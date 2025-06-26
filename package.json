@@ -35,10 +35,15 @@
   },
   "homepage": "https://github.com/febbyRG/pdf-decomposer#readme",
   "dependencies": {
+    "canvas": "^2.11.2",
+    "change-case": "^5.4.4",
+    "md5": "^2.3.0",
+    "param-case": "^3.0.4",
     "pdf-lib": "^1.17.1",
-    "pdfjs-dist": "^4.2.67"
+    "pdfjs-dist": "^3.11.174"
   },
   "devDependencies": {
+    "@types/change-case": "^0.0.30",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.0.4",
     "@typescript-eslint/eslint-plugin": "^8.35.0",

@@ -20,6 +20,12 @@ const demoDir = path.dirname(fileURLToPath(import.meta.url))
       await fs.writeFile(outputPath, JSON.stringify(result, null, 2), 'utf-8')
       console.log(`PDF decomposition result written to ${outputPath}`)
     } catch (err) {
-      console.error('Failed to parse PDF:', err)
+      console.error('Failed to parse PDF:')
+      if (err instanceof Error) {
+        console.error('Error message:', err.message)
+        console.error('Error stack:', err.stack)
+      }
+      // Print the full error object, including non-Error types
+      console.dir(err, { depth: 10 })
     }
   })()
