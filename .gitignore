@@ -18,3 +18,8 @@ Thumbs.db
 
 # Others
 *.local
+
+# demo
+scripts/demo/assets/
+scripts/demo/demo.pdf
+scripts/demo/demo.output.json
