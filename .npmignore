@@ -1,0 +1,12 @@
+test/
+scripts/
+.vscode/
+.github/
+*.log
+*.tsbuildinfo
+*.test.ts
+*.spec.ts
+README.md
+CHANGELOG.md
+CONTRIBUTING.md
+jest.config.js

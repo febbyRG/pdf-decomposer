@@ -1,0 +1,53 @@
+{
+  "name": "pdf-decomposer",
+  "version": "0.0.1",
+  "description": "A TypeScript Node.js library to parse all PDF page content (text, images, annotations, etc.) into JSON format.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run build && npm test",
+    "test": "jest",
+    "lint": "eslint . --ext .ts",
+    "demo": "node --loader ts-node/esm scripts/demo.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/febbyRG/pdf-decomposer.git"
+  },
+  "keywords": [
+    "pdf",
+    "parser",
+    "typescript",
+    "json"
+  ],
+  "author": "Febby Rachmat G<febby.rachmat@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/febbyRG/pdf-decomposer/issues"
+  },
+  "homepage": "https://github.com/febbyRG/pdf-decomposer#readme",
+  "dependencies": {
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^4.2.67"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.0.4",
+    "@typescript-eslint/eslint-plugin": "^8.35.0",
+    "@typescript-eslint/parser": "^8.35.0",
+    "eslint": "^9.29.0",
+    "jest": "^30.0.3",
+    "ts-jest": "^29.4.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  },
+  "type": "module"
+}

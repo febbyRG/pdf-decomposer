@@ -1,0 +1,20 @@
+# Node
+node_modules/
+dist/
+*.log
+*.tsbuildinfo
+.env
+.npmrc
+
+# Test
+coverage/
+
+# VSCode
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Others
+*.local
