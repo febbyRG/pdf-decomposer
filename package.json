@@ -40,7 +40,8 @@
     "md5": "^2.3.0",
     "param-case": "^3.0.4",
     "pdf-lib": "^1.17.1",
-    "pdfjs-dist": "^3.11.174"
+    "pdfjs-dist": "^3.11.174",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@types/change-case": "^0.0.30",

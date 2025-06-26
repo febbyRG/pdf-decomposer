@@ -7,7 +7,7 @@ export type PdfOperatorSelectionFn = (selection: PdfOperatorSelection) => void
 export class PdfOperatorSelection {
   public operators: PdfOperator[] = []
 
-  constructor(private list: PdfOperatorList) {}
+  constructor(private list: PdfOperatorList) { }
 
   add(operator: PdfOperator) {
     this.operators.push(operator)

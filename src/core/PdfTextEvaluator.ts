@@ -28,7 +28,7 @@ export class PdfTextEvaluator {
   private charSpacing = 0
   private transformScale = 1
 
-  constructor(private page: PdfPage) {}
+  constructor(private page: PdfPage) { }
 
   process(selection: PdfOperatorSelection) {
     for (const operator of selection.transform()) {

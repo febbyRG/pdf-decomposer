@@ -1,7 +1,7 @@
-import fs from 'fs/promises'
+import * as fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import { decomposePdf } from '../src/core/decomposePdf.js'
+import { decomposePdf } from '../src/api/decomposePdf.js'
 
 const demoDir = path.dirname(fileURLToPath(import.meta.url))
 
@@ -10,14 +10,15 @@ const demoDir = path.dirname(fileURLToPath(import.meta.url))
     const pdfPath = path.join(demoDir, 'demo.pdf')
     const outputPath = path.join(demoDir, 'demo.output.json')
     try {
-      // Debug: print first 32 bytes and file size
-      const raw = await fs.readFile(pdfPath)
-      console.log('PDF file size:', raw.length, 'bytes')
-      console.log('PDF first 32 bytes:', raw.slice(0, 32).toString('hex'))
-      console.log('PDF first 32 chars:', raw.slice(0, 32).toString('utf8'))
-
       const result = await decomposePdf(pdfPath, { assetPath: path.join(demoDir, 'assets') })
-      await fs.writeFile(outputPath, JSON.stringify(result, null, 2), 'utf-8')
+      // Write output JSON
+      await fs.writeFileSync(outputPath, JSON.stringify(result, null, 2), 'utf-8')
+      // Write images (thumbnails)
+      result.forEach((page, i) => {
+        if (page.thumbnail) {
+          fs.writeFileSync(path.join(outputPath, `page-${i + 1}-thumbnail.png`), Buffer.from(page.thumbnail, 'base64'))
+        }
+      })
       console.log(`PDF decomposition result written to ${outputPath}`)
     } catch (err) {
       console.error('Failed to parse PDF:')

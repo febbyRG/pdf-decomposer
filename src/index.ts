@@ -1,4 +1,12 @@
-export { decomposePdf } from './core/decomposePdf.js'
+export { decomposePdf } from './api/decomposePdf.js'
+export * from './core/PdfDocument.js'
+export * from './core/PdfOperator.js'
+export * from './core/PdfOperatorList.js'
+export * from './core/PdfOperatorSelection.js'
+export * from './core/PdfOperatorTransforms.js'
+export * from './core/PdfPage.js'
+export * from './core/PdfTextEvaluator.js'
+export * from './core/PdfUtil.js'
 export * from './models/PdfElement.js'
 export * from './models/PdfPageContent.js'
 
