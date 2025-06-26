@@ -16,7 +16,7 @@
     "prepublishOnly": "npm run build && npm test",
     "test": "jest",
     "lint": "eslint . --ext .ts",
-    "demo": "node --loader ts-node/esm scripts/demo.ts"
+    "demo": "tsx scripts/demo.ts"
   },
   "repository": {
     "type": "git",
@@ -53,6 +53,7 @@
     "jest": "^30.0.3",
     "ts-jest": "^29.4.0",
     "ts-node": "^10.9.2",
+    "tsx": "^4.20.3",
     "typescript": "^5.8.3"
   },
   "type": "module"

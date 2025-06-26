@@ -59,9 +59,7 @@ export class PdfDecomposerPage {
   private async extractImageElements(pdfPage: any, pageIndex: number, outputDir: string): Promise<any[]> {
     if (this.skipParser) { return [] }
     const items = await pdfPage.extractImages()
-    console.log('[extractImageElements] items:', items)
     return Promise.all(items.map(async ({ boundingBox, data, objectId, contentType }: any) => {
-      console.log('[extractImageElements] item:', { boundingBox, objectId, contentType, dataType: typeof data, dataInstance: data && data.constructor && data.constructor.name })
       let buffer: Buffer
       if (typeof Buffer !== 'undefined' && data instanceof Buffer) {
         buffer = data
@@ -90,7 +88,6 @@ export class PdfDecomposerPage {
   // Real text extraction using PDF.js getTextContent
   private async extractTextElements(pdfPage: any, pageIndex: number): Promise<any[]> {
     const textContent = await pdfPage.getTextContent()
-    console.log('PDF.js textContent.items:', textContent.items)
     return textContent.items.map((item: any, _: number) => {
       const bbox = this.getTextBoundingBox(item)
       const attributes = {
