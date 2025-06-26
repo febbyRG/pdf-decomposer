@@ -20,6 +20,5 @@ Thumbs.db
 *.local
 
 # demo
-scripts/demo/assets/
-scripts/demo/demo.pdf
-scripts/demo/demo.output.json
+demo.output.json
+demo.pdf
