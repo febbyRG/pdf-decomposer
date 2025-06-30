@@ -32,6 +32,7 @@ Thumbs.db
 # Test directories - exclude contents but keep directories
 scripts/pdf-test-input/*
 !scripts/pdf-test-input/.gitkeep
+!scripts/pdf-test-input/README.md
 scripts/usage-test-output/*
 !scripts/usage-test-output/.gitkeep
 scripts/comprehensive-test-output/*
