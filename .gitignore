@@ -19,7 +19,15 @@ Thumbs.db
 # Others
 *.local
 
-# demo
+# Test directories - exclude contents but keep directories
+scripts/pdf-test-input/*
+!scripts/pdf-test-input/.gitkeep
+scripts/usage-test-output/*
+!scripts/usage-test-output/.gitkeep
+scripts/comprehensive-test-output/*
+!scripts/comprehensive-test-output/.gitkeep
+
+# Legacy demo files (now moved to pdf-test-input)
 demo.output.json
 demo.pdf
 scripts/assets

@@ -1,136 +1,156 @@
 import fs from 'fs'
 import { Package, PdfDecomposer } from '../core/PdfDecomposer.js'
-import { PdfDecomposerPage } from '../core/PdfDecomposerPage.js'
 import { PdfDocument } from '../core/PdfDocument.js'
 import type { PdfPageContent } from '../models/PdfPageContent.js'
+import { InvalidPdfError, PdfProcessingError } from '../types/pdf.types.js'
+import { ValidationUtils } from '../utils/ValidationUtils.js'
+
+export interface DecomposeOptions {
+  readonly assetPath?: string
+  readonly startPage?: number // First page to process (1-indexed, default: 1)
+  readonly endPage?: number // Last page to process (1-indexed, default: all pages)
+  readonly generateImages?: boolean // Generate page images and thumbnails (default: false)
+  readonly extractEmbeddedImages?: boolean // Extract individual images embedded in PDF content
+  readonly imageWidth?: number // Width for rendered page images (default: 1200)
+  readonly imageQuality?: number // JPEG quality for page images (default: 90)
+}
 
 
 /**
  * Decompose a PDF file and extract all page content (text, images, annotations, etc.) into JSON format.
- * Optionally extract embedded images to assetPath.
+ * Optionally generate page images and extract embedded images to assetPath.
  * @param filePath Path to the PDF file
- * @param options Optional: { assetPath?: string }
- * @returns Array of PDFPageContent objects for each page
- * @throws Error if the file cannot be read or parsed
+ * @param options Optional configuration for decomposition
+ * @param options.assetPath Directory to save generated images and assets
+ * @param options.startPage First page to process (1-indexed, default: 1)
+ * @param options.endPage Last page to process (1-indexed, default: all pages)
+ * @param options.generateImages Generate page images and thumbnails (default: false)
+ * @param options.extractEmbeddedImages Extract individual images embedded in PDF content (default: false)
+ * @param options.imageWidth Width for rendered page images (default: 1200)
+ * @param options.imageQuality JPEG quality for page images (default: 90)
+ * @returns Array of PDFPageContent objects for each page in the specified range
+ * @throws {InvalidPdfError} if the file cannot be read or parsed, or if page range is invalid
+ * @throws {PdfProcessingError} if processing fails
  */
-export async function decomposePdf(filePath: string, options?: { assetPath?: string }): Promise<PdfPageContent[]> {
+export async function decomposePdf(
+  filePath: string,
+  options: DecomposeOptions = {}
+): Promise<PdfPageContent[]> {
 
-  const pdfDoc = await loadPdfDocument(filePath)
+  // Validate inputs
+  ValidationUtils.validateFilePath(filePath)
 
-  // Prepare output package
-  const outDir = options?.assetPath || filePath
-  const pkg: Package = { pkgDir: new LocalPackageDir(outDir), pages: [] };
+  if (options.startPage !== undefined && (!Number.isInteger(options.startPage) || options.startPage < 1)) {
+    throw new InvalidPdfError('startPage must be a positive integer')
+  }
 
-  // Attach the real PdfDecomposerPage to global for compatibility
-  (globalThis as any).PdfDecomposerPage = PdfDecomposerPage
+  if (options.endPage !== undefined && (!Number.isInteger(options.endPage) || options.endPage < 1)) {
+    throw new InvalidPdfError('endPage must be a positive integer')
+  }
 
-  const composer = new PdfDecomposer(pdfDoc, pkg)
-  composer.subscribe((state) => {
-    console.log(`[${state.progress}%] ${state.message}`)
-  })
-  composer.decomposeError.push((err: any) => {
-    console.error('Import error:', err)
-  })
-  await composer.decompose()
+  if (options.startPage !== undefined && options.endPage !== undefined && options.startPage > options.endPage) {
+    throw new InvalidPdfError('startPage must be less than or equal to endPage')
+  }
 
-  return composer.pkg.pages
+  try {
+    const pdfDoc = await loadPdfDocument(filePath)
 
-  // let data: Uint8Array
-  // try {
-  //   data = new Uint8Array(await fs.promises.readFile(filePath))
-  // } catch (err) {
-  //   throw new Error(`Failed to read file: ${filePath}. ${(err as Error).message}`)
-  // }
+    // Prepare output package
+    const outDir = options.assetPath || filePath
+    const pkg: Package = { pkgDir: new LocalPackageDir(outDir), pages: [] }
 
-  // // Dynamically import pdfjs-dist and get the correct getDocument function
-  // let pdfjsLib: any
-  // let getDocument: any
-  // try {
-  //   pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.js')
-  //   getDocument = pdfjsLib.default?.getDocument || pdfjsLib.getDocument
-  //   if (!getDocument) throw new Error('getDocument not found in pdfjs-dist')
-  // } catch (err) {
-  //   throw new Error(`Failed to load pdfjs-dist: ${(err as Error).message}`)
-  // }
+    const composer = new PdfDecomposer(
+      pdfDoc,
+      pkg,
+      false,
+      options.generateImages ?? false,
+      options.extractEmbeddedImages,
+      options.imageWidth,
+      options.imageQuality
+    )
+    composer.subscribe((state) => {
+      console.log(`[${Math.round(state.progress)}%] ${state.message}`)
+    })
+    composer.decomposeError.push((err: any) => {
+      console.error('Processing error:', err)
+    })
 
-  // // Load PDF.js document proxy
-  // let pdfProxy: any
-  // try {
-  //   const loadingTask = getDocument({ data })
-  //   pdfProxy = await loadingTask.promise
-  // } catch (err) {
-  //   throw new Error(`Failed to parse PDF: ${(err as Error).message}`)
-  // }
+    // Calculate page range
+    const totalPages = pdfDoc.numPages
+    const startPage = Math.max(1, options.startPage || 1)
+    const endPage = Math.min(totalPages, options.endPage || totalPages)
 
-  // // Create and process PdfDocument
-  // const pdfDoc = new PdfDocument(pdfProxy)
-  // await pdfDoc.process()
+    // Validate page range against actual document
+    if (startPage > totalPages) {
+      throw new InvalidPdfError(`startPage (${startPage}) exceeds document page count (${totalPages})`)
+    }
 
-  // const numPages = pdfDoc.numPages
-  // const pages: PdfPageContent[] = []
+    await composer.decompose(startPage, endPage)
 
-  // // Prepare asset path for images if needed
-  // let assetPath: string | undefined = options?.assetPath
-  // if (assetPath) {
-  //   await fs.promises.mkdir(assetPath, { recursive: true })
-  // }
+    return composer.pkg.pages
+  } catch (error) {
+    if (error instanceof InvalidPdfError || error instanceof PdfProcessingError) {
+      throw error
+    }
 
-  // for (let i = 0; i < numPages; i++) {
-  //   const page: PdfPage = pdfDoc.getPage(i + 1)
-  //   // Extract text and images
-  //   const [rawTextElements, imageElementsRaw, annotations] = await Promise.all([
-  //     page.extractText(),
-  //     page.extractImages(),
-  //     page.getAnnotations()
-  //   ])
-
-  //   // Map text elements to PdfElement with type: 'text'
-  //   const textElements: PdfElement[] = rawTextElements.map((el: any) => ({ ...el, type: 'text' }))
-
-  //   // Save images to disk if assetPath is provided, and add assetFile property
-  //   let imageElements: PdfElement[] = []
-  //   if (assetPath && imageElementsRaw.length > 0) {
-  //     imageElements = await Promise.all(imageElementsRaw.map(async (img: any) => {
-  //       const fileName = `${img.objectId || `img_${i + 1}`}.png`
-  //       const imgPath = path.join(assetPath!, fileName)
-  //       await fs.promises.writeFile(imgPath, img.data)
-  //       return { ...img, type: 'image', assetFile: imgPath }
-  //     }))
-  //   } else {
-  //     imageElements = imageElementsRaw.map((img: any) => ({ ...img, type: 'image' }))
-  //   }
-
-  //   // Compose all elements for this page
-  //   const elements: PdfElement[] = [
-  //     ...textElements,
-  //     ...imageElements
-  //   ]
-
-  //   pages.push({
-  //     pageNumber: i + 1,
-  //     elements,
-  //     annotations
-  //   })
-  // }
-  // return pages
+    // Wrap unknown errors
+    throw new PdfProcessingError(
+      `Failed to decompose PDF: ${(error as Error).message}`,
+      undefined,
+      error as Error
+    )
+  }
 }
 
 class LocalPackageDir {
-  dir: string
-  constructor(dir: string) { this.dir = dir }
-  async create() { if (!fs.existsSync(this.dir)) fs.mkdirSync(this.dir, { recursive: true }) }
+  constructor(private readonly dir: string) { }
+
+  async create(): Promise<void> {
+    try {
+      if (!fs.existsSync(this.dir)) {
+        fs.mkdirSync(this.dir, { recursive: true })
+      }
+    } catch (error) {
+      throw new PdfProcessingError(
+        `Failed to create output directory: ${(error as Error).message}`,
+        undefined,
+        error as Error
+      )
+    }
+  }
 }
 
 async function loadPdfDocument(filePath: string): Promise<PdfDocument> {
-  // @ts-ignore
-  const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.js')
-  const { getDocument } = pdfjsLib.default || pdfjsLib
-  const data = new Uint8Array(fs.readFileSync(filePath))
-  const loadingTask = getDocument({ data })
-  const doc = await loadingTask.promise
-  // Use the custom PdfDocument class, which will create PdfPage instances
-  const customDoc = new PdfDocument(doc as any)
-  await customDoc.process()
-  return customDoc
+  try {
+    // Verify file exists
+    if (!fs.existsSync(filePath)) {
+      throw new InvalidPdfError(`File not found: ${filePath}`)
+    }
+
+    const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.js')
+    const { getDocument } = pdfjsLib.default || pdfjsLib
+
+    if (!getDocument) {
+      throw new PdfProcessingError('Failed to load PDF.js getDocument function')
+    }
+
+    const data = new Uint8Array(fs.readFileSync(filePath))
+    const loadingTask = getDocument({ data })
+    const doc = await loadingTask.promise
+
+    // Use the custom PdfDocument class, which will create PdfPage instances
+    const customDoc = new PdfDocument(doc as any)
+    await customDoc.process()
+
+    return customDoc
+  } catch (error) {
+    if (error instanceof InvalidPdfError || error instanceof PdfProcessingError) {
+      throw error
+    }
+
+    throw new InvalidPdfError(
+      `Failed to load PDF document: ${(error as Error).message}`
+    )
+  }
 }
 

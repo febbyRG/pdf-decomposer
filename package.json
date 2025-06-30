@@ -14,9 +14,9 @@
     "build": "tsc",
     "prepare": "npm run build",
     "prepublishOnly": "npm run build && npm test",
-    "test": "jest",
-    "lint": "eslint . --ext .ts",
-    "demo": "tsx scripts/demo.ts"
+    "test": "npx tsx scripts/comprehensive-test.ts",
+    "test:usage": "tsx scripts/usage-test.ts",
+    "lint": "eslint . --ext .ts"
   },
   "repository": {
     "type": "git",
@@ -39,19 +39,15 @@
     "change-case": "^5.4.4",
     "md5": "^2.3.0",
     "param-case": "^3.0.4",
-    "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^3.11.174",
+    "puppeteer": "^24.11.1",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
-    "@types/change-case": "^0.0.30",
-    "@types/jest": "^30.0.0",
     "@types/node": "^24.0.4",
     "@typescript-eslint/eslint-plugin": "^8.35.0",
     "@typescript-eslint/parser": "^8.35.0",
     "eslint": "^9.29.0",
-    "jest": "^30.0.3",
-    "ts-jest": "^29.4.0",
     "ts-node": "^10.9.2",
     "tsx": "^4.20.3",
     "typescript": "^5.8.3"

@@ -3,23 +3,30 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import { decomposePdf } from '../src/api/decomposePdf.js'
 
-const demoDir = path.dirname(fileURLToPath(import.meta.url))
+const scriptDir = path.dirname(fileURLToPath(import.meta.url))
 
   ; (async () => {
     // Use the correct path for the demo PDF
-    const pdfPath = path.join(demoDir, 'demo.pdf')
-    const outputPath = path.join(demoDir, 'demo.output.json')
+    const pdfPath = path.join(scriptDir, 'pdf-test-input', 'demo.pdf')
+    const usageTestDir = path.join(scriptDir, 'usage-test-output')
+    const outputPath = path.join(usageTestDir, 'test.output.json')
+
     try {
-      const result = await decomposePdf(pdfPath, { assetPath: path.join(demoDir, 'assets') })
+      // Create usage-test directory if it doesn't exist
+      if (!fs.existsSync(usageTestDir)) {
+        fs.mkdirSync(usageTestDir, { recursive: true })
+      }
+
+      const result = await decomposePdf(pdfPath, {
+        assetPath: usageTestDir,
+        generateImages: true  // Generate page images for demo
+      })
       // Write output JSON
       await fs.writeFileSync(outputPath, JSON.stringify(result, null, 2), 'utf-8')
-      // Write images (thumbnails)
-      result.forEach((page, i) => {
-        if (page.thumbnail) {
-          fs.writeFileSync(path.join(outputPath, `page-${i + 1}-thumbnail.png`), Buffer.from(page.thumbnail, 'base64'))
-        }
-      })
       console.log(`PDF decomposition result written to ${outputPath}`)
+
+      process.exit(0)
+
     } catch (err) {
       console.error('Failed to parse PDF:')
       if (err instanceof Error) {

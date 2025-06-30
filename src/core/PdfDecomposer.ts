@@ -1,5 +1,7 @@
 
-import { PdfDocument } from "./PdfDocument.js"
+import { MemoryManager } from '../utils/MemoryManager.js'
+import { PdfDecomposerPage } from './PdfDecomposerPage.js'
+import { PdfDocument } from './PdfDocument.js'
 
 export interface DecomposeError {
   message: string
@@ -21,35 +23,82 @@ export interface Package {
 }
 
 export class PdfDecomposer {
-  private observable: Array<(state: PdfDecomposeState) => void> = [];
-  private currentProgress = 0;
-  public decomposeError: Array<(error: DecomposeError) => void> = [];
+  private observable: Array<(state: PdfDecomposeState) => void> = []
+  private currentProgress = 0
+  public decomposeError: Array<(error: DecomposeError) => void> = []
 
-  constructor(public pdfDoc: PdfDocument, public pkg: Package, private skipDecompose = false) { }
+  constructor(
+    public pdfDoc: PdfDocument,
+    public pkg: Package,
+    private skipDecompose = false,
+    private generateImages = false,
+    private extractEmbeddedImages = false,
+    private imageWidth = 1200,
+    private imageQuality = 90
+  ) { }
 
-  async decompose(limit: number = Infinity) {
+  async decompose(startPage: number = 1, endPage: number = Infinity) {
     this.notify({ progress: 0, message: 'Loading ...', processing: true })
     this.currentProgress = 0
     this.update('Preparing your PDF...', 0)
     this.pkg.fingerprint = this.pdfDoc.fingerprint
     await this.pkg.pkgDir.create()
-    const total = Math.min(this.pdfDoc.numPages, limit)
+
+    // Calculate actual page range
+    const totalPages = this.pdfDoc.numPages
+    const actualStartPage = Math.max(1, startPage)
+    const actualEndPage = Math.min(totalPages, endPage === Infinity ? totalPages : endPage)
+    const total = actualEndPage - actualStartPage + 1
+
     this.update('Loading document', 0, 10)
     this.pkg.pages = []
-    await Promise.all(
-      Array.from(Array(total).keys()).map(async (pageIndex: number) => {
-        const page = new (globalThis as any).PdfDecomposerPage(this, pageIndex + 1, this.skipDecompose)
-        this.pkg.pages[pageIndex] = await page.decompose().catch(({ message }: Error) => {
-          this.notifyDecomposeError({ message, pageIndex: pageIndex + 1 })
-          return null
+
+    // Log initial memory usage
+    const initialMemory = MemoryManager.getMemoryStats()
+    console.log(`🧠 Starting decomposition with ${initialMemory.used}MB used`)
+    console.log(`🚀 Processing pages ${actualStartPage}-${actualEndPage} (${total} pages) sequentially`)
+
+    // Process pages sequentially (single-threaded)
+    for (let pageIndex = 0; pageIndex < total; pageIndex++) {
+      const actualPageNumber = actualStartPage + pageIndex
+
+      try {
+        // Monitor memory before page processing
+        await MemoryManager.withMemoryMonitoring(async () => {
+          const page = new PdfDecomposerPage(this, actualPageNumber, this.skipDecompose, this.generateImages, this.extractEmbeddedImages, this.imageWidth, this.imageQuality)
+          this.pkg.pages[pageIndex] = await page.decompose()
+
+          if (pageIndex === 0 && this.pkg.pages[0]) {
+            this.pkg.thumbnail = this.pkg.pages[0].thumbnail
+          }
+        }, {
+          maxMemoryMB: 300,
+          gcThresholdMB: 150,
+          aggressiveCleanup: true
         })
-        if (pageIndex === 0 && this.pkg.pages[0]) {
-          this.pkg.thumbnail = this.pkg.pages[0].thumbnail
+
+        const loaded = pageIndex + 1
+        this.update(`Processed ${loaded} pages out of ${total}`, 10, 80, { loaded, total })        // Periodic memory cleanup every 5 pages to prevent accumulation
+        if ((pageIndex + 1) % 5 === 0 && pageIndex + 1 < total) {
+          console.log(`🧹 Page ${actualPageNumber} complete, cleaning up memory...`)
+          await MemoryManager.cleanupMemory()
+
+          const memoryAfterCleanup = MemoryManager.getMemoryStats()
+          console.log(`🧠 Memory after cleanup: ${memoryAfterCleanup.used}MB`)
         }
-        const loaded = this.pkg.pages.length
-        this.update(`Processed ${loaded} pages out of ${total}`, 10, 80, { loaded, total })
-      })
-    )
+
+      } catch (error) {
+        this.notifyDecomposeError({
+          message: (error as Error).message,
+          pageIndex: actualPageNumber
+        })
+        this.pkg.pages[pageIndex] = null
+
+        // Emergency cleanup on error
+        await MemoryManager.cleanupMemory()
+      }
+    }
+
     this.update('Saving your Package', 85)
     this.pkg.pages = this.pkg.pages.filter((page) => page != null)
     this.update('Finalizing your PDF', 95)
