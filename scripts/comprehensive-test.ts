@@ -24,9 +24,9 @@ class ComprehensiveTest {
   private baseOutputDir: string
   private pdfPath: string
 
-  constructor() {
+  constructor(customPdfPath?: string) {
     this.baseOutputDir = path.join(__dirname, 'comprehensive-test-output')
-    this.pdfPath = path.join(__dirname, 'pdf-test-input', 'demo.pdf')
+    this.pdfPath = customPdfPath || path.join(__dirname, 'pdf-test-input', 'demo.pdf')
   }
 
   async run() {
@@ -426,7 +426,8 @@ class ComprehensiveTest {
 }
 
 // Run the comprehensive test
-const test = new ComprehensiveTest()
+const customPdfPath = process.argv[2]
+const test = new ComprehensiveTest(customPdfPath)
 test.run().catch(error => {
   console.error('❌ Test suite crashed:', error)
   process.exit(1)
