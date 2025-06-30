@@ -83,6 +83,22 @@ const result = await decomposePdf('document.pdf', {
 })
 ```
 
+### Advanced Composition Features
+```typescript
+// Intelligent paragraph grouping for PDF-to-HTML conversion
+const result = await decomposePdf('document.pdf', {
+  elementComposer: true, // Groups scattered text into coherent paragraphs
+  extractEmbeddedImages: true
+})
+
+// Combine pages with continuous content flow (articles, stories)
+const result = await decomposePdf('document.pdf', {
+  elementComposer: true, // First group text into paragraphs
+  pageComposer: true, // Then combine pages with continuous content
+  extractEmbeddedImages: true
+})
+```
+
 ### PDF-to-HTML Conversion with Paragraph Grouping
 ```typescript
 const result = await decomposePdf('document.pdf', {

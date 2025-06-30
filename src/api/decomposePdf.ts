@@ -12,6 +12,7 @@ export interface DecomposeOptions {
   readonly generateImages?: boolean // Generate page images and thumbnails (default: false)
   readonly extractEmbeddedImages?: boolean // Extract individual images embedded in PDF content
   readonly elementComposer?: boolean // Group text elements into paragraphs for better structure (default: false)
+  readonly pageComposer?: boolean // Combine pages with continuous content flow (default: false)
   readonly imageWidth?: number // Width for rendered page images (default: 1200)
   readonly imageQuality?: number // JPEG quality for page images (default: 90)
 }
@@ -28,6 +29,7 @@ export interface DecomposeOptions {
  * @param options.generateImages Generate page images and thumbnails (default: false)
  * @param options.extractEmbeddedImages Extract individual images embedded in PDF content (default: false)
  * @param options.elementComposer Group text elements into paragraphs for better structure (default: false)
+ * @param options.pageComposer Combine pages with continuous content flow (default: false)
  * @param options.imageWidth Width for rendered page images (default: 1200)
  * @param options.imageQuality JPEG quality for page images (default: 90)
  * @returns Array of PDFPageContent objects for each page in the specified range
@@ -68,6 +70,7 @@ export async function decomposePdf(
       options.generateImages ?? false,
       options.extractEmbeddedImages,
       options.elementComposer ?? false,
+      options.pageComposer ?? false,
       options.imageWidth,
       options.imageQuality
     )

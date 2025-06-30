@@ -9,4 +9,11 @@ export interface PdfPageContent {
   image: string
   thumbnail?: string
   elements: PdfElement[]
+  // Metadata for page composition
+  metadata?: {
+    composedFromPages?: number[]
+    originalHeight?: number
+    isComposed?: boolean
+    [key: string]: any
+  }
 }

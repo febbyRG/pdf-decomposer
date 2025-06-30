@@ -95,8 +95,9 @@ function createSlimOutput(pages: PdfPageContent[]): any[] {
 
     const result = await decomposePdf(pdfPath, {
       assetPath: usageTestDir,
-      extractEmbeddedImages: true, // Extract embedded images
+      generateImages: true, // Extract embedded images
       elementComposer: true, // Group text elements into paragraphs
+      pageComposer: true, // Combine pages with continuous content flow
     })
 
     // Write output JSON

@@ -3,6 +3,7 @@ import { MemoryManager } from '../utils/MemoryManager.js'
 import { PdfDecomposerPage } from './PdfDecomposerPage.js'
 import { PdfDocument } from './PdfDocument.js'
 import { PdfElementComposer } from './PdfElementComposer.js'
+import { PdfPageComposer } from './PdfPageComposer.js'
 
 export interface DecomposeError {
   message: string
@@ -35,6 +36,7 @@ export class PdfDecomposer {
     private generateImages = false,
     private extractEmbeddedImages = false,
     private elementComposer = false,
+    private pageComposer = false,
     private imageWidth = 1200,
     private imageQuality = 90
   ) { }
@@ -99,15 +101,19 @@ export class PdfDecomposer {
         // Emergency cleanup on error
         await MemoryManager.cleanupMemory()
       }
-    }
-
-    this.update('Saving your Package', 85)
+    } this.update('Saving your Package', 85)
     this.pkg.pages = this.pkg.pages.filter((page) => page != null)
 
     // Apply element composition if requested
     if (this.elementComposer) {
-      this.update('Composing elements into paragraphs', 90)
+      this.update('Composing elements into paragraphs', 88)
       this.pkg.pages = PdfElementComposer.composeElements(this.pkg.pages)
+    }
+
+    // Apply page composition if requested
+    if (this.pageComposer) {
+      this.update('Composing pages with continuous content', 92)
+      this.pkg.pages = PdfPageComposer.composePages(this.pkg.pages)
     }
 
     this.update('Finalizing your PDF', 95)

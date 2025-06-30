@@ -46,6 +46,13 @@ const result = await decomposePdf('document.pdf', {
   elementComposer: true, // Groups individual text elements into structured paragraphs
   extractEmbeddedImages: true
 })
+
+// Combine pages with continuous content flow (ideal for articles/stories)
+const result = await decomposePdf('document.pdf', {
+  elementComposer: true, // Group text elements first
+  pageComposer: true, // Then combine pages with continuous content
+  extractEmbeddedImages: true
+})
 ```
 
 ## Testing

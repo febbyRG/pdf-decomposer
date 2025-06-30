@@ -164,8 +164,11 @@ export class PdfDecomposerPage {
   // Real text extraction using PDF.js getTextContent
   private async extractTextElements(pdfPage: any, pageIndex: number): Promise<any[]> {
     const textContent = await pdfPage.getTextContent()
+    const viewport = pdfPage.getViewport({ scale: 1 })
+    const pageHeight = viewport.height
+
     return textContent.items.map((item: any, _: number) => {
-      const bbox = this.getTextBoundingBox(item)
+      const bbox = this.getTextBoundingBox(item, pageHeight)
       const attributes = {
         fontFamily: item.fontName,
         fontSize: item.transform ? item.transform[0] : undefined,
@@ -184,16 +187,21 @@ export class PdfDecomposerPage {
   }
 
   // Helper to get bounding box from PDF.js text item
-  private getTextBoundingBox(item: any) {
+  private getTextBoundingBox(item: any, pageHeight: number) {
     // PDF.js text item transform: [scaleX, skewX, skewY, scaleY, transX, transY]
-    // width/height are not directly available, so estimate
+    // PDF coordinate system has origin at bottom-left, we need to convert to top-left
     const [a, , , d, e, f] = item.transform
     const width = item.width || Math.abs(a)
     const height = item.height || Math.abs(d)
+
+    // Convert from PDF coordinate system (bottom-left origin) to top-left origin
+    const bottomY = f
+    const topY = pageHeight - bottomY - height
+
     return {
-      top: f,
+      top: topY,
       left: e,
-      bottom: f + height,
+      bottom: topY + height,
       right: e + width,
       width,
       height
