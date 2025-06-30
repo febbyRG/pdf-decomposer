@@ -82,3 +82,17 @@ const result = await decomposePdf('document.pdf', {
   extractEmbeddedImages: true // Light extraction of embedded content
 })
 ```
+
+### PDF-to-HTML Conversion with Paragraph Grouping
+```typescript
+const result = await decomposePdf('document.pdf', {
+  elementComposer: true,      // Groups individual text elements into paragraphs
+  extractEmbeddedImages: true, // Extract images for the HTML
+  assetPath: './output'       // Save images to this directory
+})
+
+// The result will contain structured paragraphs perfect for HTML conversion:
+// - element.type === 'paragraph' (instead of many individual 'text' elements)
+// - element.data contains the full paragraph text
+// - element.attributes.composed === true (indicates composed element)
+```

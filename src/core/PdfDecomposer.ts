@@ -2,6 +2,7 @@
 import { MemoryManager } from '../utils/MemoryManager.js'
 import { PdfDecomposerPage } from './PdfDecomposerPage.js'
 import { PdfDocument } from './PdfDocument.js'
+import { PdfElementComposer } from './PdfElementComposer.js'
 
 export interface DecomposeError {
   message: string
@@ -33,6 +34,7 @@ export class PdfDecomposer {
     private skipDecompose = false,
     private generateImages = false,
     private extractEmbeddedImages = false,
+    private elementComposer = false,
     private imageWidth = 1200,
     private imageQuality = 90
   ) { }
@@ -101,6 +103,13 @@ export class PdfDecomposer {
 
     this.update('Saving your Package', 85)
     this.pkg.pages = this.pkg.pages.filter((page) => page != null)
+
+    // Apply element composition if requested
+    if (this.elementComposer) {
+      this.update('Composing elements into paragraphs', 90)
+      this.pkg.pages = PdfElementComposer.composeElements(this.pkg.pages)
+    }
+
     this.update('Finalizing your PDF', 95)
     this.notify({ progress: 100, message: 'Completed', processing: false })
     return this

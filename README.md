@@ -40,6 +40,12 @@ const result = await decomposePdf('document.pdf', {
   endPage: 5,
   extractEmbeddedImages: true
 })
+
+// Group text elements into paragraphs (ideal for PDF-to-HTML conversion)
+const result = await decomposePdf('document.pdf', {
+  elementComposer: true, // Groups individual text elements into structured paragraphs
+  extractEmbeddedImages: true
+})
 ```
 
 ## Testing
