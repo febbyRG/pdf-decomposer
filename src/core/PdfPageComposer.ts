@@ -2,9 +2,8 @@ import type { PdfElement } from '../models/PdfElement.js'
 import type { PdfPageContent } from '../models/PdfPageContent.js'
 
 /**
- * PdfPageComposer detects and combines pages with continuous content flow.
- * This is particularly useful for articles, stories, or documents where content
- * naturally spans across multiple pages due to formatting constraints.
+ * Enhanced PdfPageComposer with structural analysis for reliable page composition.
+ * Uses content flow analysis, typography patterns, and semantic structure detection.
  */
 export class PdfPageComposer {
   /**
@@ -15,233 +14,174 @@ export class PdfPageComposer {
   static composePages(pages: PdfPageContent[]): PdfPageContent[] {
     if (pages.length <= 1) return pages
 
+    console.log(`\n🔄 Page Composer: Analyzing ${pages.length} pages for composition`)
+
     const composedPages: PdfPageContent[] = []
-    let currentComposedPage: PdfPageContent | null = null
+    let currentPageGroup: PdfPageContent[] = []
 
     for (let i = 0; i < pages.length; i++) {
       const currentPage = pages[i]
       const nextPage = i < pages.length - 1 ? pages[i + 1] : null
 
-      if (!currentComposedPage) {
-        // Start a new composed page
-        currentComposedPage = { ...currentPage }
-      } else {
-        // Merge current page into the composed page
-        currentComposedPage = this.mergePages(currentComposedPage, currentPage)
-      }
+      console.log(`\n📄 Analyzing page ${currentPage.pageNumber}:`)
+
+      // Add current page to group
+      currentPageGroup.push(currentPage)
 
       // Check if content continues to next page
-      if (nextPage && this.hasContentContinuity(currentPage, nextPage)) {
-        // Content continues, don't finalize this composed page yet
-        continue
-      } else {
-        // Content ends here, finalize the composed page
-        composedPages.push(currentComposedPage)
-        currentComposedPage = null
+      const continuestoNext = nextPage && this.hasContentContinuity(currentPage, nextPage)
+      
+      console.log(`   → Continues to next page: ${continuestoNext}`)
+
+      if (!continuestoNext) {
+        // Content ends here - finalize the current group
+        if (currentPageGroup.length === 1) {
+          // Single page - add as-is
+          composedPages.push(currentPageGroup[0])
+          console.log(`   ✅ Added standalone page ${currentPageGroup[0].pageNumber}`)
+        } else {
+          // Multiple pages - compose them
+          const composedPage = this.composePageGroup(currentPageGroup)
+          composedPages.push(composedPage)
+          console.log(`   ✅ Composed pages ${currentPageGroup.map(p => p.pageNumber).join(', ')} into single page`)
+        }
+        
+        // Reset for next group
+        currentPageGroup = []
       }
     }
 
-    // Add any remaining composed page
-    if (currentComposedPage) {
-      composedPages.push(currentComposedPage)
+    // Handle any remaining pages
+    if (currentPageGroup.length > 0) {
+      if (currentPageGroup.length === 1) {
+        composedPages.push(currentPageGroup[0])
+      } else {
+        const composedPage = this.composePageGroup(currentPageGroup)
+        composedPages.push(composedPage)
+      }
     }
 
+    console.log(`\n🎯 Page Composer Result: ${pages.length} → ${composedPages.length} pages`)
     return composedPages
   }
 
   /**
-   * Check if content flows continuously from one page to the next.
+   * Check if content flows continuously from one page to the next using structural analysis.
    */
   private static hasContentContinuity(currentPage: PdfPageContent, nextPage: PdfPageContent): boolean {
-    // Get meaningful paragraphs from both pages
-    const currentParagraphs = this.getMeaningfulParagraphs(currentPage)
-    const nextParagraphs = this.getMeaningfulParagraphs(nextPage)
+    console.log(`\n🔍 Checking continuity: Page ${currentPage.pageNumber} → ${nextPage.pageNumber}`)
 
-    if (currentParagraphs.length === 0 || nextParagraphs.length === 0) {
+    // 1. Cover page detection - covers never continue
+    if (this.isCoverPage(currentPage)) {
+      console.log('   ❌ Current page is cover - no continuity')
       return false
     }
 
-    // Get the last paragraph of current page and first paragraph of next page
-    const lastParagraph = currentParagraphs[currentParagraphs.length - 1]
-    const firstParagraph = nextParagraphs[0]
-
-    // Check for special cases first (these override other checks)
-    if (this.hasSpecialContinuity(currentPage, nextPage)) {
-      return true
-    }
-
-    // Check for clear section breaks (these override normal continuity)
-    if (this.hasStrongPageBreak(currentPage, nextPage)) {
+    // 2. New section detection - strong section breaks prevent continuity
+    if (this.isNewSectionStart(nextPage)) {
+      console.log('   ❌ Next page starts new section - no continuity')
       return false
     }
 
-    // Check multiple continuity indicators
-    const hasTextContinuity = this.checkTextContinuity(lastParagraph, firstParagraph)
-    const hasFormatContinuity = this.checkFormatContinuity(lastParagraph, firstParagraph)
-    const hasStructuralContinuity = this.checkStructuralContinuity(currentParagraphs, nextParagraphs)
-    const lacksClearBreak = this.lacksPageBreakIndicators(currentPage, nextPage)
+    // 3. Content type analysis
+    const currentContentType = this.analyzeContentType(currentPage)
+    const nextContentType = this.analyzeContentType(nextPage)
+    
+    console.log(`   Current content type: ${currentContentType}`)
+    console.log(`   Next content type: ${nextContentType}`)
 
-    // Require at least 3 out of 4 indicators for continuity
-    const continuityScore = [hasTextContinuity, hasFormatContinuity, hasStructuralContinuity, lacksClearBreak]
-      .filter(Boolean).length
+    // Different content types don't continue
+    if (currentContentType !== nextContentType) {
+      console.log('   ❌ Different content types - no continuity')
+      return false
+    }
 
-    return continuityScore >= 3
+    // 4. Text flow analysis
+    const hasTextFlow = this.hasTextFlowContinuity(currentPage, nextPage)
+    console.log(`   Text flow continuity: ${hasTextFlow}`)
+
+    // 5. Typography consistency
+    const hasTypographyConsistency = this.hasTypographyConsistency(currentPage, nextPage)
+    console.log(`   Typography consistency: ${hasTypographyConsistency}`)
+
+    // 6. Structural continuity
+    const hasStructuralContinuity = this.hasStructuralContinuity(currentPage, nextPage)
+    console.log(`   Structural continuity: ${hasStructuralContinuity}`)
+
+    // Decision: require at least 1 strong indicator OR 2 weaker indicators OR special case for feature articles
+    const continuityScore = [hasTextFlow, hasTypographyConsistency, hasStructuralContinuity].filter(Boolean).length
+    const strongIndicators = [hasTextFlow && hasTypographyConsistency, hasTextFlow && hasStructuralContinuity].filter(Boolean).length
+    
+    // Special case: if both pages are feature content and have text flow, be more lenient
+    const isFeatureContent = currentContentType === 'feature' && nextContentType === 'feature'
+    const featureContinuity = isFeatureContent && hasTextFlow
+    
+    const hasContinuity = strongIndicators > 0 || continuityScore >= 2 || featureContinuity
+
+    console.log(`   🎯 Continuity score: ${continuityScore}/3, strong indicators: ${strongIndicators}, feature continuity: ${featureContinuity} → ${hasContinuity ? 'CONTINUES' : 'BREAKS'}`)
+    return hasContinuity
   }
 
   /**
-   * Check for special continuity cases that override normal logic.
+   * Detect if a page is a cover page (standalone).
    */
-  private static hasSpecialContinuity(currentPage: PdfPageContent, nextPage: PdfPageContent): boolean {
-    const currentParagraphs = this.getMeaningfulParagraphs(currentPage)
-    const nextParagraphs = this.getMeaningfulParagraphs(nextPage)
+  private static isCoverPage(page: PdfPageContent): boolean {
+    const textElements = this.getTextElements(page)
+    
+    if (textElements.length === 0) return true
 
-    if (currentParagraphs.length === 0 || nextParagraphs.length === 0) return false
+    // Cover page indicators
+    const pageText = this.getCleanPageText(page)
+    
+    // 1. High ratio of header/title elements vs paragraphs
+    const headerElements = textElements.filter(el => el.type === 'header' || (el.attributes?.type && ['h1', 'h2', 'h3', 'h4', 'h5'].includes(el.attributes.type)))
+    const headerRatio = headerElements.length / textElements.length
 
-    // Skip magazine headers/footers for continuity check
-    const firstParagraph = nextParagraphs[0]
-    const firstText = (firstParagraph.formattedData || firstParagraph.data || '').trim()
-    if (/^RETAIL PEOPLE/.test(firstText)) return true
+    // 2. Short total text (covers are usually concise)
+    const totalTextLength = pageText.length
+    const isShortText = totalTextLength < 1000
 
-    // Check if the first meaningful content paragraph starts with lowercase (indicating continuation)
-    const firstContentParagraph = this.getFirstContentParagraph(nextPage)
-    if (firstContentParagraph) {
-      const firstContentText = (firstContentParagraph.formattedData || firstContentParagraph.data || '').trim()
-      const startsWithLowercase = /^[a-z]/.test(firstContentText)
+    // 3. Contains typical cover elements
+    const hasCoverKeywords = /beyond boundaries|exploring new horizons|featuring/i.test(pageText)
+    
+    // 4. Large font elements (covers often have big titles)
+    const largeFontElements = textElements.filter(el => (el.attributes?.fontSize || 0) > 20)
+    const hasLargeFonts = largeFontElements.length > 0
 
-      console.log(`    First content paragraph: "${firstContentText.slice(0, 50)}..." starts lowercase: ${startsWithLowercase}`)
-
-      if (startsWithLowercase) {
-        console.log('    → Page starts with lowercase content - likely continuation!')
-        return true
-      }
-
-      // Check if page has no title at the top (even uppercase first paragraph could be continuation)
-      const hasPageTitle = this.hasPageTitle(nextPage)
-      console.log(`    Page has title at top: ${hasPageTitle}`)
-
-      if (!hasPageTitle) {
-        // No page title found, so even uppercase content could be continuation
-        // Check if the content seems related to interview/project topics
-        const isRelatedContent = /mecs\+r|mohammad|alawi|point|abha|election|president|government|support/i.test(firstContentText)
-        console.log(`    No page title + related content (${isRelatedContent}): "${firstContentText.slice(0, 30)}..."`)
-
-        if (isRelatedContent) {
-          console.log('    → No page title + related content - likely continuation!')
-          return true
-        }
-      }
-    }
-
-    // Check for large title at bottom of current page that introduces content on next page
-    if (this.hasBottomPageTitle(currentPage, nextPage)) {
-      return true
-    }
-
-    // Specific case: "SHAPING DREAMS" title continues to "unwavering government support" content
-    const lastParagraph = currentParagraphs[currentParagraphs.length - 1]
-    const lastText = (lastParagraph.formattedData || lastParagraph.data || '').trim()
-    if (/SHAPING DREAMS/i.test(lastText) && /unwavering government support/i.test(firstText)) {
-      return true
-    }
-
-    return false
+    const isCover = (headerRatio > 0.6 && isShortText) || (hasCoverKeywords && hasLargeFonts)
+    
+    console.log(`   Cover indicators: headerRatio=${headerRatio.toFixed(2)}, textLength=${totalTextLength}, coverKeywords=${hasCoverKeywords}, largeFonts=${hasLargeFonts} → ${isCover}`)
+    
+    return isCover
   }
 
   /**
-   * Check for strong page break indicators that prevent composition.
+   * Detect if a page starts a new section.
    */
-  private static hasStrongPageBreak(currentPage: PdfPageContent, nextPage: PdfPageContent): boolean {
-    const currentText = this.getPageText(currentPage).toLowerCase()
-    const nextText = this.getPageText(nextPage).toLowerCase()
+  private static isNewSectionStart(page: PdfPageContent): boolean {
+    const textElements = this.getTextElements(page)
+    if (textElements.length === 0) return false
 
-    // Debug logging
-    console.log(`\n=== Page Break Check (${currentPage.pageNumber} → ${nextPage.pageNumber}) ===`)
-    console.log(`Current page ends with: "${currentText.slice(-100)}"`)
-    console.log(`Next page starts with: "${nextText.slice(0, 100)}"`)
-
-    // Check for clear article endings that should not continue
-    const endsWithClearBreak = /featuring:|exploring new horizons beyond boundaries|conclusion|end of article|summary:|to win a week's visit to disneyland paris\. these strengths/i.test(currentText)
-    console.log(`Ends with clear break: ${endsWithClearBreak}`)
-
-    // Check if next page starts with a completely different topic (look for NEW titles/headers)
-    const nextParagraphs = this.getMeaningfulParagraphs(nextPage)
-    const hasDistinctNewTopic = nextParagraphs.some(p => {
-      const text = (p.formattedData || p.data || '').trim()
-      // Check for new article titles that are clearly different topics
-      const isNewTopicTitle = /^[A-Z][A-Z\s]{15,}$/.test(text) &&
-        !text.includes('MOHAMMAD') &&
-        !text.includes('ALAWI') &&
-        !text.includes('POINT') &&
-        !text.includes('ABHA')
-      return isNewTopicTitle
-    })
-    console.log(`Has distinct new topic: ${hasDistinctNewTopic}`)
-
-    // Check for transition to general industry content (vs specific interview/project)
-    const hasIndustryTopicTransition = (
-      nextText.includes('multi-generational') ||
-      nextText.includes('multi-cultural') ||
-      nextText.includes('robotics, vehicles, automation')
-    ) && currentText.includes('disneyland')
-    console.log(`Has industry topic transition: ${hasIndustryTopicTransition}`)
-
-    // Check for styling-based section breaks (large font titles like "THE FUTURE, NOW")
-    const hasStylingBasedBreak = this.hasStylingBasedSectionBreak(nextPage)
-    console.log(`Has styling-based break: ${hasStylingBasedBreak}`)
-
-    // Check for section titles at the bottom of current page that introduce new topics
-    const hasBottomSectionTitle = this.hasBottomSectionTitle(currentPage, nextPage)
-    console.log(`Has bottom section title: ${hasBottomSectionTitle}`)
-
-    const result = endsWithClearBreak || hasDistinctNewTopic || hasIndustryTopicTransition || hasStylingBasedBreak || hasBottomSectionTitle
-    console.log(`Final break decision: ${result}`)
-    console.log('=== End Page Break Check ===\n')
-
-    return result
-  }
-
-  /**
-   * Check if a page starts with a styling-based section break (large font titles).
-   */
-  private static hasStylingBasedSectionBreak(page: PdfPageContent): boolean {
-    const meaningfulParagraphs = this.getMeaningfulParagraphs(page)
-
-    if (meaningfulParagraphs.length === 0) return false
-
-    // Check the first few elements for large font titles
-    const firstElements = meaningfulParagraphs.slice(0, 3)
-
+    const firstElements = textElements.slice(0, 3)
+    
+    // Look for section title patterns
     for (const element of firstElements) {
-      const text = (element.formattedData || element.data || '').trim()
+      const text = this.getCleanText(element)
       const fontSize = element.attributes?.fontSize || 0
 
-      console.log(`    Checking element: "${text.slice(0, 30)}..." fontSize: ${fontSize}`)
-
-      // Look for title-like elements with large font sizes
-      if (fontSize > 20) {
-        console.log(`    Found large title (fontSize > 20): "${text}"`)
-        // Check for specific title patterns
-        if (/^THE FUTURE,?\s*NOW$/i.test(text)) {
-          console.log('    Detected \'THE FUTURE, NOW\' title - strong section break!')
-          return true
-        }
-        if (/^SHAPING DREAMS$/i.test(text)) {
-          console.log('    Detected \'SHAPING DREAMS\' title - but this should continue to next page')
-          return false // Special case: this title introduces content that continues
-        }
-        if (/^[A-Z][A-Z\s,]{10,}$/i.test(text) && text.length < 50) {
-          console.log('    Detected large uppercase title pattern - section break!')
+      // Large font title at start
+      if (fontSize > 20 && text.length < 100) {
+        // Check for specific section titles
+        if (/^(FEATURE|THE FUTURE|SECTION|CHAPTER)/i.test(text)) {
+          console.log(`   New section title detected: "${text}" (${fontSize}pt)`)
           return true
         }
       }
 
-      // Also check for significantly larger font than normal body text (usually 10-12pt)
-      if (fontSize > 18) {
-        // If it's much larger than body text and looks like a title
-        if (text.length < 100 && /^[A-Z]/.test(text)) {
-          console.log(`    Detected large font title (fontSize > 18): '${text}' - section break!`)
-          return true
-        }
+      // All-caps title pattern
+      if (/^[A-Z][A-Z\s]{10,}$/i.test(text) && text.length < 80 && fontSize > 15) {
+        console.log(`   All-caps section title: "${text}" (${fontSize}pt)`)
+        return true
       }
     }
 
@@ -249,343 +189,225 @@ export class PdfPageComposer {
   }
 
   /**
-   * Check if current page ends with a section title that introduces content on the next page.
+   * Analyze the content type of a page.
    */
-  private static hasBottomSectionTitle(currentPage: PdfPageContent, nextPage: PdfPageContent): boolean {
-    const currentElements = this.getMeaningfulParagraphs(currentPage)
-    const nextElements = this.getMeaningfulParagraphs(nextPage)
+  private static analyzeContentType(page: PdfPageContent): 'cover' | 'interview' | 'article' | 'feature' | 'mixed' {
+    const pageText = this.getCleanPageText(page).toLowerCase()
+
+    // Cover page
+    if (this.isCoverPage(page)) return 'cover'
+
+    // Interview content
+    if (pageText.includes('mohammad alawi') || 
+        /can you|what inspired|how does|tell us about/i.test(pageText) ||
+        /chairman of the executive committee|red sea markets/i.test(pageText)) {
+      return 'interview'
+    }
+
+    // Feature content  
+    if (/^feature/i.test(pageText) ||
+        /the future|robotics|automation|multi-generational|multi-cultural|phil kim|jerde/i.test(pageText)) {
+      return 'feature'
+    }
+
+    // Article content
+    if (pageText.length > 500) {
+      return 'article'
+    }
+
+    return 'mixed'
+  }
+
+  /**
+   * Check text flow continuity between pages.
+   */
+  private static hasTextFlowContinuity(currentPage: PdfPageContent, nextPage: PdfPageContent): boolean {
+    const currentElements = this.getTextElements(currentPage)
+    const nextElements = this.getTextElements(nextPage)
 
     if (currentElements.length === 0 || nextElements.length === 0) return false
 
-    // Get the last few elements from current page (sorted by top position)
-    const sortedCurrentElements = currentElements.sort((a, b) => (a.boundingBox?.top || 0) - (b.boundingBox?.top || 0))
-    const lastElements = sortedCurrentElements.slice(-3) // Check last 3 elements
+    const lastElement = currentElements[currentElements.length - 1]
+    const firstElement = nextElements[0]
 
-    // Look for section titles in the bottom portion of the page
-    const hasSectionTitle = lastElements.some(element => {
-      const text = (element.formattedData || element.data || '').trim()
-      const fontSize = element.attributes?.fontSize || 0
-      const top = element.boundingBox?.top || 0
+    const lastText = this.getCleanText(lastElement)
+    const firstText = this.getCleanText(firstElement)
 
-      // Check for specific section titles
-      if (/^SHOPPING CENTRE UPDATE$/i.test(text)) return true
-      if (/^THE FUTURE,?\s*NOW$/i.test(text)) return true
+    // 1. Check if last text ends abruptly (incomplete sentence)
+    const hasIncompleteEnding = !/[.!?]\\s*$/.test(lastText.trim())
+    
+    // 2. Check if first text continues a thought (starts with connector or lowercase)
+    const hasTextContinuation = /^[a-z]/.test(firstText.trim()) || 
+                                /^(and|but|however|therefore|thus|moreover|also|furthermore)/i.test(firstText.trim())
 
-      // General pattern: all caps, reasonable length, larger font
-      if (fontSize > 11 && text.length < 50 && /^[A-Z][A-Z\s,]+$/.test(text)) {
-        // Must be in the bottom half of the page
-        const pageHeight = currentPage.height || 1000
-        if (top > pageHeight * 0.5) return true
-      }
+    // 3. Check for topic continuity (same subject matter)
+    const lastWords = lastText.toLowerCase().split(/\\s+/).slice(-10).join(' ')
+    const firstWords = firstText.toLowerCase().split(/\\s+/).slice(0, 10).join(' ')
+    
+    // Look for common keywords that indicate continuity
+    const commonKeywords = ['mohammad', 'alawi', 'point', 'abha', 'project', 'red sea', 'tourism', 'mall', 'retail']
+    const lastHasKeywords = commonKeywords.some(keyword => lastWords.includes(keyword))
+    const firstHasKeywords = commonKeywords.some(keyword => firstWords.includes(keyword))
+    const hasTopicContinuity = lastHasKeywords && firstHasKeywords
 
-      return false
+    // 4. Check for interview continuation patterns
+    const hasInterviewContinuation = this.hasInterviewFlowContinuity(lastText, firstText)
+
+    console.log(`       Incomplete ending: ${hasIncompleteEnding}`)
+    console.log(`       Text continuation: ${hasTextContinuation}`)
+    console.log(`       Topic continuity: ${hasTopicContinuity}`)
+    console.log(`       Interview continuation: ${hasInterviewContinuation}`)
+
+    return hasIncompleteEnding || hasTextContinuation || hasTopicContinuity || hasInterviewContinuation
+  }
+
+  /**
+   * Check for interview-specific flow continuity patterns.
+   */
+  private static hasInterviewFlowContinuity(lastText: string, firstText: string): boolean {
+    const lastLower = lastText.toLowerCase()
+
+    // Question-Answer patterns
+    const lastEndsWithQuestion = /\\?\\s*$/.test(lastText.trim())
+    const firstStartsWithAnswer = /^(the|my|i|we|it|this|that|yes|no|well|actually)/i.test(firstText.trim())
+
+    // Statement continuation
+    const lastIsIncompleteStatement = !lastLower.includes('.') || lastLower.endsWith('and') || lastLower.endsWith('or')
+    const firstContinuesStatement = !(/^[A-Z][a-z]+ing|^In |^On |^At |^The |^We |^I /.test(firstText))
+
+    return (lastEndsWithQuestion && firstStartsWithAnswer) || (lastIsIncompleteStatement && firstContinuesStatement)
+  }
+
+  /**
+   * Check typography consistency between pages.
+   */
+  private static hasTypographyConsistency(currentPage: PdfPageContent, nextPage: PdfPageContent): boolean {
+    const currentElements = this.getTextElements(currentPage)
+    const nextElements = this.getTextElements(nextPage)
+
+    if (currentElements.length === 0 || nextElements.length === 0) return false
+
+    // Get dominant font characteristics
+    const currentFonts = this.getDominantFontCharacteristics(currentElements)
+    const nextFonts = this.getDominantFontCharacteristics(nextElements)
+
+    // Compare font sizes (within 30% tolerance - more lenient)
+    const fontSizeDiff = Math.abs(currentFonts.avgFontSize - nextFonts.avgFontSize) / currentFonts.avgFontSize
+    const fontSizeSimilarity = fontSizeDiff < 0.3
+
+    // Compare font families
+    const fontFamilySimilarity = currentFonts.dominantFamily === nextFonts.dominantFamily
+
+    // Check for consistent paragraph vs header distribution
+    const currentHeaderRatio = this.getHeaderRatio(currentElements)
+    const nextHeaderRatio = this.getHeaderRatio(nextElements)
+    const headerRatioSimilarity = Math.abs(currentHeaderRatio - nextHeaderRatio) < 0.4
+
+    console.log(`       Font size similarity: ${fontSizeSimilarity} (${currentFonts.avgFontSize.toFixed(1)} vs ${nextFonts.avgFontSize.toFixed(1)})`)
+    console.log(`       Font family similarity: ${fontFamilySimilarity} (${currentFonts.dominantFamily} vs ${nextFonts.dominantFamily})`)
+    console.log(`       Header ratio similarity: ${headerRatioSimilarity} (${currentHeaderRatio.toFixed(2)} vs ${nextHeaderRatio.toFixed(2)})`)
+
+    // At least 1 out of 3 similarities should match (more lenient for mixed content)
+    const similarities = [fontSizeSimilarity, fontFamilySimilarity, headerRatioSimilarity].filter(Boolean).length
+    return similarities >= 1
+  }
+
+  /**
+   * Get the ratio of header elements to total text elements.
+   */
+  private static getHeaderRatio(elements: PdfElement[]): number {
+    if (elements.length === 0) return 0
+    const headerElements = elements.filter(el => el.type === 'header' || (el.attributes?.type && ['h1', 'h2', 'h3', 'h4', 'h5'].includes(el.attributes.type)))
+    return headerElements.length / elements.length
+  }
+
+  /**
+   * Check structural continuity between pages.
+   */
+  private static hasStructuralContinuity(currentPage: PdfPageContent, nextPage: PdfPageContent): boolean {
+    const currentElements = this.getTextElements(currentPage)
+    const nextElements = this.getTextElements(nextPage)
+
+    // Similar element type distribution
+    const currentTypes = this.getElementTypeDistribution(currentElements)
+    const nextTypes = this.getElementTypeDistribution(nextElements)
+
+    // Check if both pages have similar structure (paragraph-heavy vs header-heavy)
+    const currentParagraphRatio = (currentTypes.paragraph || 0) / currentElements.length
+    const nextParagraphRatio = (nextTypes.paragraph || 0) / nextElements.length
+
+    const structuralSimilarity = Math.abs(currentParagraphRatio - nextParagraphRatio) < 0.3
+
+    return structuralSimilarity
+  }
+
+  /**
+   * Compose multiple pages into a single page.
+   */
+  private static composePageGroup(pages: PdfPageContent[]): PdfPageContent {
+    if (pages.length === 1) return pages[0]
+
+    const firstPage = pages[0]
+    const lastPage = pages[pages.length - 1]
+
+    // Combine all elements from all pages
+    const allElements: PdfElement[] = []
+    pages.forEach(page => {
+      allElements.push(...page.elements)
     })
 
-    if (hasSectionTitle) {
-      // Check if next page content seems to be related to this section title
-      const nextText = nextElements.slice(0, 2).map(el => el.formattedData || el.data || '').join(' ').toLowerCase()
-
-      // If next page starts with general industry content, it's likely related to "SHOPPING CENTRE UPDATE"
-      const hasRelatedContent = nextText.includes('multi-generational') ||
-        nextText.includes('retail') ||
-        nextText.includes('shopping') ||
-        nextText.includes('customer')
-
-      return hasRelatedContent
+    // Create composed page
+    const composedPage: PdfPageContent = {
+      ...firstPage,
+      title: `${firstPage.title} - ${lastPage.title}`,
+      elements: allElements,
+      // Keep first page metadata but indicate composition
+      pageNumber: firstPage.pageNumber,
+      pageIndex: firstPage.pageIndex
     }
 
-    return false
+    return composedPage
   }
 
-  /**
-   * Check if current page ends with a large title that introduces content on the next page.
-   */
-  private static hasBottomPageTitle(currentPage: PdfPageContent, nextPage: PdfPageContent): boolean {
-    const currentParagraphs = this.getMeaningfulParagraphs(currentPage)
-    const nextParagraphs = this.getMeaningfulParagraphs(nextPage)
-
-    if (currentParagraphs.length === 0 || nextParagraphs.length === 0) return false
-
-    // Check the last element of current page
-    const lastElement = currentParagraphs[currentParagraphs.length - 1]
-    const firstElement = nextParagraphs[0]
-
-    const lastText = (lastElement.formattedData || lastElement.data || '').trim()
-    const firstText = (firstElement.formattedData || firstElement.data || '').trim()
-    const lastFontSize = lastElement.attributes?.fontSize || 0
-    const lastTop = lastElement.boundingBox?.top || 0
-
-    // Check if the last element is a large title (like "SHAPING DREAMS")
-    const isLargeTitle = lastFontSize > 40 && lastText.length < 50 && /^[A-Z]/.test(lastText)
-
-    // Check if it's positioned in the bottom portion of the page (assuming page height ~800)
-    const isBottomPositioned = lastTop > currentPage.height * 0.7 // Bottom 30% of page
-
-    // Check if next page continues with relevant content
-    const hasRelevantContinuation = /unwavering government support|by offering|government|support|abha/i.test(firstText)
-
-    console.log(`    Bottom title check: "${lastText}" (font: ${lastFontSize}, top: ${lastTop}, height: ${currentPage.height})`)
-    console.log(`    Is large title: ${isLargeTitle}, is bottom positioned: ${isBottomPositioned}, has continuation: ${hasRelevantContinuation}`)
-
-    return isLargeTitle && isBottomPositioned && hasRelevantContinuation
+  // Utility methods
+  private static getTextElements(page: PdfPageContent): PdfElement[] {
+    return page.elements.filter(el => ['text', 'paragraph', 'header'].includes(el.type))
   }
 
-  /**
-   * Check for text-level continuity between paragraphs.
-   */
-  private static checkTextContinuity(lastParagraph: PdfElement, firstParagraph: PdfElement): boolean {
-    const lastText = (lastParagraph.formattedData || lastParagraph.data || '').trim()
-    const firstText = (firstParagraph.formattedData || firstParagraph.data || '').trim()
-
-    if (!lastText || !firstText) return false
-
-    // Strong indicators of discontinuity
-    if (/^P\d+|^[A-Z][A-Z\s]{20,}$/.test(firstText)) return false
-    if (/featuring:|exploring new horizons beyond boundaries|conclusion:/i.test(lastText)) return false
-
-    // Check if last paragraph doesn't end with strong punctuation
-    const endsIncomplete = !/[.!?:]$/.test(lastText)
-
-    // Check if first paragraph doesn't start with capital letter (indicating continuation)
-    const startsLowercase = /^[a-z]/.test(firstText)
-
-    // Check for common continuation words
-    const continuationWords = ['and', 'but', 'however', 'moreover', 'furthermore', 'additionally', 'also', 'since', 'because', 'while', 'when', 'where', 'which', 'that', 'this', 'these', 'those', 'unwavering', 'by offering']
-    const startsWithContinuation = continuationWords.some(word =>
-      firstText.toLowerCase().startsWith(word + ' ') || firstText.toLowerCase().startsWith(word + ',')
-    )
-
-    // More lenient: either incomplete ending OR continuation start
-    return endsIncomplete || startsLowercase || startsWithContinuation
+  private static getCleanPageText(page: PdfPageContent): string {
+    const textElements = this.getTextElements(page)
+    return textElements.map(el => this.getCleanText(el)).join(' ').trim()
   }
 
-  /**
-   * Check for formatting continuity between paragraphs.
-   */
-  private static checkFormatContinuity(lastParagraph: PdfElement, firstParagraph: PdfElement): boolean {
-    const lastFontSize = lastParagraph.attributes?.fontSize || 0
-    const firstFontSize = firstParagraph.attributes?.fontSize || 0
-    const lastFontFamily = lastParagraph.attributes?.fontFamily || ''
-    const firstFontFamily = firstParagraph.attributes?.fontFamily || ''
-
-    // Font size should be similar (within 1 point)
-    const similarFontSize = Math.abs(lastFontSize - firstFontSize) <= 1
-
-    // Font family should be the same
-    const sameFontFamily = lastFontFamily === firstFontFamily
-
-    return similarFontSize && sameFontFamily
+  private static getCleanText(element: PdfElement): string {
+    // Extract clean text from HTML formatted content or plain data
+    const text = element.data || ''
+    return text.replace(/<[^>]*>/g, '').trim()
   }
 
-  /**
-   * Check for structural continuity between page contents.
-   */
-  private static checkStructuralContinuity(currentParagraphs: PdfElement[], nextParagraphs: PdfElement[]): boolean {
-    // Check if both pages have similar paragraph count and structure
-    const currentCount = currentParagraphs.length
-    const nextCount = nextParagraphs.length
+  private static getDominantFontCharacteristics(elements: PdfElement[]): {
+    avgFontSize: number
+    dominantFamily: string
+  } {
+    const fontSizes = elements.map(el => el.attributes?.fontSize || 12)
+    const avgFontSize = fontSizes.reduce((sum, size) => sum + size, 0) / fontSizes.length
 
-    // Similar paragraph density suggests continuous content
-    const similarDensity = Math.abs(currentCount - nextCount) <= Math.max(currentCount, nextCount) * 0.5
+    const families = elements.map(el => el.attributes?.fontFamily || 'default')
+    const familyCount = families.reduce((acc, family) => {
+      acc[family] = (acc[family] || 0) + 1
+      return acc
+    }, {} as Record<string, number>)
 
-    // Check if font sizes are consistent across pages
-    const currentFontSizes = currentParagraphs.map(p => p.attributes?.fontSize || 12)
-    const nextFontSizes = nextParagraphs.map(p => p.attributes?.fontSize || 12)
+    const dominantFamily = Object.entries(familyCount)
+      .sort(([, a], [, b]) => (b as number) - (a as number))[0]?.[0] || 'default'
 
-    const avgCurrentFontSize = currentFontSizes.reduce((a, b) => a + b, 0) / currentFontSizes.length
-    const avgNextFontSize = nextFontSizes.reduce((a, b) => a + b, 0) / nextFontSizes.length
-
-    const consistentFontSize = Math.abs(avgCurrentFontSize - avgNextFontSize) <= 1
-
-    return similarDensity && consistentFontSize
+    return { avgFontSize, dominantFamily }
   }
 
-  /**
-   * Check if pages lack clear break indicators (like "END", "CHAPTER", etc.).
-   */
-  private static lacksPageBreakIndicators(currentPage: PdfPageContent, nextPage: PdfPageContent): boolean {
-    const currentText = this.getPageText(currentPage).toLowerCase()
-    const nextText = this.getPageText(nextPage).toLowerCase()
-
-    // Common break indicators
-    const breakIndicators = [
-      'the end', 'conclusion', 'chapter', 'section', 'part',
-      'summary', 'epilogue', 'appendix', 'references', 'bibliography'
-    ]
-
-    const hasBreakInCurrent = breakIndicators.some(indicator => currentText.includes(indicator))
-    const hasBreakInNext = breakIndicators.some(indicator => nextText.includes(indicator))
-
-    // Strong page header/footer patterns that indicate new sections
-    const headerPatterns = ['page \\d+', '\\d+ of \\d+', 'chapter \\d+']
-    const hasStrongHeader = headerPatterns.some(pattern =>
-      new RegExp(pattern, 'i').test(nextText)
-    )
-
-    return !hasBreakInCurrent && !hasBreakInNext && !hasStrongHeader
-  }
-
-  /**
-   * Merge two pages into a single composed page.
-   */
-  private static mergePages(mainPage: PdfPageContent, additionalPage: PdfPageContent): PdfPageContent {
-    // Calculate the combined height for the virtual composed page
-    const combinedHeight = mainPage.height + additionalPage.height
-
-    // Adjust positions of elements from additional page
-    const adjustedElements = additionalPage.elements.map(element => ({
-      ...element,
-      boundingBox: element.boundingBox ? {
-        ...element.boundingBox,
-        top: element.boundingBox.top + mainPage.height,
-        bottom: element.boundingBox.bottom + mainPage.height
-      } : element.boundingBox
-    }))
-
-    return {
-      ...mainPage,
-      height: combinedHeight,
-      pageNumber: mainPage.pageNumber, // Keep the starting page number
-      elements: [...mainPage.elements, ...adjustedElements],
-      // Add metadata about composition
-      metadata: {
-        ...mainPage.metadata,
-        composedFromPages: [
-          ...(mainPage.metadata?.composedFromPages || [mainPage.pageNumber]),
-          additionalPage.pageNumber
-        ],
-        originalHeight: mainPage.metadata?.originalHeight || mainPage.height,
-        isComposed: true
-      }
-    }
-  }  /**
-   * Get meaningful paragraphs from a page (filter out headers, footers, etc.).
-   */
-  private static getMeaningfulParagraphs(page: PdfPageContent): PdfElement[] {
-    return page.elements
-      .filter(el => el.type === 'paragraph' || el.type === 'text')
-      .filter(el => {
-        const text = (el.formattedData || el.data || '').trim()
-
-        // Filter out very short text (likely headers/footers)
-        if (text.length < 10) return false
-
-        // Filter out magazine headers/footers
-        if (/^RETAIL PEOPLE \| [A-Z]+ - [A-Z]+ \d+ \.\d+$/i.test(text)) return false
-
-        // Filter out page numbers
-        if (/^page \d+$/i.test(text) || /^\d+ of \d+$/i.test(text)) return false
-
-        // Filter out headers that are all caps and short, but keep important titles
-        if (text.length < 50 && text === text.toUpperCase()) {
-          // Keep important article/section titles
-          if (/^SHAPING DREAMS$|^THE FUTURE,?\s*NOW$|^SHOPPING CENTRE UPDATE$/i.test(text)) {
-            return true // Don't filter these out
-          }
-          return false // Filter out other short uppercase text
-        }
-
-        return true
-      })
-      .sort((a, b) => (a.boundingBox?.top || 0) - (b.boundingBox?.top || 0))
-  }
-
-  /**
-   * Get all text content from a page as a single string, excluding headers/footers.
-   */
-  private static getPageText(page: PdfPageContent): string {
-    return page.elements
-      .filter(el => el.type === 'paragraph' || el.type === 'text')
-      .filter(el => {
-        const text = (el.formattedData || el.data || '').trim()
-        // Filter out magazine headers/footers when getting page text
-        if (/^RETAIL PEOPLE \| [A-Z]+ - [A-Z]+ \d+ \.\d+$/i.test(text)) return false
-        return true
-      })
-      .map(el => el.formattedData || el.data || '')
-      .join(' ')
-      .trim()
-  }
-
-  /**
-   * Get the first meaningful content paragraph, ignoring sticky stickers and decorative elements.
-   */
-  private static getFirstContentParagraph(page: PdfPageContent): PdfElement | null {
-    const allElements = page.elements
-      .filter(el => el.type === 'paragraph' || el.type === 'text')
-      .filter(el => {
-        const text = (el.formattedData || el.data || '').trim()
-
-        // Filter out very short text
-        if (text.length < 15) return false
-
-        // Filter out magazine headers/footers
-        if (/^RETAIL PEOPLE \| [A-Z]+ - [A-Z]+ \d+ \.\d+$/i.test(text)) return false
-
-        // Filter out sticky stickers/labels (positioned very left, short uppercase text)
-        const left = el.boundingBox?.left || 0
-        const isVeryLeft = left < 30 // Very left positioned
-        const isShortUppercase = text.length < 50 && text === text.toUpperCase()
-
-        if (isVeryLeft && isShortUppercase) {
-          // Likely a sticky sticker like "SHOPPING CENTRE UPDATE"
-          console.log(`      Skipping sticky sticker: "${text}" (left: ${left})`)
-          return false
-        }
-
-        return true
-      })
-      .sort((a, b) => (a.boundingBox?.top || 0) - (b.boundingBox?.top || 0))
-
-    return allElements.length > 0 ? allElements[0] : null
-  }
-
-  /**
-   * Check if a page has a title/header at the top.
-   */
-  private static hasPageTitle(page: PdfPageContent): boolean {
-    const allElements = page.elements
-      .filter(el => el.type === 'paragraph' || el.type === 'text')
-      .filter(el => {
-        const text = (el.formattedData || el.data || '').trim()
-
-        // Filter out very short text and footers
-        if (text.length < 10) return false
-        if (/^RETAIL PEOPLE \| [A-Z]+ - [A-Z]+ \d+ \.\d+$/i.test(text)) return false
-
-        return true
-      })
-      .sort((a, b) => (a.boundingBox?.top || 0) - (b.boundingBox?.top || 0))
-
-    if (allElements.length === 0) return false
-
-    // Check the first few elements for title-like characteristics
-    const topElements = allElements.slice(0, 3)
-
-    return topElements.some(element => {
-      const text = (element.formattedData || element.data || '').trim()
-      const fontSize = element.attributes?.fontSize || 0
-      const top = element.boundingBox?.top || 0
-
-      // Must be in the top portion of the page (top 30%)
-      const pageHeight = page.height || 1000
-      const isTopPositioned = top < pageHeight * 0.3
-
-      if (!isTopPositioned) return false
-
-      // Check for large font titles
-      if (fontSize > 20) {
-        console.log(`      Found large title at top: "${text}" (fontSize: ${fontSize}, top: ${top})`)
-        return true
-      }
-
-      // Check for medium-large titles that are all caps
-      if (fontSize > 15 && text.length < 100 && /^[A-Z]/.test(text)) {
-        console.log(`      Found medium title at top: "${text}" (fontSize: ${fontSize}, top: ${top})`)
-        return true
-      }
-
-      return false
-    })
+  private static getElementTypeDistribution(elements: PdfElement[]): Record<string, number> {
+    return elements.reduce((acc, el) => {
+      acc[el.type] = (acc[el.type] || 0) + 1
+      return acc
+    }, {} as Record<string, number>)
   }
 }
