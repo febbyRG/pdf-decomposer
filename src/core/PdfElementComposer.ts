@@ -115,9 +115,17 @@ export class PdfElementComposer {
     return composites.map(composite => {
       const firstOriginal = composite.originalElements[0]
       
+      // Determine element type based on classification
+      let elementType = firstOriginal.type
+      if (composite.attributes.type === 'paragraph') {
+        elementType = 'paragraph'
+      } else if (['h1', 'h2', 'h3', 'h4', 'h5'].includes(composite.attributes.type || '')) {
+        elementType = 'header'
+      }
+      
       return {
         ...firstOriginal,
-        type: composite.attributes.type === 'paragraph' ? 'paragraph' : firstOriginal.type,
+        type: elementType,
         data: composite.data,
         formattedData: composite.formattedData || composite.data,
         boundingBox: {
