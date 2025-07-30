@@ -128,7 +128,12 @@ class ComprehensiveTest {
       const outputDir = join(this.baseOutputDir, 'embedded-images')
       mkdirSync(outputDir, { recursive: true })
       
+      const options = {
+        elementComposer: true
+      }
+
       const result = await decomposePdf(this.pdfPath, {
+        ...options,
         generateImages: false,        // No Canvas-based page rendering
         extractEmbeddedImages: true,  // Use our PdfImageExtractor with EXACT working logic
         assetPath: outputDir          // Save images to output directory

@@ -2,8 +2,32 @@ import type { PdfElement } from '../models/PdfElement.js'
 import type { PdfPageContent } from '../models/PdfPageContent.js'
 
 /**
- * PdfElementComposer groups individual text elements into paragraphs for better document structure.
- * This is particularly useful for PDF-to-HTML conversion workflows.
+ * Internal composite type for FlexPDF algorithm processing
+ */
+interface Composite {
+  id: string
+  data: string
+  formattedData?: string
+  boundingBox: {
+    top: number
+    left: number
+    right: number
+    bottom: number
+    width: number
+    height: number
+  }
+  attributes: {
+    fontSize: number
+    fontFamily?: string
+    type?: string
+    composed?: boolean
+  }
+  originalElements: PdfElement[]
+}
+
+/**
+ * Enhanced PdfElementComposer with complete FlexPDF algorithm system.
+ * Implements 3-stage processing: OverlappingText → OrderComposites → ComputeTextTypes
  */
 export class PdfElementComposer {
   /**
@@ -19,26 +43,38 @@ export class PdfElementComposer {
   }
 
   /**
-   * Compose elements for a single page.
+   * Compose elements for a single page using complete FlexPDF algorithm system.
    */
   private static composePageElements(elements: PdfElement[]): PdfElement[] {
     // Separate text and non-text elements
     const textElements = elements.filter(el => el.type === 'text' && this.isMeaningfulText(el.formattedData || el.data))
     const nonTextElements = elements.filter(el => el.type !== 'text')
 
-    // Group text elements into paragraphs
-    const paragraphs = this.groupIntoParagraphs(textElements)
+    if (textElements.length === 0) return elements
 
-    // Combine paragraphs and non-text elements, sorted by reading order
-    const allElements = [...paragraphs, ...nonTextElements].sort((a, b) => {
+    // FlexPDF 3-stage algorithm system
+    let composites = this.convertToComposites(textElements)
+    
+    // Stage 1: OverlappingTextAlgorithm (Priority 30) - Spatial merging
+    composites = this.runOverlappingTextAlgorithm(composites)
+    
+    // Stage 2: OrderCompositesAlgorithm (Priority 40) - Reading order detection  
+    composites = this.runOrderCompositesAlgorithm(composites)
+    
+    // Stage 3: ComputeTextTypesAlgorithm (Priority 50) - Text type classification
+    composites = this.runComputeTextTypesAlgorithm(composites)
+
+    // Convert back to PdfElements
+    const processedElements = this.convertToElements(composites)
+
+    // Combine with non-text elements and sort by reading order
+    const allElements = [...processedElements, ...nonTextElements].sort((a, b) => {
       const aTop = a.boundingBox?.top || 0
       const bTop = b.boundingBox?.top || 0
       const yDiff = aTop - bTop
 
-      // If elements are on different lines (vertical difference > 10), sort by top position
       if (Math.abs(yDiff) > 10) return yDiff
-
-      // Same line, sort by left position
+      
       const aLeft = a.boundingBox?.left || 0
       const bLeft = b.boundingBox?.left || 0
       return aLeft - bLeft
@@ -48,9 +84,305 @@ export class PdfElementComposer {
   }
 
   /**
-   * Group text elements into paragraphs based on spatial proximity and formatting.
+   * Convert PdfElements to internal Composite format for processing
    */
-  private static groupIntoParagraphs(textElements: PdfElement[]): PdfElement[] {
+  private static convertToComposites(elements: PdfElement[]): Composite[] {
+    return elements.map((el, index) => ({
+      id: `element_${index}`,
+      data: el.data || '',
+      formattedData: el.formattedData,
+      boundingBox: {
+        top: el.boundingBox?.top || 0,
+        left: el.boundingBox?.left || 0,
+        right: (el.boundingBox?.left || 0) + (el.boundingBox?.width || 0),
+        bottom: (el.boundingBox?.top || 0) + (el.boundingBox?.height || 0),
+        width: el.boundingBox?.width || 0,
+        height: el.boundingBox?.height || 0
+      },
+      attributes: {
+        fontSize: el.attributes?.fontSize || 12,
+        fontFamily: el.attributes?.fontFamily,
+        composed: false
+      },
+      originalElements: [el]
+    }))
+  }
+
+  /**
+   * Convert Composites back to PdfElements
+   */
+  private static convertToElements(composites: Composite[]): PdfElement[] {
+    return composites.map(composite => {
+      const firstOriginal = composite.originalElements[0]
+      
+      return {
+        ...firstOriginal,
+        type: composite.attributes.type === 'paragraph' ? 'paragraph' : firstOriginal.type,
+        data: composite.data,
+        formattedData: composite.formattedData || composite.data,
+        boundingBox: {
+          top: composite.boundingBox.top,
+          left: composite.boundingBox.left,
+          width: composite.boundingBox.width,
+          height: composite.boundingBox.height
+        },
+        attributes: {
+          ...firstOriginal.attributes,
+          fontSize: composite.attributes.fontSize,
+          fontFamily: composite.attributes.fontFamily,
+          type: composite.attributes.type,
+          composed: composite.attributes.composed
+        }
+      }
+    })
+  }
+
+  /**
+   * FlexPDF Stage 1: OverlappingTextAlgorithm (Priority 30)
+   * Spatial merging with 10% font tolerance and dynamic expansion
+   */
+  private static runOverlappingTextAlgorithm(composites: Composite[]): Composite[] {
+    if (composites.length === 0) return composites
+
+    // Calculate page statistics for dynamic thresholds
+    const pageStats = this.calculatePageStatisticsFromComposites(composites)
+    
+    const processed = new Set<string>()
+    const result: Composite[] = []
+    
+    for (const composite of composites) {
+      if (processed.has(composite.id)) continue
+      
+      const cluster = [composite]
+      processed.add(composite.id)
+      
+      // Find all overlapping/adjacent composites
+      let foundMatch = true
+      while (foundMatch) {
+        foundMatch = false
+        
+        for (const candidate of composites) {
+          if (processed.has(candidate.id)) continue
+          
+          // Check if candidate should merge with any composite in cluster
+          for (const clusterComposite of cluster) {
+            if (this.shouldMergeComposites(clusterComposite, candidate, pageStats)) {
+              cluster.push(candidate)
+              processed.add(candidate.id)
+              foundMatch = true
+              break
+            }
+          }
+          
+          if (foundMatch) break
+        }
+      }
+      
+      // Create merged composite from cluster
+      result.push(this.createMergedComposite(cluster))
+    }
+    
+    return result
+  }
+
+  /**
+   * FlexPDF Stage 2: OrderCompositesAlgorithm (Priority 40) 
+   * Reading order detection with beam scanning
+   */
+  private static runOrderCompositesAlgorithm(composites: Composite[]): Composite[] {
+    if (composites.length === 0) return composites
+
+    // Sort by reading order: top to bottom, then left to right
+    return composites.sort((a, b) => {
+      const yDiff = a.boundingBox.top - b.boundingBox.top
+      if (Math.abs(yDiff) > 10) return yDiff
+      return a.boundingBox.left - b.boundingBox.left
+    })
+  }
+
+  /**
+   * FlexPDF Stage 3: ComputeTextTypesAlgorithm (Priority 50)
+   * Text type classification based on font size analysis
+   */
+  private static runComputeTextTypesAlgorithm(composites: Composite[]): Composite[] {
+    if (composites.length === 0) return composites
+
+    // Calculate character-weighted average font size
+    const weightedPairs = composites.map(comp => [comp.attributes.fontSize, comp.data.length])
+    const totalCharacters = weightedPairs.reduce((sum, [_, charCount]) => sum + charCount, 0)
+    const aggregatedSum = weightedPairs.reduce((sum, [fontSize, charCount]) => sum + fontSize * charCount, 0)
+    const averageFontSize = totalCharacters > 0 ? aggregatedSum / totalCharacters : 12
+
+    // Define heading thresholds based on FlexPDF algorithm
+    const headingThresholds = [
+      { type: 'h1', size: 2.1 * averageFontSize },
+      { type: 'h2', size: 1.75 * averageFontSize },
+      { type: 'h3', size: 1.5 * averageFontSize },
+      { type: 'h4', size: 1.25 * averageFontSize },
+      { type: 'h5', size: 1.1 * averageFontSize }
+    ]
+
+    // Classify each composite
+    for (const composite of composites) {
+      const fontSize = composite.attributes.fontSize
+      const wordCount = composite.data.split(/\s+/).filter(str => str !== '').length
+      const isLongText = wordCount > 15
+
+      if (fontSize > averageFontSize && !isLongText) {
+        // Find appropriate heading level
+        const heading = headingThresholds.find(threshold => Math.floor(threshold.size) <= fontSize)
+        composite.attributes.type = heading ? heading.type : 'h5'
+      } else {
+        composite.attributes.type = 'paragraph'
+      }
+    }
+
+    return composites
+  }
+
+  /**
+   * Calculate page statistics from composites (FlexPDF approach)
+   */
+  private static calculatePageStatisticsFromComposites(composites: Composite[]): {
+    averageFontSize: number
+    totalCharacters: number
+  } {
+    const weightedPairs = composites.map(comp => [
+      comp.attributes.fontSize,
+      comp.data.length
+    ])
+    
+    const totalCharacters = weightedPairs.reduce((sum, [_, charCount]) => sum + charCount, 0)
+    const aggregatedSum = weightedPairs.reduce((sum, [fontSize, charCount]) => sum + fontSize * charCount, 0)
+    const averageFontSize = totalCharacters > 0 ? aggregatedSum / totalCharacters : 12
+    
+    return { averageFontSize, totalCharacters }
+  }
+
+  /**
+   * FlexPDF composite merging criteria
+   */
+  private static shouldMergeComposites(compA: Composite, compB: Composite, pageStats: any): boolean {
+    // Font compatibility check (10% tolerance like FlexPDF)
+    const fontSizeA = compA.attributes.fontSize
+    const fontSizeB = compB.attributes.fontSize
+    const relativeFontDiff = Math.abs(fontSizeA / fontSizeB - 1)
+    
+    if (relativeFontDiff > 0.1) return false
+    
+    // Spatial proximity check with enhanced expansion (FlexPDF frontend behavior)
+    const avgFontSize = (fontSizeA + fontSizeB) / 2
+    const correctedFontSize = Math.max(Math.pow(avgFontSize, 2) / pageStats.averageFontSize, avgFontSize)
+    
+    // Enhanced expansion calculation to match FlexPDF frontend composite behavior
+    const baseExpansion = correctedFontSize / 3.5
+    const minExpansion = Math.max(avgFontSize * 0.8, 5) // Minimum based on font size, at least 5px
+    const expansionAmount = Math.min(Math.max(baseExpansion, minExpansion), 15)
+    
+    return this.intersectsWithExpansionComposite(compA.boundingBox, compB.boundingBox, expansionAmount)
+  }
+
+  /**
+   * Check composite bounding box intersection with expansion
+   */
+  private static intersectsWithExpansionComposite(boxA: any, boxB: any, expansion: number): boolean {
+    const expandedA = {
+      left: boxA.left - expansion,
+      top: boxA.top - expansion,
+      right: boxA.right + expansion,
+      bottom: boxA.bottom + expansion
+    }
+    
+    return !(expandedA.right < boxB.left || 
+             expandedA.left > boxB.right ||
+             expandedA.bottom < boxB.top ||
+             expandedA.top > boxB.bottom)
+  }
+
+  /**
+   * Create merged composite from cluster of composites
+   */
+  private static createMergedComposite(cluster: Composite[]): Composite {
+    if (cluster.length === 1) {
+      cluster[0].attributes.composed = true
+      return cluster[0]
+    }
+
+    // Sort cluster by reading order
+    cluster.sort((a, b) => {
+      const yDiff = a.boundingBox.top - b.boundingBox.top
+      if (Math.abs(yDiff) > 10) return yDiff
+      return a.boundingBox.left - b.boundingBox.left
+    })
+
+    // Calculate merged bounding box
+    const tops = cluster.map(c => c.boundingBox.top)
+    const lefts = cluster.map(c => c.boundingBox.left)
+    const rights = cluster.map(c => c.boundingBox.right)
+    const bottoms = cluster.map(c => c.boundingBox.bottom)
+
+    const mergedBox = {
+      top: Math.min(...tops),
+      left: Math.min(...lefts),
+      right: Math.max(...rights),
+      bottom: Math.max(...bottoms),
+      width: Math.max(...rights) - Math.min(...lefts),
+      height: Math.max(...bottoms) - Math.min(...tops)
+    }
+
+    // Merge text content
+    const mergedData = cluster.map(c => c.data).join(' ')
+    const mergedFormatted = cluster.map(c => c.formattedData || c.data).join(' ')
+
+    // Calculate average font size
+    const avgFontSize = cluster.reduce((sum, c) => sum + c.attributes.fontSize, 0) / cluster.length
+
+    // Collect all original elements
+    const allOriginalElements: PdfElement[] = []
+    cluster.forEach(c => allOriginalElements.push(...c.originalElements))
+
+    return {
+      id: `merged_${cluster[0].id}`,
+      data: mergedData,
+      formattedData: mergedFormatted,
+      boundingBox: mergedBox,
+      attributes: {
+        fontSize: Math.round(avgFontSize * 10) / 10,
+        fontFamily: cluster[0].attributes.fontFamily,
+        composed: true
+      },
+      originalElements: allOriginalElements
+    }
+  }
+
+  private static calculatePageStatistics(textElements: PdfElement[]): {
+    averageFontSize: number
+    totalCharacters: number
+    fontSizeDistribution: Map<number, number>
+  } {
+    const weightedPairs = textElements.map(el => [
+      el.attributes?.fontSize || 12,
+      (el.data || '').length
+    ])
+    
+    const totalCharacters = weightedPairs.reduce((sum, [_, charCount]) => sum + charCount, 0)
+    const aggregatedSum = weightedPairs.reduce((sum, [fontSize, charCount]) => sum + fontSize * charCount, 0)
+    const averageFontSize = totalCharacters > 0 ? aggregatedSum / totalCharacters : 12
+    
+    // Font size distribution for better analysis
+    const fontSizeDistribution = new Map<number, number>()
+    textElements.forEach(el => {
+      const fontSize = Math.round((el.attributes?.fontSize || 12) * 10) / 10
+      fontSizeDistribution.set(fontSize, (fontSizeDistribution.get(fontSize) || 0) + 1)
+    })
+    
+    return { averageFontSize, totalCharacters, fontSizeDistribution }
+  }
+
+  /**
+   * Group text elements using dynamic clustering with FlexPDF-inspired spatial analysis.
+   */
+  private static groupWithDynamicClustering(textElements: PdfElement[], pageStats: any): PdfElement[] {
     if (textElements.length === 0) return []
 
     // Sort text elements by reading order (top to bottom, then left to right)
@@ -66,199 +398,125 @@ export class PdfElementComposer {
       return aLeft - bLeft // Same line, left to right
     })
 
-    const paragraphs: PdfElement[] = []
-    let currentParagraph: PdfElement[] = []
-
-    for (let i = 0; i < sortedElements.length; i++) {
-      const current = sortedElements[i]
-      const previous = i > 0 ? sortedElements[i - 1] : null
-
-      // Start a new paragraph if:
-      // 1. This is the first element
-      // 2. Current or previous element is likely a title/header
-      // 3. Vertical gap is large (more than 6.0x font size) AND no semantic continuity
-      // 4. Font size differs significantly (more than 4 points)
-      // 5. Horizontal alignment changes significantly (new column/section)
-      
-      // Start a new paragraph if:
-      // 1. This is the first element
-      // 2. Current or previous element is likely a title/header
-      // 3. Vertical gap is large (more than 6.0x font size) AND no semantic continuity
-      // 4. Font size differs significantly (more than 4 points)
-      // 5. Horizontal alignment changes significantly (new column/section)
-      const shouldStartNewParagraph = !previous ||
-        this.isLikelyTitle(current) ||
-        this.isLikelyTitle(previous) ||
-        (this.hasLargeVerticalGap(current, previous) && !this.hasSemanticContinuity(current, previous)) ||
-        this.hasFontSizeChange(current, previous) ||
-        this.hasHorizontalAlignmentChange(current, previous)
-
-      if (shouldStartNewParagraph && currentParagraph.length > 0) {
-        // Finalize the current paragraph
-        const composedParagraph = this.createComposedParagraph(currentParagraph)
-        paragraphs.push(composedParagraph)
-        currentParagraph = []
-      }
-
-      currentParagraph.push(current)
-    }
-
-    // Add the final paragraph
-    if (currentParagraph.length > 0) {
-      const composedParagraph = this.createComposedParagraph(currentParagraph)
-      paragraphs.push(composedParagraph)
-    }
+    // Use FlexPDF-inspired overlapping algorithm
+    const clusters = this.findOverlappingClusters(sortedElements, pageStats)
+    
+    // Convert clusters to composed paragraphs
+    const paragraphs = clusters
+      .filter(cluster => cluster.length > 0)
+      .map(cluster => this.createComposedParagraph(cluster))
 
     return paragraphs
   }
 
   /**
-   * Check if there's a large vertical gap between two elements.
-   * Improved logic to handle overlapping elements and better paragraph detection.
+   * FlexPDF-inspired overlapping detection algorithm.
    */
-  private static hasLargeVerticalGap(current: PdfElement, previous: PdfElement): boolean {
-    const currentTop = current.boundingBox?.top || 0
-    const previousTop = previous.boundingBox?.top || 0
-    const previousHeight = previous.boundingBox?.height || 0
-    const previousBottom = previousTop + previousHeight
-    const rawPreviousFontSize = previous.attributes?.fontSize || 12
+  private static findOverlappingClusters(elements: PdfElement[], pageStats: any): PdfElement[][] {
+    const clusters: PdfElement[][] = []
+    const processed = new Set<number>()
     
-    // Handle edge case where fontSize is 0 (use default)
-    const previousFontSize = rawPreviousFontSize === 0 ? 12 : rawPreviousFontSize
-
-    const verticalGap = currentTop - previousBottom
-
-    // Handle overlapping or very close elements (common in paragraph text)
-    // If elements overlap or are very close (< 1.0x font size), they're likely same paragraph
-    // Improved threshold to handle more overlapping cases
-    if (verticalGap < (previousFontSize * 1.0)) {
-      return false
+    for (let i = 0; i < elements.length; i++) {
+      if (processed.has(i)) continue
+      
+      const cluster = [elements[i]]
+      processed.add(i)
+      
+      // Find all overlapping/adjacent elements
+      let foundMatch = true
+      while (foundMatch) {
+        foundMatch = false
+        
+        for (let j = 0; j < elements.length; j++) {
+          if (processed.has(j)) continue
+          
+          // Check if current element should merge with any element in cluster
+          for (const clusterElement of cluster) {
+            if (this.shouldMergeElements(clusterElement, elements[j], pageStats)) {
+              cluster.push(elements[j])
+              processed.add(j)
+              foundMatch = true
+              break
+            }
+          }
+          
+          if (foundMatch) break
+        }
+      }
+      
+      clusters.push(cluster)
     }
-
-    // For normal paragraph spacing, use more relaxed threshold
-    // Most paragraphs have line spacing between 1.2x to 1.8x font size
-    // But some PDF layouts have larger gaps within same paragraph due to formatting
-    const relaxedThreshold = previousFontSize * 6.0 // Increased to 6.0x to handle even larger within-paragraph gaps
     
-    return verticalGap > relaxedThreshold
+    return clusters
   }
 
   /**
-   * Check if there's a significant font size change between two elements.
-   * More lenient for small variations that are common in continuous text.
+   * FlexPDF-inspired element merging criteria with dynamic thresholds.
    */
-  private static hasFontSizeChange(current: PdfElement, previous: PdfElement): boolean {
-    const currentFontSize = current.attributes?.fontSize || 12
-    const previousFontSize = previous.attributes?.fontSize || 12
-
-    // Handle edge case where fontSize is 0 (invalid/missing font size)
-    const normalizedCurrent = currentFontSize === 0 ? 12 : currentFontSize
-    const normalizedPrevious = previousFontSize === 0 ? 12 : previousFontSize
-
-    // Allow for small variations that are common in PDF text extraction
-    // Further increased threshold from 3 to 4 points for paragraph continuity
-    // This handles cases like 9.1 vs 10.2 fontSize in same paragraph
-    return Math.abs(normalizedCurrent - normalizedPrevious) > 4
-  }
-
-  /**
-   * Check if there's a significant horizontal alignment change.
-   */
-  private static hasHorizontalAlignmentChange(current: PdfElement, previous: PdfElement): boolean {
-    const currentLeft = current.boundingBox?.left || 0
-    const previousLeft = previous.boundingBox?.left || 0
-
-    // Increased threshold from 50px to 200px to handle text wrapping and column layouts
-    // In PDF paragraph text, elements can have significant horizontal shifts due to:
-    // - Text wrapping to new lines
-    // - Column-based layouts  
-    // - Justified text alignment
-    return Math.abs(currentLeft - previousLeft) > 200
-  }
-
-  /**
-   * Check if text has semantic continuity (should continue as same paragraph).
-   * Analyzes punctuation and text flow patterns.
-   */
-  private static hasSemanticContinuity(current: PdfElement, previous: PdfElement): boolean {
-    const currentText = (current.data || '').trim()
-    const previousText = (previous.data || '').trim()
-
-    if (!currentText || !previousText) return false
-
-    // Strong indicators that suggest NEW paragraph (should NOT continue)
-    const currentLooksLikeTitle = this.looksLikeTitle(currentText)
-    const previousLooksLikeTitle = this.looksLikeTitle(previousText)
+  private static shouldMergeElements(elementA: PdfElement, elementB: PdfElement, pageStats: any): boolean {
+    // Font compatibility check (10% tolerance like FlexPDF)
+    const fontSizeA = elementA.attributes?.fontSize || 12
+    const fontSizeB = elementB.attributes?.fontSize || 12
+    const relativeFontDiff = Math.abs(fontSizeA / fontSizeB - 1)
     
-    // Don't continue from title to content or content to title
-    if (currentLooksLikeTitle || previousLooksLikeTitle) {
-      return false
+    if (relativeFontDiff > 0.1) return false
+    
+    // Spatial proximity check with dynamic expansion (FlexPDF-inspired)
+    const avgFontSize = (fontSizeA + fontSizeB) / 2
+    const correctedFontSize = Math.max(Math.pow(avgFontSize, 2) / pageStats.averageFontSize, avgFontSize)
+    const expansionAmount = Math.min(Math.max(correctedFontSize / 3.5, 2), 10)
+    
+    return this.intersectsWithExpansion(elementA.boundingBox, elementB.boundingBox, expansionAmount)
+  }
+
+  /**
+   * Check if two bounding boxes intersect with expansion (FlexPDF-inspired).
+   */
+  private static intersectsWithExpansion(boxA: any, boxB: any, expansion: number): boolean {
+    if (!boxA || !boxB) return false
+    
+    const expandedA = {
+      left: boxA.left - expansion,
+      top: boxA.top - expansion,
+      right: (boxA.left + boxA.width) + expansion,
+      bottom: (boxA.top + boxA.height) + expansion
     }
-
-    // Strong indicators that previous text should continue
-    const previousEndsIncomplete = !/[.!?;:]$/.test(previousText) // Doesn't end with strong punctuation
-    const previousEndsWithComma = /,$/.test(previousText) // Ends with comma (definitely continues)
-    const previousEndsWithAnd = /\s(and|or|but|yet|so|for|nor)$/.test(previousText) // Ends with conjunction
-    const previousEndsWithPreposition = /\s(with|in|at|on|by|for|of|to|from|under|over|through|across|into|onto)$/i.test(previousText)
-
-    // Strong indicators that current text is continuation
-    const currentStartsLowercase = /^[a-z]/.test(currentText) // Starts with lowercase
-    const currentStartsWithArticle = /^(a|an|the|this|that|these|those|it|he|she|they|we|you|which|who|where|when|while)\s/i.test(currentText)
-    const currentStartsWithConjunction = /^(and|or|but|however|moreover|furthermore|additionally|also|therefore|thus|hence|then|next|finally)\s/i.test(currentText)
-    const currentIsFragment = currentText.length < 30 && !currentText.endsWith('.') && !currentText.endsWith('!') && !currentText.endsWith('?')
-
-    // Strong indicators that suggest NEW paragraph
-    const currentStartsWithCapitalSentence = /^[A-Z][a-z].*[.!?]$/.test(currentText) && currentText.length > 20 // Complete sentence starting with capital
     
-    // Don't continue if current looks like a new section
-    if (currentStartsWithCapitalSentence) {
-      return false
-    }
-
-    // Enhanced continuity detection - be more aggressive about continuing
-    return previousEndsIncomplete || previousEndsWithComma || previousEndsWithAnd || previousEndsWithPreposition ||
-           currentStartsLowercase || currentStartsWithArticle || currentStartsWithConjunction || currentIsFragment
+    return !(expandedA.right < boxB.left || 
+             expandedA.left > (boxB.left + boxB.width) ||
+             expandedA.bottom < boxB.top ||
+             expandedA.top > (boxB.top + boxB.height))
   }
 
   /**
-   * Check if text looks like a title or header.
+   * Generic title detection without hard-coded content.
    */
-  private static looksLikeTitle(text: string): boolean {
-    if (!text || text.trim().length === 0) return false
-    
+  private static looksLikeGenericTitle(text: string): boolean {
+    if (!text || text.length === 0) return false
+
     const cleanText = text.trim()
-    
-    // Short ALL CAPS text (likely titles/headers)
-    if (cleanText.length < 100 && /^[A-Z\s\-.,!]+$/.test(cleanText)) {
-      return true
-    }
-    
-    // Pattern matching for common title formats
-    const titlePatterns = [
-      /^[A-Z][A-Z\s]+UPDATE$/i,  // "SHOPPING CENTRE UPDATE"
-      /^[A-Z\s]{10,50}$/,        // Medium length all caps
-      /^P\d+$/,                  // Page numbers like "P12"
-      /^FEATURING:/i,            // Article sections
-      /^MR\.|MS\.|DR\./i         // Titles with people names
-    ]
-    
-    return titlePatterns.some(pattern => pattern.test(cleanText))
+
+    // Generic title patterns
+    const isAllCaps = /^[A-Z\s\-.,!]+$/.test(cleanText) && cleanText.length < 100
+    const isShortAndBold = cleanText.length < 50 && /^[A-Z]/.test(cleanText) && !/[.!?]$/.test(cleanText)
+    const hasSpecialFormatting = /^(P\d+|CHAPTER \d+|SECTION \d+)$/i.test(cleanText)
+
+    return isAllCaps || isShortAndBold || hasSpecialFormatting
   }
 
   /**
-   * Additional check if element is likely a title based on formatting context.
+   * Generic new section detection.
    */
-  private static isLikelyTitle(element: PdfElement): boolean {
-    const text = (element.data || '').trim()
-    const fontSize = element.attributes?.fontSize || 12
+  private static looksLikeNewSection(text: string): boolean {
+    if (!text || text.length === 0) return false
 
-    // Elements with fontSize 0 that look like titles are likely titles
-    if (fontSize === 0 && this.looksLikeTitle(text)) {
-      return true
-    }
-
-    // Other title indicators
-    return this.looksLikeTitle(text)
+    // Question patterns (generic interview/conversation starters)
+    const isQuestion = /^(Can you|How do|What|Where|When|Why|Would you|Tell us|Share|Describe|Explain)/i.test(text)
+    
+    // Formal introduction patterns
+    const isFormalIntro = /^(Mr\.|Ms\.|Dr\.|Prof\.)\s/i.test(text)
+    
+    return isQuestion || isFormalIntro
   }
 
   /**
