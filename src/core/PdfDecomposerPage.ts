@@ -171,8 +171,12 @@ export class PdfDecomposerPage {
 
     return textContent.items.map((item: any, _: number) => {
       const bbox = this.getTextBoundingBox(item, pageHeight)
+      
+      // Resolve readable font name from PDF internal ID
+      const resolvedFontFamily = this.resolveFontFamily(item.fontName)
+      
       const attributes = {
-        fontFamily: item.fontName,
+        fontFamily: resolvedFontFamily, // Use resolved font name instead of internal ID
         fontSize: item.transform ? item.transform[0] : undefined,
         textColor: undefined // PDF.js does not provide text color directly
       }
@@ -276,6 +280,9 @@ export class PdfDecomposerPage {
     // Apply formatting based on font attributes
     const fontSize = attributes.fontSize || 0
     const fontFamily = attributes.fontFamily || ''
+    
+    // Resolve readable font name from PDF internal ID
+    const resolvedFontFamily = this.resolveFontFamily(fontFamily)
 
     // Detect bold text based on font name patterns
     if (this.isBoldFont(fontFamily)) {
@@ -298,8 +305,8 @@ export class PdfDecomposerPage {
     if (fontSize && fontSize !== 12) {
       styles.push(`font-size: ${fontSize}px`)
     }
-    if (fontFamily && !fontFamily.includes('default')) {
-      styles.push(`font-family: "${fontFamily}"`)
+    if (resolvedFontFamily && resolvedFontFamily !== 'inherit') {
+      styles.push(`font-family: ${resolvedFontFamily}`)
     }
     if (attributes.textColor) {
       styles.push(`color: ${attributes.textColor}`)
@@ -333,5 +340,105 @@ export class PdfDecomposerPage {
     return lowerName.includes('italic') || 
            lowerName.includes('oblique') ||
            lowerName.includes('-it')
+  }
+
+  /**
+   * Resolve PDF internal font ID to readable font family name
+   */
+  private resolveFontFamily(pdfFontId: string): string {
+    if (!pdfFontId) return 'inherit'
+
+    // Map common PDF internal font IDs to readable names
+    const fontMapping: { [key: string]: string } = {
+      // Common PDF.js internal font patterns
+      'g_d0_f1': 'Arial',
+      'g_d0_f2': 'Georgia', 
+      'g_d0_f3': 'Times New Roman',
+      'g_d0_f4': 'Helvetica',
+      'g_d0_f5': 'Verdana',
+      'g_d0_f6': 'Courier New',
+      'g_d0_f7': 'Comic Sans MS',
+      'g_d0_f8': 'Impact',
+      'g_d0_f9': 'Trebuchet MS',
+      'g_d0_f10': 'Arial Black',
+      
+      // Times family variations
+      'TimesRoman': 'Times',
+      'Times-Roman': 'Times', 
+      'Times-Bold': 'Times',
+      'Times-Italic': 'Times',
+      'Times-BoldItalic': 'Times',
+      
+      // Helvetica family variations
+      'Helvetica': 'Helvetica',
+      'Helvetica-Bold': 'Helvetica',
+      'Helvetica-Oblique': 'Helvetica',
+      'Helvetica-BoldOblique': 'Helvetica',
+      
+      // Arial family variations  
+      'Arial': 'Arial',
+      'Arial-Bold': 'Arial',
+      'Arial-Italic': 'Arial',
+      'Arial-BoldItalic': 'Arial',
+      
+      // Courier family variations
+      'Courier': 'Courier New',
+      'Courier-Bold': 'Courier New',
+      'Courier-Oblique': 'Courier New',
+      'Courier-BoldOblique': 'Courier New',
+    }
+
+    // Direct mapping if available
+    if (fontMapping[pdfFontId]) {
+      return fontMapping[pdfFontId]
+    }
+
+    // Smart fallback based on patterns
+    const lowerFontId = pdfFontId.toLowerCase()
+    
+    if (lowerFontId.includes('arial')) {
+      return 'Arial'
+    }
+    if (lowerFontId.includes('helvetica')) {
+      return 'Helvetica'
+    }
+    if (lowerFontId.includes('times')) {
+      return 'Times New Roman'
+    }
+    if (lowerFontId.includes('georgia')) {
+      return 'Georgia'
+    }
+    if (lowerFontId.includes('courier')) {
+      return 'Courier New'
+    }
+    if (lowerFontId.includes('verdana')) {
+      return 'Verdana'
+    }
+    if (lowerFontId.includes('comic')) {
+      return 'Comic Sans MS'
+    }
+    if (lowerFontId.includes('impact')) {
+      return 'Impact'
+    }
+    if (lowerFontId.includes('trebuchet')) {
+      return 'Trebuchet MS'
+    }
+    
+    // Generic fallbacks based on characteristics
+    if (lowerFontId.includes('mono') || lowerFontId.includes('code')) {
+      return 'Courier New'
+    }
+    if (lowerFontId.includes('serif') || lowerFontId.includes('roman')) {
+      return 'Times New Roman'
+    }
+    if (lowerFontId.includes('sans') || lowerFontId.includes('gothic')) {
+      return 'Arial'
+    }
+    if (lowerFontId.includes('script') || lowerFontId.includes('cursive')) {
+      return 'Comic Sans MS'
+    }
+    
+    // Default fallback for unrecognized fonts
+    return 'Open Sans'
   }
 }
