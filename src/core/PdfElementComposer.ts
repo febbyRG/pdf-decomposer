@@ -75,11 +75,21 @@ export class PdfElementComposer {
 
       // Start a new paragraph if:
       // 1. This is the first element
-      // 2. Vertical gap is large (more than 1.5x font size)
-      // 3. Font size differs significantly (more than 2 points)
-      // 4. Horizontal alignment changes significantly (new column/section)
+      // 2. Current or previous element is likely a title/header
+      // 3. Vertical gap is large (more than 6.0x font size) AND no semantic continuity
+      // 4. Font size differs significantly (more than 4 points)
+      // 5. Horizontal alignment changes significantly (new column/section)
+      
+      // Start a new paragraph if:
+      // 1. This is the first element
+      // 2. Current or previous element is likely a title/header
+      // 3. Vertical gap is large (more than 6.0x font size) AND no semantic continuity
+      // 4. Font size differs significantly (more than 4 points)
+      // 5. Horizontal alignment changes significantly (new column/section)
       const shouldStartNewParagraph = !previous ||
-        this.hasLargeVerticalGap(current, previous) ||
+        this.isLikelyTitle(current) ||
+        this.isLikelyTitle(previous) ||
+        (this.hasLargeVerticalGap(current, previous) && !this.hasSemanticContinuity(current, previous)) ||
         this.hasFontSizeChange(current, previous) ||
         this.hasHorizontalAlignmentChange(current, previous)
 
@@ -104,24 +114,51 @@ export class PdfElementComposer {
 
   /**
    * Check if there's a large vertical gap between two elements.
+   * Improved logic to handle overlapping elements and better paragraph detection.
    */
   private static hasLargeVerticalGap(current: PdfElement, previous: PdfElement): boolean {
     const currentTop = current.boundingBox?.top || 0
-    const previousBottom = (previous.boundingBox?.top || 0) + (previous.boundingBox?.height || 0)
-    const previousFontSize = previous.attributes?.fontSize || 12
+    const previousTop = previous.boundingBox?.top || 0
+    const previousHeight = previous.boundingBox?.height || 0
+    const previousBottom = previousTop + previousHeight
+    const rawPreviousFontSize = previous.attributes?.fontSize || 12
+    
+    // Handle edge case where fontSize is 0 (use default)
+    const previousFontSize = rawPreviousFontSize === 0 ? 12 : rawPreviousFontSize
 
     const verticalGap = currentTop - previousBottom
-    return verticalGap > (previousFontSize * 1.5)
+
+    // Handle overlapping or very close elements (common in paragraph text)
+    // If elements overlap or are very close (< 1.0x font size), they're likely same paragraph
+    // Improved threshold to handle more overlapping cases
+    if (verticalGap < (previousFontSize * 1.0)) {
+      return false
+    }
+
+    // For normal paragraph spacing, use more relaxed threshold
+    // Most paragraphs have line spacing between 1.2x to 1.8x font size
+    // But some PDF layouts have larger gaps within same paragraph due to formatting
+    const relaxedThreshold = previousFontSize * 6.0 // Increased to 6.0x to handle even larger within-paragraph gaps
+    
+    return verticalGap > relaxedThreshold
   }
 
   /**
    * Check if there's a significant font size change between two elements.
+   * More lenient for small variations that are common in continuous text.
    */
   private static hasFontSizeChange(current: PdfElement, previous: PdfElement): boolean {
     const currentFontSize = current.attributes?.fontSize || 12
     const previousFontSize = previous.attributes?.fontSize || 12
 
-    return Math.abs(currentFontSize - previousFontSize) > 2
+    // Handle edge case where fontSize is 0 (invalid/missing font size)
+    const normalizedCurrent = currentFontSize === 0 ? 12 : currentFontSize
+    const normalizedPrevious = previousFontSize === 0 ? 12 : previousFontSize
+
+    // Allow for small variations that are common in PDF text extraction
+    // Further increased threshold from 3 to 4 points for paragraph continuity
+    // This handles cases like 9.1 vs 10.2 fontSize in same paragraph
+    return Math.abs(normalizedCurrent - normalizedPrevious) > 4
   }
 
   /**
@@ -131,7 +168,97 @@ export class PdfElementComposer {
     const currentLeft = current.boundingBox?.left || 0
     const previousLeft = previous.boundingBox?.left || 0
 
-    return Math.abs(currentLeft - previousLeft) > 50
+    // Increased threshold from 50px to 200px to handle text wrapping and column layouts
+    // In PDF paragraph text, elements can have significant horizontal shifts due to:
+    // - Text wrapping to new lines
+    // - Column-based layouts  
+    // - Justified text alignment
+    return Math.abs(currentLeft - previousLeft) > 200
+  }
+
+  /**
+   * Check if text has semantic continuity (should continue as same paragraph).
+   * Analyzes punctuation and text flow patterns.
+   */
+  private static hasSemanticContinuity(current: PdfElement, previous: PdfElement): boolean {
+    const currentText = (current.data || '').trim()
+    const previousText = (previous.data || '').trim()
+
+    if (!currentText || !previousText) return false
+
+    // Strong indicators that suggest NEW paragraph (should NOT continue)
+    const currentLooksLikeTitle = this.looksLikeTitle(currentText)
+    const previousLooksLikeTitle = this.looksLikeTitle(previousText)
+    
+    // Don't continue from title to content or content to title
+    if (currentLooksLikeTitle || previousLooksLikeTitle) {
+      return false
+    }
+
+    // Strong indicators that previous text should continue
+    const previousEndsIncomplete = !/[.!?;:]$/.test(previousText) // Doesn't end with strong punctuation
+    const previousEndsWithComma = /,$/.test(previousText) // Ends with comma (definitely continues)
+    const previousEndsWithAnd = /\s(and|or|but|yet|so|for|nor)$/.test(previousText) // Ends with conjunction
+    const previousEndsWithPreposition = /\s(with|in|at|on|by|for|of|to|from|under|over|through|across|into|onto)$/i.test(previousText)
+
+    // Strong indicators that current text is continuation
+    const currentStartsLowercase = /^[a-z]/.test(currentText) // Starts with lowercase
+    const currentStartsWithArticle = /^(a|an|the|this|that|these|those|it|he|she|they|we|you|which|who|where|when|while)\s/i.test(currentText)
+    const currentStartsWithConjunction = /^(and|or|but|however|moreover|furthermore|additionally|also|therefore|thus|hence|then|next|finally)\s/i.test(currentText)
+    const currentIsFragment = currentText.length < 30 && !currentText.endsWith('.') && !currentText.endsWith('!') && !currentText.endsWith('?')
+
+    // Strong indicators that suggest NEW paragraph
+    const currentStartsWithCapitalSentence = /^[A-Z][a-z].*[.!?]$/.test(currentText) && currentText.length > 20 // Complete sentence starting with capital
+    
+    // Don't continue if current looks like a new section
+    if (currentStartsWithCapitalSentence) {
+      return false
+    }
+
+    // Enhanced continuity detection - be more aggressive about continuing
+    return previousEndsIncomplete || previousEndsWithComma || previousEndsWithAnd || previousEndsWithPreposition ||
+           currentStartsLowercase || currentStartsWithArticle || currentStartsWithConjunction || currentIsFragment
+  }
+
+  /**
+   * Check if text looks like a title or header.
+   */
+  private static looksLikeTitle(text: string): boolean {
+    if (!text || text.trim().length === 0) return false
+    
+    const cleanText = text.trim()
+    
+    // Short ALL CAPS text (likely titles/headers)
+    if (cleanText.length < 100 && /^[A-Z\s\-.,!]+$/.test(cleanText)) {
+      return true
+    }
+    
+    // Pattern matching for common title formats
+    const titlePatterns = [
+      /^[A-Z][A-Z\s]+UPDATE$/i,  // "SHOPPING CENTRE UPDATE"
+      /^[A-Z\s]{10,50}$/,        // Medium length all caps
+      /^P\d+$/,                  // Page numbers like "P12"
+      /^FEATURING:/i,            // Article sections
+      /^MR\.|MS\.|DR\./i         // Titles with people names
+    ]
+    
+    return titlePatterns.some(pattern => pattern.test(cleanText))
+  }
+
+  /**
+   * Additional check if element is likely a title based on formatting context.
+   */
+  private static isLikelyTitle(element: PdfElement): boolean {
+    const text = (element.data || '').trim()
+    const fontSize = element.attributes?.fontSize || 12
+
+    // Elements with fontSize 0 that look like titles are likely titles
+    if (fontSize === 0 && this.looksLikeTitle(text)) {
+      return true
+    }
+
+    // Other title indicators
+    return this.looksLikeTitle(text)
   }
 
   /**
