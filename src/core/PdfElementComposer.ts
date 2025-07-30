@@ -207,7 +207,7 @@ export class PdfElementComposer {
   private static runComputeTextTypesAlgorithm(composites: Composite[]): Composite[] {
     if (composites.length === 0) return composites
 
-    // Calculate character-weighted average font size
+    // Calculate character-weighted average font size (FlexPDF exact approach)
     const weightedPairs = composites.map(comp => [comp.attributes.fontSize, comp.data.length])
     const totalCharacters = weightedPairs.reduce((sum, [_, charCount]) => sum + charCount, 0)
     const aggregatedSum = weightedPairs.reduce((sum, [fontSize, charCount]) => sum + fontSize * charCount, 0)
@@ -222,15 +222,15 @@ export class PdfElementComposer {
       { type: 'h5', size: 1.1 * averageFontSize }
     ]
 
-    // Classify each composite
+    // Classify each composite (FlexPDF exact logic)
     for (const composite of composites) {
       const fontSize = composite.attributes.fontSize
       const wordCount = composite.data.split(/\s+/).filter(str => str !== '').length
       const isLongText = wordCount > 15
 
       if (fontSize > averageFontSize && !isLongText) {
-        // Find appropriate heading level
-        const heading = headingThresholds.find(threshold => Math.floor(threshold.size) <= fontSize)
+        // Find appropriate heading level (FlexPDF uses floor comparison)
+        const heading = headingThresholds.find(threshold => threshold.size <= fontSize)
         composite.attributes.type = heading ? heading.type : 'h5'
       } else {
         composite.attributes.type = 'paragraph'
