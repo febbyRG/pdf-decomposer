@@ -52,21 +52,24 @@ export class PdfImageExtractor {
       console.log('🔍 Page type:', page.constructor?.name || typeof page)
       console.log(`� Processing page ${pageNumber}`)
       
-      // Method 1: Check operator list for image operations
-      const operatorImages = await this.extractFromOperatorList(pdfPageProxy)
+      // Method 1: Check operator list for image operations (MAIN METHOD - like editor)
+      const operatorImages = await this.extractFromOperatorList(pdfPageProxy, pageNumber)
       images.push(...operatorImages)
       
-      // Method 2: Check page objects (main method)
-      const pageObjImages = await PdfImageExtractor.extractFromPageObjects(pdfPageProxy, pageNumber)
-      images.push(...pageObjImages)
+      // PERFORMANCE OPTIMIZATION: Only use operator list approach like editor
+      // The other methods are slower and often redundant
       
-      // Method 3: Check common objects (fallback)  
-      const commonObjImages = await PdfImageExtractor.extractFromCommonObjects(pdfPageProxy, pageNumber)
-      images.push(...commonObjImages)
+      // Method 2: Check page objects (disabled for performance)
+      // const pageObjImages = await PdfImageExtractor.extractFromPageObjects(pdfPageProxy, pageNumber)
+      // images.push(...pageObjImages)
       
-      // Method 4: XObject analysis (fallback)
-      const xObjectImages = await PdfImageExtractor.extractFromPageContent(pdfPageProxy, pageNumber)
-      images.push(...xObjectImages)
+      // Method 3: Check common objects (disabled for performance)  
+      // const commonObjImages = await PdfImageExtractor.extractFromCommonObjects(pdfPageProxy, pageNumber)
+      // images.push(...commonObjImages)
+      
+      // Method 4: XObject analysis (disabled for performance)
+      // const xObjectImages = await PdfImageExtractor.extractFromPageContent(pdfPageProxy, pageNumber)
+      // images.push(...xObjectImages)
       
       // Remove duplicates based on content and dimensions
       const uniqueImages = PdfImageExtractor.removeDuplicateImages(images)
@@ -83,7 +86,7 @@ export class PdfImageExtractor {
    * Extract images by analyzing PDF operator list  
    * This detects inline images and Do (XObject) operations
    */
-  private async extractFromOperatorList(page: any): Promise<ExtractedImage[]> {
+  private async extractFromOperatorList(page: any, pageNumber: number): Promise<ExtractedImage[]> {
     const images: ExtractedImage[] = []
     
     try {
@@ -99,48 +102,54 @@ export class PdfImageExtractor {
       
       console.log('📋 Found', operatorList.fnArray.length, 'operations')
       
-      // Look for image operations
-      // 85 = Do (XObject), 86 = BI (Begin inline image), 87 = ID/EI (inline image data)
+      // Look for image operations - SIMPLIFIED APPROACH like editor
+      // Only check Do (XObject) operations which are most common
       for (let i = 0; i < operatorList.fnArray.length; i++) {
         const op = operatorList.fnArray[i]
         const args = operatorList.argsArray[i]
         
-        if (op === 85) { // Do operation - paint XObject
-          console.log('🖼️ Found XObject operation:', args)
+        if (op === 85 && args && args.length > 0) { // Do operation - paint XObject
+          const imageName = args[0]
+          console.log(`🔍 Extracting XObject image: ${imageName}`)
           
-          if (args && args.length > 0) {
-            const imageName = args[0]
+          // Use DIRECT ACCESS to page.objs like editor approach
+          if (page.objs && page.objs.has(imageName)) {
+            const imageObj = page.objs.get(imageName)
             
-            // Try to get image data from page resources
-            const imageData = await this.extractXObjectImage(page, imageName)
-            if (imageData) {
-              images.push({
-                id: imageName,
-                data: imageData,
-                width: args[1] || 0,
-                height: args[2] || 0,
-                format: 'png',
-                pageNumber: 1,
-                alt: imageName,
-                type: 'embedded'
-              })
+            if (PdfImageExtractor.isImageObject(imageObj)) {
+              console.log(`✅ Processing ${imageName} from page.objs`)
+              
+              const extractedImage = await PdfImageExtractor.createExtractedImageFromObject(
+                imageObj,
+                imageName,
+                pageNumber, // Use actual page number
+                i,
+                'document'
+              )
+              
+              if (extractedImage) {
+                images.push(extractedImage)
+              }
+            }
+          } else if (page.commonObjs && page.commonObjs.has(imageName)) {
+            const imageObj = page.commonObjs.get(imageName)
+            
+            if (PdfImageExtractor.isImageObject(imageObj)) {
+              console.log(`✅ Processing ${imageName} from commonObjs`)
+              
+              const extractedImage = await PdfImageExtractor.createExtractedImageFromObject(
+                imageObj,
+                imageName,
+                pageNumber, // Use actual page number
+                i,
+                'document'
+              )
+              
+              if (extractedImage) {
+                images.push(extractedImage)
+              }
             }
           }
-        } else if (op === 86) { // BI - Begin inline image
-          console.log('🖼️ Found inline image operation:', args)
-          
-          // Inline images are harder to extract in PDF.js 5.x
-          // For now, we'll track them
-          images.push({
-            id: `inline_${i}`,
-            data: '', // TODO: Extract inline image data
-            width: 0,
-            height: 0,
-            format: 'png',
-            pageNumber: 1,
-            alt: `Inline image ${i}`,
-            type: 'embedded'
-          })
         }
       }
       
@@ -701,7 +710,7 @@ export class PdfImageExtractor {
       const dataUrl = `data:image/png;base64,${this.uint8ArrayToBase64(pngBuffer)}`
 
       return {
-        id: `${source}-${pageNumber}-${imageIndex + 1}-${imageId.replace(/[^a-zA-Z0-9]/g, '_')}`,
+        id: `${imageId.replace(/[^a-zA-Z0-9]/g, '_')}`,
         data: dataUrl,
         format: 'png',
         width: width,
