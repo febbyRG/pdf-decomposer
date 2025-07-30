@@ -239,6 +239,12 @@ class ComprehensiveTest {
         images: imageAnalysis,
         assetFiles: directAssetImages
       }, null, 2))
+      
+      // Save complete decomposePdf result for analysis
+      const resultPath = join(outputDir, 'result.json')
+      writeFileSync(resultPath, JSON.stringify(result, null, 2), 'utf-8')
+
+      console.log(`   📄 Complete decompose result saved to: ${basename(resultPath)}`)
 
     } catch (error) {
       this.results.push({

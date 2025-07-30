@@ -176,13 +176,17 @@ export class PdfDecomposerPage {
         fontSize: item.transform ? item.transform[0] : undefined,
         textColor: undefined // PDF.js does not provide text color directly
       }
+      
+      // Generate formatted HTML version based on font attributes
+      const formattedData = this.generateFormattedText(item.str, attributes)
+      
       return {
         id: uuidv4(),
         pageIndex,
         type: 'text',
         boundingBox: bbox,
-        data: item.str,
-        formattedData: item.str,
+        data: item.str, // Plain text
+        formattedData: formattedData, // HTML formatted text
         attributes
       }
     }) // No filter for debugging
@@ -251,5 +255,83 @@ export class PdfDecomposerPage {
 
     fs.writeFileSync(filePath, minimalImageBuffer)
     console.log(`📋 Created placeholder image: ${path.basename(filePath)} (${minimalImageBuffer.length} bytes)`)
+  }
+
+  /**
+   * Generate formatted HTML text based on font attributes
+   */
+  private generateFormattedText(text: string, attributes: any): string {
+    if (!text) return text
+
+    let html = text
+    
+    // Escape HTML special characters first
+    html = html
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+
+    // Apply formatting based on font attributes
+    const fontSize = attributes.fontSize || 0
+    const fontFamily = attributes.fontFamily || ''
+
+    // Detect bold text based on font name patterns
+    if (this.isBoldFont(fontFamily)) {
+      html = `<strong>${html}</strong>`
+    }
+
+    // Detect italic text based on font name patterns
+    if (this.isItalicFont(fontFamily)) {
+      html = `<em>${html}</em>`
+    }
+
+    // Detect headings based on font size (assuming larger fonts are headings)
+    if (fontSize > 16) {
+      const level = fontSize > 24 ? 1 : fontSize > 20 ? 2 : fontSize > 18 ? 3 : 4
+      html = `<h${level}>${html}</h${level}>`
+    }
+
+    // Add font styling if specified
+    const styles: string[] = []
+    if (fontSize && fontSize !== 12) {
+      styles.push(`font-size: ${fontSize}px`)
+    }
+    if (fontFamily && !fontFamily.includes('default')) {
+      styles.push(`font-family: "${fontFamily}"`)
+    }
+    if (attributes.textColor) {
+      styles.push(`color: ${attributes.textColor}`)
+    }
+
+    if (styles.length > 0) {
+      html = `<span style="${styles.join('; ')}">${html}</span>`
+    }
+
+    return html
+  }
+
+  /**
+   * Check if font name indicates bold styling
+   */
+  private isBoldFont(fontName: string): boolean {
+    if (!fontName) return false
+    const lowerName = fontName.toLowerCase()
+    return lowerName.includes('bold') || 
+           lowerName.includes('black') || 
+           lowerName.includes('heavy') ||
+           lowerName.includes('extrabold')
+  }
+
+  /**
+   * Check if font name indicates italic styling
+   */
+  private isItalicFont(fontName: string): boolean {
+    if (!fontName) return false
+    const lowerName = fontName.toLowerCase()
+    return lowerName.includes('italic') || 
+           lowerName.includes('oblique') ||
+           lowerName.includes('-it')
   }
 }

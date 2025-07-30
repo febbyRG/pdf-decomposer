@@ -141,8 +141,11 @@ export class PdfElementComposer {
     // Calculate paragraph bounding box
     const bounds = this.calculateParagraphBounds(elements)
 
-    // Combine text content
-    const paragraphText = elements.map(el => el.formattedData || el.data).join(' ')
+    // Combine plain text content
+    const paragraphText = elements.map(el => el.data).join(' ')
+    
+    // Combine formatted HTML content preserving individual formatting
+    const formattedHtml = this.combineFormattedText(elements)
 
     // Calculate average font size
     const avgFontSize = elements.reduce((sum, el) => sum + (el.attributes?.fontSize || 12), 0) / elements.length
@@ -154,8 +157,8 @@ export class PdfElementComposer {
       ...firstElement,
       type: 'paragraph', // New type for composed paragraphs
       boundingBox: bounds,
-      data: paragraphText,
-      formattedData: paragraphText,
+      data: paragraphText, // Plain text
+      formattedData: formattedHtml, // HTML formatted text
       attributes: {
         ...firstElement.attributes,
         fontSize: Math.round(avgFontSize * 10) / 10, // Round to 1 decimal place
@@ -202,5 +205,48 @@ export class PdfElementComposer {
     if (cleanText.length < 2 && /^[\s\W]$/.test(cleanText)) return false
 
     return true
+  }
+
+  /**
+   * Combine formatted HTML text from multiple elements intelligently
+   */
+  private static combineFormattedText(elements: PdfElement[]): string {
+    if (elements.length === 0) return ''
+    
+    // Join formatted text with appropriate spacing
+    const formattedParts = elements.map(el => {
+      const formatted = el.formattedData || el.data || ''
+      return formatted.trim()
+    }).filter(part => part.length > 0)
+
+    if (formattedParts.length === 0) return ''
+
+    // Smart joining - add space between parts unless they end/start with HTML tags
+    let result = formattedParts[0]
+    for (let i = 1; i < formattedParts.length; i++) {
+      const prev = formattedParts[i - 1]
+      const current = formattedParts[i]
+      
+      // Check if we need space between parts
+      const needsSpace = !prev.endsWith('>') && !current.startsWith('<') && 
+                        !prev.endsWith(' ') && !current.startsWith(' ')
+      
+      result += (needsSpace ? ' ' : '') + current
+    }
+
+    // Wrap the combined content in a paragraph tag if it doesn't already have block-level tags
+    if (!this.hasBlockLevelTags(result)) {
+      result = `<p>${result}</p>`
+    }
+
+    return result
+  }
+
+  /**
+   * Check if text contains block-level HTML tags
+   */
+  private static hasBlockLevelTags(html: string): boolean {
+    const blockTags = ['<p>', '<h1>', '<h2>', '<h3>', '<h4>', '<h5>', '<h6>', '<div>', '<section>', '<article>']
+    return blockTags.some(tag => html.includes(tag))
   }
 }
