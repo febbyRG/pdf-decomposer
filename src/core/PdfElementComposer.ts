@@ -67,8 +67,10 @@ export class PdfElementComposer {
     // Convert back to PdfElements
     const processedElements = this.convertToElements(composites)
 
-    // Combine with non-text elements and sort by reading order
-    const allElements = [...processedElements, ...nonTextElements].sort((a, b) => {
+    // Combine with non-text elements - preserve FlexPDF algorithm ordering for text elements
+    // Only sort non-text elements by position, keep text elements in FlexPDF order
+    const processedTextElements = processedElements
+    const sortedNonTextElements = nonTextElements.sort((a, b) => {
       const aTop = a.boundingBox?.top || 0
       const bTop = b.boundingBox?.top || 0
       const yDiff = aTop - bTop
@@ -80,7 +82,37 @@ export class PdfElementComposer {
       return aLeft - bLeft
     })
 
-    return allElements
+    // Merge text and non-text elements while preserving text element order from FlexPDF
+    const finalElements: PdfElement[] = []
+    let textIndex = 0
+    let nonTextIndex = 0
+
+    while (textIndex < processedTextElements.length || nonTextIndex < sortedNonTextElements.length) {
+      const textEl = textIndex < processedTextElements.length ? processedTextElements[textIndex] : null
+      const nonTextEl = nonTextIndex < sortedNonTextElements.length ? sortedNonTextElements[nonTextIndex] : null
+
+      if (!textEl) {
+        finalElements.push(nonTextEl!)
+        nonTextIndex++
+      } else if (!nonTextEl) {
+        finalElements.push(textEl)
+        textIndex++
+      } else {
+        // Compare positions to interleave properly
+        const textTop = textEl.boundingBox?.top || 0
+        const nonTextTop = nonTextEl.boundingBox?.top || 0
+        
+        if (textTop <= nonTextTop + 10) { // Text element comes first or same line
+          finalElements.push(textEl)
+          textIndex++
+        } else {
+          finalElements.push(nonTextEl)
+          nonTextIndex++
+        }
+      }
+    }
+
+    return finalElements
   }
 
   /**
@@ -195,17 +227,106 @@ export class PdfElementComposer {
 
   /**
    * FlexPDF Stage 2: OrderCompositesAlgorithm (Priority 40) 
-   * Reading order detection with beam scanning
+   * Reading order detection with beam scanning for multi-column layout
    */
   private static runOrderCompositesAlgorithm(composites: Composite[]): Composite[] {
     if (composites.length === 0) return composites
 
-    // Sort by reading order: top to bottom, then left to right
-    return composites.sort((a, b) => {
-      const yDiff = a.boundingBox.top - b.boundingBox.top
-      if (Math.abs(yDiff) > 10) return yDiff
-      return a.boundingBox.left - b.boundingBox.left
-    })
+    // Use beam scanning to detect column layout
+    const columns = this.detectColumnsWithBeamScanning(composites)
+    
+    if (columns.length <= 1) {
+      // Single column - simple top-to-bottom sorting
+      return composites.sort((a, b) => a.boundingBox.top - b.boundingBox.top)
+    }
+    
+    // Multi-column - sort by column first, then by position within column
+    const sortedComposites: Composite[] = []
+    
+    // Process each column left-to-right
+    columns.sort((a, b) => a.leftBoundary - b.leftBoundary)
+    
+    for (const column of columns) {
+      // Sort elements within column by top-to-bottom
+      const columnElements = column.elements.sort((a, b) => a.boundingBox.top - b.boundingBox.top)
+      sortedComposites.push(...columnElements)
+    }
+    
+    return sortedComposites
+  }
+
+  /**
+   * FlexPDF Beam Scanning: Detect column layout using horizontal and vertical beams
+   */
+  private static detectColumnsWithBeamScanning(composites: Composite[]): Array<{
+    leftBoundary: number
+    rightBoundary: number
+    elements: Composite[]
+  }> {
+    if (composites.length === 0) return []
+
+    // Calculate page boundaries
+    const leftMost = Math.min(...composites.map(c => c.boundingBox.left))
+    const rightMost = Math.max(...composites.map(c => c.boundingBox.right))
+    
+    // Sort elements by left position to find gaps
+    const sortedByLeft = [...composites].sort((a, b) => a.boundingBox.left - b.boundingBox.left)
+    
+    // Find significant gaps between elements (column separators)
+    const columnBreaks: number[] = []
+    
+    for (let i = 0; i < sortedByLeft.length - 1; i++) {
+      const currentRight = sortedByLeft[i].boundingBox.right
+      const nextLeft = sortedByLeft[i + 1].boundingBox.left
+      const gap = nextLeft - currentRight
+      
+      // If gap is significant (>= 15pt), it's a column break
+      if (gap >= 15) {
+        const breakPoint = (currentRight + nextLeft) / 2
+        if (!columnBreaks.includes(breakPoint)) {
+          columnBreaks.push(breakPoint)
+        }
+      }
+    }
+
+    // Create columns based on detected breaks
+    const columns: Array<{ leftBoundary: number, rightBoundary: number, elements: Composite[] }> = []
+    
+    if (columnBreaks.length === 0) {
+      // No significant gaps - single column
+      return [{
+        leftBoundary: leftMost,
+        rightBoundary: rightMost,
+        elements: composites
+      }]
+    }
+
+    // Multiple columns detected - sort breaks
+    columnBreaks.sort((a, b) => a - b)
+    
+    let currentLeft = leftMost
+    
+    for (let i = 0; i <= columnBreaks.length; i++) {
+      const currentRight = i < columnBreaks.length ? columnBreaks[i] : rightMost
+      
+      // Find elements in this column (element center must be within column bounds)
+      const columnElements = composites.filter(comp => {
+        const elementCenter = (comp.boundingBox.left + comp.boundingBox.right) / 2
+        return elementCenter >= currentLeft && elementCenter <= currentRight
+      })
+      
+      if (columnElements.length > 0) {
+        columns.push({
+          leftBoundary: currentLeft,
+          rightBoundary: currentRight,
+          elements: columnElements
+        })
+      }
+      
+      currentLeft = currentRight
+    }
+
+    return columns
   }
 
   /**
