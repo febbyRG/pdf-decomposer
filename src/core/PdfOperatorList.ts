@@ -2,14 +2,18 @@ import md5 from 'md5'
 import * as pdfjs from 'pdfjs-dist'
 import { PdfOperator, PdfOperatorFilter } from './PdfOperator.js'
 import { PdfOperatorSelection, PdfOperatorSelectionFn } from './PdfOperatorSelection.js'
-const { OPS } = (pdfjs as any)
+
+// Handle different PDF.js versions (3.x vs 5.x)
+const OPS = (pdfjs as any)?.OPS || {}
 type PDFOperatorList = any
 
 export interface OPSLookup {
   [key: number]: string
 }
 
-const OPS_LOOKUP = Object.entries(OPS).reduce<OPSLookup>((obj: any, [key, value]: any) => { obj[value] = key; return obj }, {})
+const OPS_LOOKUP = OPS && typeof OPS === 'object' 
+  ? Object.entries(OPS).reduce<OPSLookup>((obj: any, [key, value]: any) => { obj[value] = key; return obj }, {})
+  : {}
 
 function makeFilterFn(filter?: string | string[] | PdfOperatorFilter): PdfOperatorFilter {
   if (!filter) {

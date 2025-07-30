@@ -65,7 +65,10 @@ export class PdfElementComposer {
     composites = this.runComputeTextTypesAlgorithm(composites)
 
     // Convert back to PdfElements
-    const processedElements = this.convertToElements(composites)
+    let processedElements = this.convertToElements(composites)
+
+    // Merge drop caps with following paragraphs
+    processedElements = this.mergeDropCaps(processedElements)
 
     // Combine with non-text elements - preserve FlexPDF algorithm ordering for text elements
     // Only sort non-text elements by position, keep text elements in FlexPDF order
@@ -175,6 +178,136 @@ export class PdfElementComposer {
         }
       }
     })
+  }
+
+  /**
+   * Merge drop caps (large initial letters) with their following paragraphs
+   */
+  private static mergeDropCaps(elements: PdfElement[]): PdfElement[] {
+    if (elements.length === 0) return elements
+
+    const result: PdfElement[] = []
+    let i = 0
+
+    while (i < elements.length) {
+      const currentElement = elements[i]
+      const nextElement = i + 1 < elements.length ? elements[i + 1] : null
+
+      // Check if current element is a drop cap pattern
+      if (this.isDropCap(currentElement, nextElement)) {
+        // Merge drop cap with next paragraph
+        const mergedElement = this.mergeDropCapWithParagraph(currentElement, nextElement!)
+        result.push(mergedElement)
+        i += 2 // Skip both elements as they're merged
+      } else {
+        result.push(currentElement)
+        i++
+      }
+    }
+
+    return result
+  }
+
+  /**
+   * Check if an element is a drop cap (large single letter/word)
+   */
+  private static isDropCap(element: PdfElement, nextElement: PdfElement | null): boolean {
+    if (!element || !nextElement) return false
+
+    // Must be a header (large font) followed by a paragraph
+    if (element.type !== 'header' || nextElement.type !== 'paragraph') return false
+
+    const text = (element.data || '').trim()
+    const fontSize = element.attributes?.fontSize || 0
+    const nextFontSize = nextElement.attributes?.fontSize || 0
+
+    // Drop cap criteria:
+    // 1. Very short text (1-3 characters, typically just one letter)
+    // 2. Significantly larger font than next element (at least 2x)
+    // 3. Elements are vertically close (drop cap should be near the paragraph)
+    const isShortText = text.length <= 3
+    const isLargeFont = fontSize > nextFontSize * 2
+    const isVerticallyClose = this.areVerticallyClose(element, nextElement, 50) // within 50pts
+
+    return isShortText && isLargeFont && isVerticallyClose
+  }
+
+  /**
+   * Check if two elements are vertically close
+   */
+  private static areVerticallyClose(element1: PdfElement, element2: PdfElement, threshold: number): boolean {
+    const top2 = element2.boundingBox?.top || 0
+    const bottom1 = (element1.boundingBox?.top || 0) + (element1.boundingBox?.height || 0)
+    
+    // Check if element2 starts within threshold distance from element1's bottom
+    const verticalDistance = Math.abs(top2 - bottom1)
+    return verticalDistance <= threshold
+  }
+
+  /**
+   * Merge a drop cap with its following paragraph
+   */
+  private static mergeDropCapWithParagraph(dropCap: PdfElement, paragraph: PdfElement): PdfElement {
+    const dropCapText = (dropCap.data || '').trim()
+    const paragraphText = (paragraph.data || '').trim()
+    
+    // Combine the texts
+    const combinedText = dropCapText + paragraphText
+    
+    // Use paragraph's bounding box as the main area, but extend to include drop cap
+    const combinedBoundingBox = {
+      top: Math.min(dropCap.boundingBox?.top || 0, paragraph.boundingBox?.top || 0),
+      left: Math.min(dropCap.boundingBox?.left || 0, paragraph.boundingBox?.left || 0),
+      width: Math.max(
+        (dropCap.boundingBox?.left || 0) + (dropCap.boundingBox?.width || 0),
+        (paragraph.boundingBox?.left || 0) + (paragraph.boundingBox?.width || 0)
+      ) - Math.min(dropCap.boundingBox?.left || 0, paragraph.boundingBox?.left || 0),
+      height: Math.max(
+        (dropCap.boundingBox?.top || 0) + (dropCap.boundingBox?.height || 0),
+        (paragraph.boundingBox?.top || 0) + (paragraph.boundingBox?.height || 0)
+      ) - Math.min(dropCap.boundingBox?.top || 0, paragraph.boundingBox?.top || 0)
+    }
+
+    // Create combined formatted data (keep paragraph formatting, but prepend drop cap)
+    const combinedFormattedData = this.combineDropCapFormatting(dropCap, paragraph)
+
+    return {
+      ...paragraph, // Use paragraph as base
+      data: combinedText,
+      formattedData: combinedFormattedData,
+      boundingBox: combinedBoundingBox,
+      attributes: {
+        ...paragraph.attributes,
+        composed: true
+      }
+    }
+  }
+
+  /**
+   * Combine formatting from drop cap and paragraph
+   */
+  private static combineDropCapFormatting(dropCap: PdfElement, paragraph: PdfElement): string {
+    const paragraphFormatted = paragraph.formattedData || paragraph.data || ''
+    
+    // Extract the drop cap letter and paragraph content
+    const dropCapText = (dropCap.data || '').trim()
+    const paragraphText = (paragraph.data || '').trim()
+    
+    if (!dropCapText || !paragraphText) {
+      return paragraphFormatted
+    }
+
+    // Create a styled drop cap followed by paragraph content
+    const dropCapStyled = `<span style="font-size: ${dropCap.attributes?.fontSize}px; font-family: ${dropCap.attributes?.fontFamily}"><strong>${dropCapText}</strong></span>`
+    
+    // Remove the drop cap letter from paragraph formatting if it exists
+    let cleanParagraphFormatted = paragraphFormatted
+    if (paragraphText.toLowerCase().startsWith(dropCapText.toLowerCase())) {
+      // If paragraph text starts with same letter, we need to handle it carefully
+      cleanParagraphFormatted = paragraphFormatted
+    }
+    
+    return `${dropCapStyled}${cleanParagraphFormatted}`
   }
 
   /**

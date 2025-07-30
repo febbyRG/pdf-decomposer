@@ -147,7 +147,10 @@ async function loadPdfDocument(filePath: string): Promise<PdfDocument> {
     }
 
     const data = new Uint8Array(fs.readFileSync(filePath))
-    const loadingTask = getDocument({ data })
+    const loadingTask = getDocument({
+      data,
+      verbosity: 0
+    })
     const doc = await loadingTask.promise
 
     // Use the custom PdfDocument class, which will create PdfPage instances

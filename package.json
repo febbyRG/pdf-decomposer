@@ -49,7 +49,7 @@
     "change-case": "^5.4.4",
     "md5": "^2.3.0",
     "param-case": "^3.0.4",
-    "pdfjs-dist": "^5.4.54",
+    "pdfjs-dist": "^3.11.174",
     "uuid": "^11.1.0"
   },
   "devDependencies": {

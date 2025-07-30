@@ -1,12 +1,12 @@
 /**
- * PDF Image Extractor - Universal Implementation for PDF.js 5.x
+ * PDF Image Extractor - Universal Implementation for PDF.js 3.x & 5.x
  * 
  * Following PDF.js best practices for cross-platform image extraction:
  * - Uses PDFObjects for proper resource management 
  * - Implements universal compatibility (Browser + Node.js)
- * - Memory-safe processing with auto-scaling
+ * - Direct processing approach like editor (no defensive validation)
  * - Supports multiple image formats and color spaces
- * - Follows PDF.js 5.x API patterns
+ * - Follows PDF.js 3.x/5.x API patterns
  */
 
 import { PDFPageProxy } from 'pdfjs-dist'

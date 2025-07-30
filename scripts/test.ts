@@ -34,10 +34,11 @@ class ComprehensiveTest {
   private results: TestResult[] = []
   private baseOutputDir: string
   private pdfPath: string
+  private pdfFile: string = 'test.pdf'
 
   constructor(customPdfPath?: string) {
     this.baseOutputDir = join(__dirname, 'scripts', 'test-output')
-    this.pdfPath = customPdfPath || join(__dirname, 'scripts', 'test-input', 'demo.pdf')
+    this.pdfPath = customPdfPath || join(__dirname, 'scripts', 'test-input', this.pdfFile)
   }
 
   async run() {
