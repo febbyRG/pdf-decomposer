@@ -65,14 +65,18 @@ export async function decomposePdf(
     const outDir = options.assetPath || path.dirname(filePath)
     const pkg: Package = { pkgDir: new LocalPackageDir(outDir), pages: [] }
 
+    // If pageComposer is enabled, automatically enable elementComposer
+    const enableElementComposer = options.elementComposer ?? options.pageComposer ?? false
+    const enablePageComposer = options.pageComposer ?? false
+
     const composer = new PdfDecomposer(
       pdfDoc,
       pkg,
       false,
       options.generateImages ?? false,
       options.extractEmbeddedImages,
-      options.elementComposer ?? false,
-      options.pageComposer ?? false,
+      enableElementComposer,
+      enablePageComposer,
       options.imageWidth,
       options.imageQuality
     )

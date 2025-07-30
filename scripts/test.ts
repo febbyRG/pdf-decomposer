@@ -129,7 +129,8 @@ class ComprehensiveTest {
       mkdirSync(outputDir, { recursive: true })
       
       const options = {
-        elementComposer: true
+        elementComposer: true,
+        pageComposer: true
       }
 
       const result = await decomposePdf(this.pdfPath, {

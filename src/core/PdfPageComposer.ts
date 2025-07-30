@@ -342,7 +342,8 @@ export class PdfPageComposer {
   }
 
   /**
-   * Compose multiple pages into a single page.
+   * Compose multiple pages into a single page with proper element ordering.
+   * Uses the same FlexPDF algorithm as PdfElementComposer for consistent ordering.
    */
   private static composePageGroup(pages: PdfPageContent[]): PdfPageContent {
     if (pages.length === 1) return pages[0]
@@ -356,17 +357,68 @@ export class PdfPageComposer {
       allElements.push(...page.elements)
     })
 
+    // Apply proper ordering using spatial positioning
+    // This ensures headers appear before paragraphs in the same reading flow
+    const orderedElements = this.orderElementsSpatially(allElements)
+
     // Create composed page
     const composedPage: PdfPageContent = {
       ...firstPage,
       title: `${firstPage.title} - ${lastPage.title}`,
-      elements: allElements,
+      elements: orderedElements,
       // Keep first page metadata but indicate composition
       pageNumber: firstPage.pageNumber,
       pageIndex: firstPage.pageIndex
     }
 
     return composedPage
+  }
+
+  /**
+   * Order elements spatially while preserving page context.
+   * Elements from the same original page stay together in proper reading order.
+   */
+  private static orderElementsSpatially(elements: PdfElement[]): PdfElement[] {
+    // Group elements by their original page
+    const elementsByPage = new Map<number, PdfElement[]>()
+    
+    elements.forEach(element => {
+      const pageIndex = element.pageIndex || 0
+      if (!elementsByPage.has(pageIndex)) {
+        elementsByPage.set(pageIndex, [])
+      }
+      elementsByPage.get(pageIndex)!.push(element)
+    })
+
+    // Sort elements within each page group by reading order
+    const orderedElements: PdfElement[] = []
+    
+    // Process pages in order
+    const sortedPageIndexes = Array.from(elementsByPage.keys()).sort((a, b) => a - b)
+    
+    for (const pageIndex of sortedPageIndexes) {
+      const pageElements = elementsByPage.get(pageIndex)!
+      
+      // Sort elements within this page by reading order (top-to-bottom, left-to-right)
+      const sortedPageElements = pageElements.sort((a, b) => {
+        const aTop = a.boundingBox?.top || 0
+        const bTop = b.boundingBox?.top || 0
+        const yDiff = aTop - bTop
+
+        // If elements are on different lines (>10pt difference), sort by Y position
+        if (Math.abs(yDiff) > 10) return yDiff
+        
+        // If on same line, sort by X position (left-to-right)
+        const aLeft = a.boundingBox?.left || (Array.isArray(a.boundingBox) ? a.boundingBox[0] : 0)
+        const bLeft = b.boundingBox?.left || (Array.isArray(b.boundingBox) ? b.boundingBox[0] : 0)
+        return aLeft - bLeft
+      })
+
+      // Add all elements from this page to the final result
+      orderedElements.push(...sortedPageElements)
+    }
+
+    return orderedElements
   }
 
   // Utility methods
