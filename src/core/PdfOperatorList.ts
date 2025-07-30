@@ -1,8 +1,8 @@
 import md5 from 'md5'
-import pkg from 'pdfjs-dist'
+import * as pdfjs from 'pdfjs-dist'
 import { PdfOperator, PdfOperatorFilter } from './PdfOperator.js'
 import { PdfOperatorSelection, PdfOperatorSelectionFn } from './PdfOperatorSelection.js'
-const { OPS } = pkg
+const { OPS } = (pdfjs as any)
 type PDFOperatorList = any
 
 export interface OPSLookup {

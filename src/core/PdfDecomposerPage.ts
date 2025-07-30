@@ -1,8 +1,8 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import { v4 as uuidv4 } from 'uuid'
-import { getPuppeteerRenderer } from '../utils/PuppeteerRenderer.js'
-import { PdfDecomposer } from './PdfDecomposer.js'
+import { PdfImageExtractor } from './PdfImageExtractor.js'
+import type { PdfDecomposer } from './PdfDecomposer.js'
 
 export class PdfDecomposerPage {
   constructor(
@@ -33,132 +33,134 @@ export class PdfDecomposerPage {
       outputDir = (this.decomposer.pkg.pkgDir as any).dir
     }
 
-    // Check if we should skip image rendering for memory safety
-    if (!this.generateImages) {
-      console.log(`📝 No-image mode: Skipping image rendering for page ${pageNumber}`)
+    // Extract text and embedded images without page rendering
+    console.log(`📝 Extracting content for page ${pageNumber} (no page images)`)
 
-      // Extract only text elements (and optionally embedded images)
-      const elements: any[] = [
-        ...await this.extractTextElements(pdfPage, pageIndex),
-        // Conditionally extract embedded images if enabled (even without page images)
-        ...(this.extractEmbeddedImages ? await this.extractImageElements(pdfPage, pageIndex, outputDir) : [])
-      ]
+    const elements: any[] = [
+      ...await this.extractTextElements(pdfPage, pageIndex),
+      // Extract embedded images if enabled
+      ...(this.extractEmbeddedImages ? await this.extractImageElements(pdfPage, pageIndex, outputDir) : [])
+    ]
 
-      return {
-        pageIndex,
-        pageNumber,
-        width,
-        height,
-        title,
-        image: null, // No image generated
-        thumbnail: null, // No thumbnail generated
-        elements
-      }
+    // Return page data without generating page images
+    const result = {
+      pageIndex,
+      pageNumber,
+      width,
+      height,
+      title,
+      image: this.generateImages ? imageFilename : null,
+      thumbnail: this.generateImages ? thumbFilename : null,
+      elements
     }
 
-    // Use Puppeteer for high-quality image rendering (default method)
-    console.log(`🌐 Puppeteer mode: Using browser-based rendering for page ${pageNumber}`)
-
-    try {
-      // Get PDF buffer from the document
-      const pdfDoc = this.decomposer.pdfDoc
-      const pdfBuffer = Buffer.from(await pdfDoc.getData())
-
-      const renderer = getPuppeteerRenderer()
-
-      // Render page using Puppeteer with configurable quality settings
-      const renderResult = await renderer.renderPdfPageWithPdfJs(
-        pdfBuffer,
-        pageNumber,
-        path.join(outputDir, imageFilename),
-        {
-          width: Math.round(Math.min(width, this.imageWidth)),  // Configurable width
-          quality: this.imageQuality,                           // Configurable quality
-          format: 'jpeg',
-          scale: 1.5                                           // Higher scale for crisp images
-        }
-      )
-
-      // Create thumbnail with better quality
-      await renderer.createThumbnail(
-        path.join(outputDir, imageFilename),
-        path.join(outputDir, thumbFilename),
-        150,  // Larger thumbnail
-        80    // Better thumbnail quality
-      )
-
-      // Extract elements (text and structural data)
-      const elements: any[] = [
-        ...await this.extractTextElements(pdfPage, pageIndex),
-        // Conditionally extract embedded images if enabled
-        ...(this.extractEmbeddedImages ? await this.extractImageElements(pdfPage, pageIndex, outputDir) : [])
-      ]
-
-      return {
-        pageIndex,
-        pageNumber,
-        width: renderResult.width,
-        height: renderResult.height,
-        title,
-        image: imageFilename,
-        thumbnail: thumbFilename,
-        elements
-      }
-
-    } catch (error) {
-      console.error(`❌ Puppeteer rendering failed for page ${pageNumber}:`, error)
-      // Fall back to placeholder mode
-      console.log(`📋 Falling back to placeholder mode for page ${pageNumber}`)
+    // Create placeholder files if image generation is enabled
+    if (this.generateImages) {
+      console.log(`📋 Creating placeholder images for page ${pageNumber}`)
       this.createPlaceholderImage(path.join(outputDir, imageFilename), width, height, pageNumber, false)
       this.createPlaceholderImage(path.join(outputDir, thumbFilename), 120, 160, pageNumber, true)
-
-      const elements: any[] = [
-        ...await this.extractTextElements(pdfPage, pageIndex),
-        // Conditionally extract embedded images if enabled (even in fallback mode)
-        ...(this.extractEmbeddedImages ? await this.extractImageElements(pdfPage, pageIndex, outputDir) : [])
-      ]
-
-      return {
-        pageIndex,
-        pageNumber,
-        width,
-        height,
-        title,
-        image: imageFilename,
-        thumbnail: thumbFilename,
-        elements
-      }
     }
+
+    return result
   }
 
-  // Use pdfPage.extractImages() for image extraction, like the old implementation
+  // Use universal image extraction (works in both Node.js and Browser)
   private async extractImageElements(pdfPage: any, pageIndex: number, outputDir: string): Promise<any[]> {
     if (this.skipParser) { return [] }
-    const items = await pdfPage.extractImages()
-    return Promise.all(items.map(async ({ boundingBox, data, objectId, contentType: _contentType }: any) => {
-      let buffer: Buffer
-      if (typeof Buffer !== 'undefined' && data instanceof Buffer) {
-        buffer = data
-      } else if (data instanceof Uint8Array) {
-        buffer = Buffer.from(data)
-      } else if (data.arrayBuffer) {
-        buffer = Buffer.from(await data.arrayBuffer())
-      } else {
-        throw new Error('Unknown image data type')
+    
+    try {
+      console.log(`🔧 Using universal image extraction for page ${pageIndex + 1}`)
+      const extractor = new PdfImageExtractor()
+      const universalImages = await extractor.extractImagesFromPage(pdfPage)
+      
+      // Save extracted images to files (Node.js) or keep as data URLs (Browser)
+      const imageElements: any[] = []
+      for (const img of universalImages) {
+        try {
+          let dataReference = img.data // Default to data URL
+          
+          // In Node.js environment, optionally save to file
+          if (typeof process !== 'undefined' && process.versions && process.versions.node && outputDir) {
+            try {
+              // Convert base64 to buffer and save
+              const base64Data = img.data.split(',')[1]
+              if (base64Data) {
+                const buffer = Buffer.from(base64Data, 'base64')
+                const fileName = `${img.id}.png`
+                const filePath = path.join(outputDir, fileName)
+                fs.writeFileSync(filePath, buffer)
+                dataReference = fileName // Use file reference for Node.js
+                console.log(`    💾 Saved to file: ${fileName}`)
+              }
+            } catch (saveError) {
+              console.warn(`Failed to save image ${img.id} to file, keeping as data URL:`, saveError)
+              // Keep as data URL if file save fails
+            }
+          }
+          
+          imageElements.push({
+            id: img.id,
+            pageIndex,
+            type: 'image',
+            boundingBox: [0, 0, img.width, img.height], // Default bbox
+            data: dataReference,
+            attributes: { 
+              type: 'embedded',
+              width: img.width,
+              height: img.height,
+              format: img.format,
+              originalId: img.id,
+              scaled: img.scaled,
+              scaleFactor: img.scaleFactor,
+              extraction: 'universal'
+            }
+          })
+        } catch (processError) {
+          console.warn(`Failed to process image ${img.id}:`, processError)
+        }
       }
-      const fileName = `${objectId}.png`
-      const filePath = path.join(outputDir, fileName)
-      fs.writeFileSync(filePath, buffer)
-      const attributes = { type: 'spacing' }
-      return {
-        id: uuidv4(),
-        pageIndex,
-        type: 'image',
-        boundingBox,
-        data: fileName,
-        attributes
+      
+      return imageElements
+    } catch (error) {
+      console.warn(`Universal image extraction failed for page ${pageIndex + 1}:`, error)
+      
+      // Fallback to legacy extraction (Node.js only)
+      if (typeof process !== 'undefined' && process.versions && process.versions.node) {
+        console.log(`📋 Falling back to legacy image extraction for page ${pageIndex + 1}`)
+        try {
+          const items = await pdfPage.extractImages()
+          return Promise.all(items.map(async ({ boundingBox, data, objectId, contentType: _contentType }: any) => {
+            let buffer: Buffer
+            if (typeof Buffer !== 'undefined' && data instanceof Buffer) {
+              buffer = data
+            } else if (data instanceof Uint8Array) {
+              buffer = Buffer.from(data)
+            } else if (data.arrayBuffer) {
+              buffer = Buffer.from(await data.arrayBuffer())
+            } else {
+              throw new Error('Unknown image data type')
+            }
+            const fileName = `${objectId}.png`
+            const filePath = path.join(outputDir, fileName)
+            fs.writeFileSync(filePath, buffer)
+            const attributes = { type: 'legacy' }
+            return {
+              id: uuidv4(),
+              pageIndex,
+              type: 'image',
+              boundingBox,
+              data: fileName,
+              attributes
+            }
+          }))
+        } catch (legacyError) {
+          console.warn('Legacy extraction also failed:', legacyError)
+          return []
+        }
       }
-    }))
+      
+      return []
+    }
   }
 
   // Real text extraction using PDF.js getTextContent

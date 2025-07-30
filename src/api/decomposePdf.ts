@@ -1,4 +1,6 @@
 import fs from 'fs'
+import path from 'path'
+import '../utils/DOMMatrixPolyfill.js' // Polyfill for Node.js PDF.js compatibility
 import { Package, PdfDecomposer } from '../core/PdfDecomposer.js'
 import { PdfDocument } from '../core/PdfDocument.js'
 import type { PdfPageContent } from '../models/PdfPageContent.js'
@@ -60,7 +62,7 @@ export async function decomposePdf(
     const pdfDoc = await loadPdfDocument(filePath)
 
     // Prepare output package
-    const outDir = options.assetPath || filePath
+    const outDir = options.assetPath || path.dirname(filePath)
     const pkg: Package = { pkgDir: new LocalPackageDir(outDir), pages: [] }
 
     const composer = new PdfDecomposer(
@@ -133,7 +135,7 @@ async function loadPdfDocument(filePath: string): Promise<PdfDocument> {
       throw new InvalidPdfError(`File not found: ${filePath}`)
     }
 
-    const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.js')
+    const pdfjsLib = await import('pdfjs-dist')
     const { getDocument } = pdfjsLib.default || pdfjsLib
 
     if (!getDocument) {

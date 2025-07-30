@@ -1,9 +1,16 @@
 {
   "name": "pdf-decomposer",
-  "version": "0.0.1",
-  "description": "A TypeScript Node.js library to parse all PDF page content (text, images, annotations, etc.) into JSON format.",
+  "version": "1.2.0",
+  "description": "A powerful PDF text and image extraction library with universal browser and Node.js support",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
   "files": [
     "dist"
   ],
@@ -14,8 +21,7 @@
     "build": "tsc",
     "prepare": "npm run build",
     "prepublishOnly": "npm run build && npm test",
-    "test": "npx tsx scripts/comprehensive-test.ts",
-    "test:usage": "tsx scripts/usage-test.ts",
+    "test": "npx tsx scripts/test.ts",
     "lint": "eslint . --ext .ts"
   },
   "repository": {
@@ -26,7 +32,12 @@
     "pdf",
     "parser",
     "typescript",
-    "json"
+    "json",
+    "browser",
+    "angular",
+    "react",
+    "vue",
+    "image-extraction"
   ],
   "author": "Febby Rachmat G<febby.rachmat@gmail.com>",
   "license": "MIT",
@@ -35,16 +46,14 @@
   },
   "homepage": "https://github.com/febbyRG/pdf-decomposer#readme",
   "dependencies": {
-    "canvas": "^2.11.2",
     "change-case": "^5.4.4",
     "md5": "^2.3.0",
     "param-case": "^3.0.4",
-    "pdfjs-dist": "^3.11.174",
-    "puppeteer": "^24.11.1",
+    "pdfjs-dist": "^5.4.54",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
-    "@types/node": "^24.0.4",
+    "@types/node": "^24.1.0",
     "@typescript-eslint/eslint-plugin": "^8.35.0",
     "@typescript-eslint/parser": "^8.35.0",
     "eslint": "^9.29.0",

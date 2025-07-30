@@ -1,6 +1,6 @@
 
 // Improved PdfPage with proper types and error handling
-import pkg from 'pdfjs-dist'
+import * as pdfjs from 'pdfjs-dist'
 import type {
   BoundingBox,
   ImageData,
@@ -10,7 +10,6 @@ import type {
   RenderParameters,
   ViewportParameters
 } from '../types/pdf.types.js'
-import { CanvasManager } from '../utils/CanvasManager.js'
 import { ValidationUtils } from '../utils/ValidationUtils.js'
 import { PdfDocument } from './PdfDocument.js'
 import { PdfOperatorFilter } from './PdfOperator.js'
@@ -18,9 +17,8 @@ import { PdfOperatorList } from './PdfOperatorList.js'
 import { PdfOperatorSelectionFn } from './PdfOperatorSelection.js'
 import { Operators } from './PdfOperatorTransforms.js'
 import { PdfTextEvaluator } from './PdfTextEvaluator.js'
-import { transformImageToArray } from './PdfUtil.js'
 
-const { Util } = pkg
+const { Util } = (pdfjs as any)
 
 // Legacy export for backwards compatibility
 export type PdfRenderOptions = RenderOptions
@@ -145,116 +143,33 @@ export class PdfPage {
     const angleSin = angle === 0 ? 0 : Math.sin(angle)
     const left = tx[4] + height * angleSin
     const top = tx[5] - height * angleCos
-    const [x1, y1, x2, y2] = angle === 0
-      ? [left, top, left + width, top + height]
-      : Util.getAxialAlignedBoundingBox([0, 0, width, height], [angleCos, angleSin, -angleSin, angleCos, left, top])
+    
+    let bbox: number[]
+    if (angle === 0) {
+      bbox = [left, top, left + width, top + height]
+    } else {
+      bbox = []
+      Util.axialAlignedBoundingBox([0, 0, width, height], [angleCos, angleSin, -angleSin, angleCos, left, top], bbox)
+    }
+    
+    const [x1, y1, x2, y2] = bbox
     return { top: y1, right: x2, bottom: y2, left: x1, width: x2 - x1, height: y2 - y1 }
   }
 
-  async imageToBlob({ objectId, width, height }: { objectId: string; width: number; height: number }): Promise<Buffer> {
+  async imageToBlob({ objectId, width: _width, height: _height }: { objectId: string; width: number; height: number }): Promise<Buffer> {
     ValidationUtils.validateObjectId(objectId)
-
-    // Apply aggressive memory safety for large images
-    const MAX_IMAGE_SIZE = 1024
-    const scale = Math.min(MAX_IMAGE_SIZE / Math.max(width, height), 1)
-    const safeWidth = Math.max(1, Math.floor(width * scale))
-    const safeHeight = Math.max(1, Math.floor(height * scale))
-
-    return CanvasManager.withCanvas(safeWidth, safeHeight, async (canvas, context) => {
-      const image = this.getObject(objectId)
-      if (!image) {
-        throw new Error(`Image object not found: ${objectId}`)
-      }
-
-      try {
-        const data = transformImageToArray(image)
-
-        // For very large images, skip canvas operations and return a minimal placeholder
-        if (width * height > 2000000) { // 2 megapixels
-          console.warn(`⚠️  Skipping large image ${objectId} (${width}x${height}) to prevent OOM`)
-          // Create a small placeholder image
-          context.fillStyle = '#f0f0f0'
-          context.fillRect(0, 0, safeWidth, safeHeight)
-          context.fillStyle = '#999'
-          context.font = '12px Arial'
-          context.fillText('Large Image', 10, 20)
-          return CanvasManager.canvasToBuffer(canvas, 'image/png', 30)
-        }
-
-        // Create image data with scaled dimensions
-        const imageData = context.createImageData(safeWidth, safeHeight)
-
-        // If we're scaling down, we need to sample the original data
-        if (scale < 1) {
-          const originalWidth = image.width
-
-          for (let y = 0; y < safeHeight; y++) {
-            for (let x = 0; x < safeWidth; x++) {
-              const srcX = Math.floor(x / scale)
-              const srcY = Math.floor(y / scale)
-              const srcIndex = (srcY * originalWidth + srcX) * 4
-              const destIndex = (y * safeWidth + x) * 4
-
-              imageData.data[destIndex] = data[srcIndex] || 0
-              imageData.data[destIndex + 1] = data[srcIndex + 1] || 0
-              imageData.data[destIndex + 2] = data[srcIndex + 2] || 0
-              imageData.data[destIndex + 3] = data[srcIndex + 3] || 255
-            }
-          }
-        } else {
-          // Use original data if no scaling needed
-          imageData.data.set(data.slice(0, imageData.data.length))
-        }
-
-        context.putImageData(imageData, 0, 0)
-        return CanvasManager.canvasToBuffer(canvas, 'image/png', 40) // Lower quality
-      } catch (error) {
-        console.warn(`⚠️  Failed to process image ${objectId}, creating placeholder:`, error)
-        // Create error placeholder
-        context.fillStyle = '#ffeeee'
-        context.fillRect(0, 0, safeWidth, safeHeight)
-        context.fillStyle = '#cc0000'
-        context.font = '10px Arial'
-        context.fillText('Error', 5, 15)
-        return CanvasManager.canvasToBuffer(canvas, 'image/png', 30)
-      }
-    })
+    
+    // Canvas-free implementation: return empty buffer with warning
+    console.warn(`⚠️ imageToBlob method disabled in Canvas-free mode (objectId: ${objectId})`)
+    return Buffer.alloc(0)
   }
 
   async renderBlob(options: RenderOptions = {}): Promise<Buffer> {
     ValidationUtils.validateRenderOptions(options)
-
-    // Apply ultra-aggressive memory-safe defaults for large PDFs
-    const baseWidth = Math.min(this.viewport.width, 500) // Further reduced from 800
-    const safeOptions = {
-      type: 'image/jpeg' as const,
-      quality: 25, // Much lower quality
-      width: baseWidth,
-      ...options
-    }
-
-    // Further reduce size if we detect high memory pressure
-    const { MemoryManager } = await import('../utils/MemoryManager.js')
-    const stats = MemoryManager.getMemoryStats()
-    if (stats.used > 80) { // Lower threshold at 80MB
-      safeOptions.width = Math.min(safeOptions.width, 300)
-      safeOptions.quality = Math.min(safeOptions.quality, 20)
-      console.log(`⚡ Memory pressure detected (${stats.used}MB), using minimal rendering`)
-    }
-
-    const scale = safeOptions.width / this.view.width
-    const viewport = this.getViewport({ scale })
-
-    return CanvasManager.withCanvas(viewport.width, viewport.height, async (canvas, canvasContext) => {
-      await this.render({ canvasContext, viewport })
-
-      // Force cleanup of render context
-      if (canvasContext && typeof canvasContext.reset === 'function') {
-        canvasContext.reset()
-      }
-
-      return CanvasManager.canvasToBuffer(canvas, safeOptions.type, safeOptions.quality)
-    })
+    
+    // Canvas-free implementation: return empty buffer with warning  
+    console.warn('⚠️ renderBlob method disabled in Canvas-free mode')
+    return Buffer.alloc(0)
   }
 
   async extractText() {

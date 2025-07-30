@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "es2022",
-    "lib": ["es2022"],
+    "lib": ["es2022", "es2024", "DOM", "DOM.Iterable"],
     "module": "nodenext",
     "outDir": "dist",
     "moduleResolution": "nodenext",
@@ -20,6 +20,6 @@
     },
     "typeRoots": ["./types", "./node_modules/@types"]
   },
-  "include": ["src/**/*", "scripts/**/*"],
-  "exclude": ["node_modules", "dist", "test"]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "test", "scripts"]
 }
