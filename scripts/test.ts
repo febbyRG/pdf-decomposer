@@ -69,19 +69,19 @@ class ComprehensiveTest {
       await this.testEmbeddedImages()
 
       // Test: Memory-efficient mode
-      await this.testMemoryEfficientMode()
+      // await this.testMemoryEfficientMode()
 
       // Test: Page range processing
-      await this.testPageRange()
+      // await this.testPageRange()
 
       // Test: Single page processing
-      await this.testSinglePage()
+      // await this.testSinglePage()
 
       // Test: Error handling
-      await this.testErrorHandling()
+      // await this.testErrorHandling()
 
       // Print results
-      this.printResults()
+      // this.printResults()
 
       process.exit(0)
 

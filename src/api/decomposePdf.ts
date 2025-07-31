@@ -118,7 +118,7 @@ export async function decomposePdf(
     // Apply minify option if requested
     if (options.minify) {
       console.log('🗜️ Applying minify option...')
-      return pkg.pages.map(minifyPageContent)
+      return minifyPagesData(pkg.pages)
     }
 
     return pkg.pages
@@ -187,15 +187,45 @@ class MemoryPackageDir {
 }
 
 /**
- * Minify page content for smaller output
+ * Minify pages data for smaller output
  */
-function minifyPageContent(page: PdfPageContent): PdfPageContent {
-  return {
-    ...page,
-    elements: page.elements?.map((element: any) => ({
-      type: element.type,
-      data: element.data,
-      ...(element.boundingBox && { boundingBox: element.boundingBox })
-    })) || []
-  }
+function minifyPagesData(pages: PdfPageContent[]): any[] {
+  return pages.map(page => {
+    const minifiedPage: any = {
+      pageIndex: page.pageIndex,
+      width: Math.round(page.width),
+      height: Math.round(page.height),
+      title: page.title,
+      elements: page.elements.map(element => {
+        const minifiedElement: any = {
+          type: element.type,
+          data: element.data
+        }
+
+        // Simplify boundingBox format
+        if (element.boundingBox) {
+          if (Array.isArray(element.boundingBox)) {
+            // Convert [x, y, width, height] format to [top, left, width, height]
+            minifiedElement.boundingBox = element.boundingBox
+          } else if (typeof element.boundingBox === 'object') {
+            // Convert {top, left, width, height} format to [top, left, width, height]
+            const bbox = element.boundingBox as any
+            minifiedElement.boundingBox = [Math.round(bbox.top || 0), Math.round(bbox.left || 0), Math.round(bbox.width || 0), Math.round(bbox.height || 0)]
+          }
+        }
+
+        // Handle special type mapping
+        if (element.attributes?.type) {
+          // Map specific types like 'h1', 'h2', etc from attributes
+          if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(element.attributes.type)) {
+            minifiedElement.type = element.attributes.type
+          }
+        }
+
+        return minifiedElement
+      })
+    }
+
+    return minifiedPage
+  })
 }
