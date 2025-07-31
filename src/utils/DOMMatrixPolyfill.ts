@@ -1,15 +1,30 @@
 /**
- * DOMMatrix, Promise.withResolvers, structuredClone, and ReadableStream polyfills for Node.js environment
+ * DOMMatrix, Promise.withResolvers, Promise.allSettled, structuredClone, and ReadableStream polyfills for Node.js environment
  * Provides minimal implementations to make PDF.js work without Canvas
  */
+
+// Promise.allSettled polyfill for Node.js < 12.9
+if (typeof Promise.allSettled === 'undefined') {
+  Promise.allSettled = function (promises: Promise<any>[]) {
+    return Promise.all(
+      promises.map(promise =>
+        Promise.resolve(promise)
+          .then(value => ({ status: 'fulfilled' as const, value }))
+          .catch(reason => ({ status: 'rejected' as const, reason }))
+      )
+    )
+  }
+  console.log('✅ Promise.allSettled polyfill installed for Node.js environment')
+}
 
 // ReadableStream polyfill for Node.js < 18
 if (typeof globalThis.ReadableStream === 'undefined') {
   class ReadableStreamPolyfill {
-    private _locked: boolean = false
+    private _locked = false
+    private _reader: any = null
 
-    constructor(_source?: any) {
-      // Simple constructor - just initialize
+    constructor(private _source?: any) {
+      // Initialize with source if provided
     }
 
     getReader() {
@@ -18,14 +33,21 @@ if (typeof globalThis.ReadableStream === 'undefined') {
       }
       this._locked = true
 
-      return {
+      const reader = {
         read: async () => {
+          // For PDF.js compatibility, we need to return proper stream chunks
           return { done: true, value: undefined }
         },
         releaseLock: () => {
           this._locked = false
-        }
+          this._reader = null
+        },
+        cancel: () => Promise.resolve(),
+        closed: Promise.resolve()
       }
+
+      this._reader = reader
+      return reader
     }
 
     cancel() {
@@ -78,30 +100,30 @@ if (typeof (Promise as any).withResolvers === 'undefined') {
 // DOMMatrix polyfill for Node.js environment
 if (typeof globalThis.DOMMatrix === 'undefined') {
   class DOMMatrix {
-    a: number = 1
-    b: number = 0
-    c: number = 0
-    d: number = 1
-    e: number = 0
-    f: number = 0
-    m11: number = 1
-    m12: number = 0
-    m13: number = 0
-    m14: number = 0
-    m21: number = 0
-    m22: number = 1
-    m23: number = 0
-    m24: number = 0
-    m31: number = 0
-    m32: number = 0
-    m33: number = 1
-    m34: number = 0
-    m41: number = 0
-    m42: number = 0
-    m43: number = 0
-    m44: number = 1
-    is2D: boolean = true
-    isIdentity: boolean = true
+    a = 1
+    b = 0
+    c = 0
+    d = 1
+    e = 0
+    f = 0
+    m11 = 1
+    m12 = 0
+    m13 = 0
+    m14 = 0
+    m21 = 0
+    m22 = 1
+    m23 = 0
+    m24 = 0
+    m31 = 0
+    m32 = 0
+    m33 = 1
+    m34 = 0
+    m41 = 0
+    m42 = 0
+    m43 = 0
+    m44 = 1
+    is2D = true
+    isIdentity = true
 
     constructor(init?: string | number[]) {
       if (init) {

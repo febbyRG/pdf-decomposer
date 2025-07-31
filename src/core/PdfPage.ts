@@ -143,7 +143,7 @@ export class PdfPage {
     const angleSin = angle === 0 ? 0 : Math.sin(angle)
     const left = tx[4] + height * angleSin
     const top = tx[5] - height * angleCos
-    
+
     let bbox: number[]
     if (angle === 0) {
       bbox = [left, top, left + width, top + height]
@@ -151,14 +151,14 @@ export class PdfPage {
       bbox = []
       Util.axialAlignedBoundingBox([0, 0, width, height], [angleCos, angleSin, -angleSin, angleCos, left, top], bbox)
     }
-    
+
     const [x1, y1, x2, y2] = bbox
     return { top: y1, right: x2, bottom: y2, left: x1, width: x2 - x1, height: y2 - y1 }
   }
 
   async imageToBlob({ objectId, width: _width, height: _height }: { objectId: string; width: number; height: number }): Promise<Buffer> {
     ValidationUtils.validateObjectId(objectId)
-    
+
     // Canvas-free implementation: return empty buffer with warning
     console.warn(`⚠️ imageToBlob method disabled in Canvas-free mode (objectId: ${objectId})`)
     return Buffer.alloc(0)
@@ -166,8 +166,8 @@ export class PdfPage {
 
   async renderBlob(options: RenderOptions = {}): Promise<Buffer> {
     ValidationUtils.validateRenderOptions(options)
-    
-    // Canvas-free implementation: return empty buffer with warning  
+
+    // Canvas-free implementation: return empty buffer with warning
     console.warn('⚠️ renderBlob method disabled in Canvas-free mode')
     return Buffer.alloc(0)
   }
@@ -179,7 +179,9 @@ export class PdfPage {
   }
 
   getTextContent() {
-    return this.proxy.getTextContent()
+    // Fix for pdfjs-dist@2.6.347: getTextContent() needs options parameter
+    // Use type assertion to handle runtime vs compile-time API differences
+    return (this.proxy as any).getTextContent({ normalizeWhitespace: false })
   }
 
   get title() { return `Page ${this.proxy.pageNumber}` }

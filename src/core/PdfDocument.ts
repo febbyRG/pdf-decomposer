@@ -12,7 +12,8 @@ export class PdfDocument {
   async process(onProgress?: (event: { loaded: number, total: number }) => void) {
     for (let pageNumber = 1; pageNumber <= this.proxy.numPages; pageNumber += 1) {
       const proxy = await this.proxy.getPage(pageNumber)
-      const operators = await proxy.getOperatorList()
+      // Fix for pdfjs-dist@2.6.347: getOperatorList() needs intent parameter
+      const operators = await proxy.getOperatorList({ intent: 'display' })
       const list = new PdfOperatorList(operators)
       const scale = this.scale ?? 1024 / (proxy.view[3] - proxy.view[1])
       const page = new PdfPage(this, proxy, list, scale)

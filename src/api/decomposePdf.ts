@@ -1,4 +1,6 @@
-import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.js'
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore - ES5 build doesn't have TypeScript declarations
+import * as pdfjsLib from 'pdfjs-dist/es5/build/pdf.js'
 import { Package, PdfDecomposer } from '../core/PdfDecomposer.js'
 import { PdfDocument } from '../core/PdfDocument.js'
 import type { PdfPageContent } from '../models/PdfPageContent.js'

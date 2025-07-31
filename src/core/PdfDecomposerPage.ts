@@ -165,7 +165,8 @@ export class PdfDecomposerPage {
 
   // Real text extraction using PDF.js getTextContent
   private async extractTextElements(pdfPage: any, pageIndex: number): Promise<any[]> {
-    const textContent = await pdfPage.getTextContent()
+    // Fix for pdfjs-dist@2.6.347: getTextContent() needs options parameter
+    const textContent = await pdfPage.getTextContent({ normalizeWhitespace: false })
     const viewport = pdfPage.getViewport({ scale: 1 })
     const pageHeight = viewport.height
 
