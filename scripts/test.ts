@@ -2,7 +2,7 @@
 
 /**
  * PDF-Decomposer Comprehensive Test Suite
- * 
+ *
  * Tests all major functionality including:
  * - Text extraction
  * - Image extraction (embedded)
@@ -11,9 +11,9 @@
  * - Node.js 20 compatibility
  */
 
-import { existsSync, rmSync, mkdirSync, writeFileSync, readdirSync, statSync } from 'node:fs'
-import { join, dirname, basename } from 'node:path'
+import { existsSync, mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
+import { basename, dirname, join } from 'node:path'
 import { decomposePdf } from '../src/index.js'
 
 const require = createRequire(import.meta.url)
@@ -34,7 +34,7 @@ class ComprehensiveTest {
   private results: TestResult[] = []
   private baseOutputDir: string
   private pdfPath: string
-  private pdfFile: string = 'test.pdf'
+  private pdfFile: string = 'demo.pdf'
 
   constructor(customPdfPath?: string) {
     this.baseOutputDir = join(__dirname, 'scripts', 'test-output')
@@ -61,7 +61,7 @@ class ComprehensiveTest {
       // Test: Memory-efficient mode
       // await this.testMemoryEfficientMode()
 
-      // Test: Page range processing  
+      // Test: Page range processing
       // await this.testPageRange()
 
       // Test: Single page processing
@@ -96,7 +96,7 @@ class ComprehensiveTest {
       const duration = Date.now() - startTime
       const textElements = result.reduce((acc: any[], page: any) =>
         acc.concat(page.textElements || []), [])
-      
+
       this.results.push({
         name: testName,
         passed: result.length > 0,
@@ -128,10 +128,11 @@ class ComprehensiveTest {
 
       const outputDir = join(this.baseOutputDir, 'embedded-images')
       mkdirSync(outputDir, { recursive: true })
-      
+
       const options = {
         elementComposer: true,
-        pageComposer: true
+        pageComposer: true,
+        minify: true
       }
 
       const result = await decomposePdf(this.pdfPath, {
@@ -142,24 +143,24 @@ class ComprehensiveTest {
       })
 
       const duration = Date.now() - startTime
-            const embeddedImages = result.reduce((acc: any[], page: any) =>
+      const embeddedImages = result.reduce((acc: any[], page: any) =>
         acc.concat(page.embeddedImages || []), [])
-      
+
       console.log(`   📊 Processing completed: ${result.length} pages, images found`)
-      
+
       // Save embedded images to files and analyze
       let savedImages = 0
       const imageAnalysis: any[] = []
-      
+
       for (let i = 0; i < result.length; i++) {
         const page = result[i]
         const pageNum = page.pageNumber || (i + 1)
         const imageElements = page.elements?.filter((e: any) => e.type === 'image') || []
-        
+
         if (imageElements.length > 0) {
           console.log(`   📸 Page ${pageNum}: Found ${imageElements.length} embedded images`)
         }
-        
+
         for (let j = 0; j < imageElements.length; j++) {
           const imageElement = imageElements[j]
           const analysis = {
@@ -175,9 +176,9 @@ class ComprehensiveTest {
             scaleFactor: imageElement.attributes?.scaleFactor
           }
           imageAnalysis.push(analysis)
-          
+
           console.log(`      ✅ ${analysis.id}: ${analysis.width}x${analysis.height} (${analysis.format}) - ${(analysis.dataSize / 1024).toFixed(1)}KB ${analysis.scaled ? `[scaled ${(analysis.scaleFactor * 100).toFixed(1)}%]` : ''}`)
-          
+
           if (imageElement.data && imageElement.data.startsWith('data:image/')) {
             try {
               const base64Data = imageElement.data.split(',')[1]
@@ -214,7 +215,7 @@ class ComprehensiveTest {
 
       // Test passes if we extract at least some images successfully
       const testPassed = embeddedImageCount > 0 && totalSavedFiles > 0
-      
+
       this.results.push({
         name: testName,
         passed: testPassed,
@@ -246,7 +247,7 @@ class ComprehensiveTest {
         images: imageAnalysis,
         assetFiles: directAssetImages
       }, null, 2))
-      
+
       // Save complete decomposePdf result for analysis
       const resultPath = join(outputDir, 'result.json')
       writeFileSync(resultPath, JSON.stringify(result, null, 2), 'utf-8')

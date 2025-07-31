@@ -1,10 +1,10 @@
 import fs from 'fs'
 import path from 'path'
-import '../utils/DOMMatrixPolyfill.js' // Polyfill for Node.js PDF.js compatibility
 import { Package, PdfDecomposer } from '../core/PdfDecomposer.js'
 import { PdfDocument } from '../core/PdfDocument.js'
 import type { PdfPageContent } from '../models/PdfPageContent.js'
 import { InvalidPdfError, PdfProcessingError } from '../types/pdf.types.js'
+import '../utils/DOMMatrixPolyfill.js' // Polyfill for Node.js PDF.js compatibility
 import { ValidationUtils } from '../utils/ValidationUtils.js'
 
 export interface DecomposeOptions {
@@ -17,6 +17,7 @@ export interface DecomposeOptions {
   readonly pageComposer?: boolean // Combine pages with continuous content flow (default: false)
   readonly imageWidth?: number // Width for rendered page images (default: 1200)
   readonly imageQuality?: number // JPEG quality for page images (default: 90)
+  readonly minify?: boolean // Simplify return data from decomposePdf (default: false)
 }
 
 
@@ -34,6 +35,7 @@ export interface DecomposeOptions {
  * @param options.pageComposer Combine pages with continuous content flow (default: false)
  * @param options.imageWidth Width for rendered page images (default: 1200)
  * @param options.imageQuality JPEG quality for page images (default: 90)
+ * @param options.minify Simplify return data from decomposePdf (default: false)
  * @returns Array of PDFPageContent objects for each page in the specified range
  * @throws {InvalidPdfError} if the file cannot be read or parsed, or if page range is invalid
  * @throws {PdfProcessingError} if processing fails
@@ -99,7 +101,8 @@ export async function decomposePdf(
 
     await composer.decompose(startPage, endPage)
 
-    return composer.pkg.pages
+    const pages = composer.pkg.pages
+    return options.minify ? minifyPagesData(pages) : pages
   } catch (error) {
     if (error instanceof InvalidPdfError || error instanceof PdfProcessingError) {
       throw error
@@ -112,6 +115,52 @@ export async function decomposePdf(
       error as Error
     )
   }
+}
+
+/**
+ * Minify pages data by removing unnecessary properties and simplifying structure
+ * @param pages Array of PdfPageContent to minify
+ * @returns Minified version of pages data
+ */
+function minifyPagesData(pages: PdfPageContent[]): any[] {
+  return pages.map(page => {
+    const minifiedPage: any = {
+      pageIndex: page.pageIndex,
+      width: Math.round(page.width),
+      height: Math.round(page.height),
+      title: page.title,
+      elements: page.elements.map(element => {
+        const minifiedElement: any = {
+          type: element.type,
+          data: element.data
+        }
+
+        // Simplify boundingBox format
+        if (element.boundingBox) {
+          if (Array.isArray(element.boundingBox)) {
+            // Convert [x, y, width, height] format to [top, left, width, height]
+            minifiedElement.boundingBox = element.boundingBox
+          } else if (typeof element.boundingBox === 'object') {
+            // Convert {top, left, width, height} format to [top, left, width, height]
+            const bbox = element.boundingBox as any
+            minifiedElement.boundingBox = [Math.round(bbox.top || 0), Math.round(bbox.left || 0), Math.round(bbox.width || 0), Math.round(bbox.height || 0)]
+          }
+        }
+
+        // Handle special type mapping
+        if (element.attributes?.type) {
+          // Map specific types like 'h1', 'h2', etc from attributes
+          if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(element.attributes.type)) {
+            minifiedElement.type = element.attributes.type
+          }
+        }
+
+        return minifiedElement
+      })
+    }
+
+    return minifiedPage
+  })
 }
 
 class LocalPackageDir {
