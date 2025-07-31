@@ -11,7 +11,7 @@
  * - Node.js 16+ compatibility
  */
 
-import { existsSync, mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from 'fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'fs'
 import { basename, join } from 'path'
 import { decomposePdf } from '../dist/index'
 
@@ -35,6 +35,10 @@ class ComprehensiveTest {
   constructor(customPdfPath?: string) {
     this.baseOutputDir = join(__dirname, 'test-output')
     this.pdfPath = customPdfPath || join(__dirname, 'test-input', this.pdfFile)
+  }
+
+  private readPdfBuffer(): Buffer {
+    return readFileSync(this.pdfPath)
   }
 
   async run() {
@@ -65,19 +69,19 @@ class ComprehensiveTest {
       await this.testEmbeddedImages()
 
       // Test: Memory-efficient mode
-      // await this.testMemoryEfficientMode()
+      await this.testMemoryEfficientMode()
 
       // Test: Page range processing
-      // await this.testPageRange()
+      await this.testPageRange()
 
       // Test: Single page processing
-      // await this.testSinglePage()
+      await this.testSinglePage()
 
       // Test: Error handling
-      // await this.testErrorHandling()
+      await this.testErrorHandling()
 
       // Print results
-      // this.printResults()
+      this.printResults()
 
       process.exit(0)
 
@@ -94,7 +98,8 @@ class ComprehensiveTest {
     try {
       console.log(`🔄 Running: ${testName}...`)
 
-      const result = await decomposePdf(this.pdfPath, {
+      const pdfBuffer = this.readPdfBuffer()
+      const result = await decomposePdf(pdfBuffer, {
         generateImages: false,        // No Canvas-based page rendering
         extractEmbeddedImages: false  // Text only
       })
@@ -141,22 +146,20 @@ class ComprehensiveTest {
         minify: true
       }
 
-      const result = await decomposePdf(this.pdfPath, {
+      const pdfBuffer = this.readPdfBuffer()
+      const result = await decomposePdf(pdfBuffer, {
         ...options,
         generateImages: false,        // No Canvas-based page rendering
-        extractEmbeddedImages: true,  // Use our PdfImageExtractor with EXACT working logic
-        assetPath: outputDir          // Save images to output directory
+        extractEmbeddedImages: true   // Use our PdfImageExtractor with EXACT working logic
       })
 
       const duration = Date.now() - startTime
-      const embeddedImages = result.reduce((acc: any[], page: any) =>
-        acc.concat(page.embeddedImages || []), [])
 
       console.log(`   📊 Processing completed: ${result.length} pages, images found`)
 
       // Save embedded images to files and analyze
-      let savedImages = 0
       const imageAnalysis: any[] = []
+      const generatedFiles: string[] = []
 
       for (let i = 0; i < result.length; i++) {
         const page = result[i]
@@ -177,80 +180,100 @@ class ComprehensiveTest {
             height: imageElement.attributes?.height || imageElement.height,
             format: imageElement.attributes?.format || imageElement.format,
             hasData: !!imageElement.data,
-            dataSize: imageElement.data ? imageElement.data.length : 0,
+            dataSize: 0,
             scaled: imageElement.attributes?.scaled,
-            scaleFactor: imageElement.attributes?.scaleFactor
+            scaleFactor: imageElement.attributes?.scaleFactor,
+            filename: imageElement.data // This is the filename now
           }
           imageAnalysis.push(analysis)
 
-          console.log(`      ✅ ${analysis.id}: ${analysis.width}x${analysis.height} (${analysis.format}) - ${(analysis.dataSize / 1024).toFixed(1)}KB ${analysis.scaled ? `[scaled ${(analysis.scaleFactor * 100).toFixed(1)}%]` : ''}`)
+          console.log(`      ✅ ${analysis.id}: ${analysis.width}x${analysis.height} (${analysis.format}) - saved as ${analysis.filename} ${analysis.scaled ? `[scaled ${(analysis.scaleFactor * 100).toFixed(1)}%]` : ''}`)
 
-          if (imageElement.data && imageElement.data.startsWith('data:image/')) {
-            try {
-              const base64Data = imageElement.data.split(',')[1]
-              const imageBuffer = Buffer.from(base64Data, 'base64')
-              const format = imageElement.attributes?.format || imageElement.format || 'png'
-              const imagePath = join(outputDir, `${imageElement.id || `page-${pageNum}-image-${j + 1}`}.${format}`)
-              writeFileSync(imagePath, imageBuffer)
-              savedImages++
-              console.log(`      💾 Saved: ${basename(imagePath)} (${(imageBuffer.length / 1024).toFixed(1)}KB)`)
-            } catch (error) {
-              console.error(`      ❌ Failed to save image ${j + 1} from page ${pageNum}:`, error)
+          // Check if the file actually exists (PdfImageExtractor saves them directly)
+          if (imageElement.data && typeof imageElement.data === 'string' && imageElement.data.endsWith('.png')) {
+            // Check in multiple possible locations
+            const possiblePaths = [
+              imageElement.data, // Current working directory
+              join(process.cwd(), imageElement.data), // Explicit current directory
+              join(outputDir, imageElement.data), // Output directory
+              join(__dirname, imageElement.data), // Script directory
+              join(__dirname, 'test-input', imageElement.data) // Test input directory
+            ]
+
+            for (const filePath of possiblePaths) {
+              if (existsSync(filePath)) {
+                const stats = statSync(filePath)
+                analysis.dataSize = stats.size
+                generatedFiles.push(filePath)
+                console.log(`      💾 Found saved file: ${basename(filePath)} (${(stats.size / 1024).toFixed(1)}KB) at ${filePath}`)
+                break
+              }
             }
           }
         }
       }
 
-      // Check for asset files saved directly by decomposePdf
+      // Check for additional asset files in output directory
       const assetFiles = existsSync(outputDir) ? readdirSync(outputDir) : []
       const directAssetImages = assetFiles.filter((file: string) => file.endsWith('.png') || file.endsWith('.jpg') || file.endsWith('.jpeg'))
 
       if (directAssetImages.length > 0) {
-        console.log(`   📁 Found ${directAssetImages.length} saved images:`)
+        console.log(`   📁 Found ${directAssetImages.length} additional saved images in output dir:`)
         directAssetImages.forEach((file: string) => {
           const filePath = join(outputDir, file)
           const stats = statSync(filePath)
           console.log(`     📄 ${file} - ${(stats.size / 1024).toFixed(1)}KB`)
+          generatedFiles.push(filePath)
         })
       }
 
-      const totalSavedFiles = savedImages + directAssetImages.length
+      if (directAssetImages.length > 0) {
+        console.log(`   📁 Found ${directAssetImages.length} additional saved images in output dir:`)
+        directAssetImages.forEach((file: string) => {
+          const filePath = join(outputDir, file)
+          const stats = statSync(filePath)
+          console.log(`     📄 ${file} - ${(stats.size / 1024).toFixed(1)}KB`)
+          generatedFiles.push(filePath)
+        })
+      }
+
       const expectedImages = 12 // Based on our test PDF
-      const embeddedImageCount = totalSavedFiles // Use actual saved files count
+      const embeddedImageCount = imageAnalysis.length // Use actual found images count
       const successRate = embeddedImageCount > 0 ? ((embeddedImageCount / expectedImages) * 100) : 0
 
-      // Test passes if we extract at least some images successfully
-      const testPassed = embeddedImageCount > 0 && totalSavedFiles > 0
+      // Test passes if we extract the expected number of images
+      const testPassed = embeddedImageCount >= expectedImages
 
       this.results.push({
         name: testName,
         passed: testPassed,
         duration,
-        details: `Extracted ${embeddedImageCount}/${expectedImages} embedded images (${successRate.toFixed(1)}% success rate), saved ${totalSavedFiles} files`,
+        details: `Extracted ${embeddedImageCount}/${expectedImages} embedded images (${successRate.toFixed(1)}% success rate), generated ${generatedFiles.length} files`,
         pageCount: result.length,
         embeddedImageCount,
-        outputSize: totalSavedFiles
+        outputSize: generatedFiles.length
       })
 
       if (testPassed) {
-        console.log(`  ✅ Image extraction test PASSED: ${embeddedImages} images found, ${totalSavedFiles} files saved in ${duration}ms`)
-        console.log(`     Success rate: ${successRate.toFixed(1)}% (${embeddedImages}/${expectedImages} images)`)
+        console.log(`  ✅ Image extraction test PASSED: ${embeddedImageCount} images found, ${generatedFiles.length} files generated in ${duration}ms`)
+        console.log(`     Success rate: ${successRate.toFixed(1)}% (${embeddedImageCount}/${expectedImages} images)`)
       } else {
-        console.log(`  ❌ Image extraction test FAILED: Only ${embeddedImageCount} images found, ${totalSavedFiles} files saved`)
+        console.log(`  ❌ Image extraction test FAILED: Only ${embeddedImageCount} images found, ${generatedFiles.length} files generated`)
       }
 
       // Save detailed image analysis
       const analysisPath = join(outputDir, 'image-analysis.json')
       writeFileSync(analysisPath, JSON.stringify({
         summary: {
-          totalImages: embeddedImages,
+          totalImages: embeddedImageCount,
           expectedImages,
           successRate: successRate.toFixed(1),
-          totalFiles: totalSavedFiles,
+          totalFiles: generatedFiles.length,
           processingTime: duration,
           testPassed
         },
         images: imageAnalysis,
+        generatedFiles,
         assetFiles: directAssetImages
       }, null, 2))
 
@@ -279,7 +302,8 @@ class ComprehensiveTest {
     try {
       console.log(`🔄 Running: ${testName}...`)
 
-      const result = await decomposePdf(this.pdfPath, {
+      const pdfBuffer = this.readPdfBuffer()
+      const result = await decomposePdf(pdfBuffer, {
         generateImages: false,
         extractEmbeddedImages: true,
         startPage: 2,
@@ -319,7 +343,8 @@ class ComprehensiveTest {
     try {
       console.log(`🔄 Running: ${testName}...`)
 
-      const result = await decomposePdf(this.pdfPath, {
+      const pdfBuffer = this.readPdfBuffer()
+      const result = await decomposePdf(pdfBuffer, {
         generateImages: false,
         extractEmbeddedImages: true,
         startPage: 1,
@@ -357,21 +382,22 @@ class ComprehensiveTest {
     try {
       console.log(`🔄 Running: ${testName}...`)
 
+      const pdfBuffer = this.readPdfBuffer()
       let errorsCaught = 0
 
       // Test invalid startPage
       try {
-        await decomposePdf(this.pdfPath, { startPage: 0 })
+        await decomposePdf(pdfBuffer, { startPage: 0 })
       } catch { errorsCaught++ }
 
       // Test startPage > endPage
       try {
-        await decomposePdf(this.pdfPath, { startPage: 5, endPage: 3 })
+        await decomposePdf(pdfBuffer, { startPage: 5, endPage: 3 })
       } catch { errorsCaught++ }
 
       // Test startPage beyond document
       try {
-        await decomposePdf(this.pdfPath, { startPage: 100 })
+        await decomposePdf(pdfBuffer, { startPage: 100 })
       } catch { errorsCaught++ }
 
       const duration = Date.now() - startTime

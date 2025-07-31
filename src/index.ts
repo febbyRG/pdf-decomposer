@@ -1,6 +1,5 @@
-// Main API
-export { decomposePdf } from './api/decomposePdf.js'
-export type { DecomposeOptions } from './api/decomposePdf.js'
+// Main API (Buffer-based, works in both Node.js and browser)
+export * from './api/decomposePdf.js'
 
 // Core classes (Node.js environment)
 export * from './core/PdfDocument.js'
@@ -25,8 +24,8 @@ export type {
 
 // Utilities
 export { Logger, logger } from './utils/Logger.js'
-export { ValidationUtils } from './utils/ValidationUtils.js'
 export { MemoryManager } from './utils/MemoryManager.js'
+export { ValidationUtils } from './utils/ValidationUtils.js'
 
 // Configuration
 export { ENV_CONFIG, PDF_CONFIG } from './config/constants.js'

@@ -1,8 +1,8 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import { v4 as uuidv4 } from 'uuid'
-import { PdfImageExtractor } from './PdfImageExtractor.js'
 import type { PdfDecomposer } from './PdfDecomposer.js'
+import { PdfImageExtractor } from './PdfImageExtractor.js'
 
 export class PdfDecomposerPage {
   constructor(
@@ -67,19 +67,19 @@ export class PdfDecomposerPage {
   // Use universal image extraction (works in both Node.js and Browser)
   private async extractImageElements(pdfPage: any, pageIndex: number, outputDir: string): Promise<any[]> {
     if (this.skipParser) { return [] }
-    
+
     try {
       console.log(`🔧 Using universal image extraction for page ${pageIndex + 1}`)
       const extractor = new PdfImageExtractor()
       const universalImages = await extractor.extractImagesFromPage(pdfPage)
-      
+
       // Save extracted images to files (Node.js) or keep as data URLs (Browser)
       const imageElements: any[] = []
       for (const img of universalImages) {
         try {
-          let dataReference = img.data // Default to data URL
-          
-          // In Node.js environment, optionally save to file
+          const dataReference = img.data // Always use data URL for universal compatibility
+
+          // In Node.js environment, optionally save to file but keep data URL for return value
           if (typeof process !== 'undefined' && process.versions && process.versions.node && outputDir) {
             try {
               // Convert base64 to buffer and save
@@ -89,22 +89,22 @@ export class PdfDecomposerPage {
                 const fileName = `${img.id}.png`
                 const filePath = path.join(outputDir, fileName)
                 fs.writeFileSync(filePath, buffer)
-                dataReference = fileName // Use file reference for Node.js
-                console.log(`    💾 Saved to file: ${fileName}`)
+                // Keep dataReference as data URL for universal compatibility
+                console.log(`    💾 Saved to file: ${fileName} (keeping data URL for compatibility)`)
               }
             } catch (saveError) {
               console.warn(`Failed to save image ${img.id} to file, keeping as data URL:`, saveError)
               // Keep as data URL if file save fails
             }
           }
-          
+
           imageElements.push({
             id: img.id,
             pageIndex,
             type: 'image',
             boundingBox: [0, 0, img.width, img.height], // Default bbox
             data: dataReference,
-            attributes: { 
+            attributes: {
               type: 'embedded',
               width: img.width,
               height: img.height,
@@ -119,11 +119,11 @@ export class PdfDecomposerPage {
           console.warn(`Failed to process image ${img.id}:`, processError)
         }
       }
-      
+
       return imageElements
     } catch (error) {
       console.warn(`Universal image extraction failed for page ${pageIndex + 1}:`, error)
-      
+
       // Fallback to legacy extraction (Node.js only)
       if (typeof process !== 'undefined' && process.versions && process.versions.node) {
         console.log(`📋 Falling back to legacy image extraction for page ${pageIndex + 1}`)
@@ -158,7 +158,7 @@ export class PdfDecomposerPage {
           return []
         }
       }
-      
+
       return []
     }
   }
@@ -171,19 +171,19 @@ export class PdfDecomposerPage {
 
     return textContent.items.map((item: any, _: number) => {
       const bbox = this.getTextBoundingBox(item, pageHeight)
-      
+
       // Resolve readable font name from PDF internal ID
       const resolvedFontFamily = this.resolveFontFamily(item.fontName)
-      
+
       const attributes = {
         fontFamily: resolvedFontFamily, // Use resolved font name instead of internal ID
         fontSize: item.transform ? item.transform[0] : undefined,
         textColor: undefined // PDF.js does not provide text color directly
       }
-      
+
       // Generate formatted HTML version based on font attributes
       const formattedData = this.generateFormattedText(item.str, attributes)
-      
+
       return {
         id: uuidv4(),
         pageIndex,
@@ -268,7 +268,7 @@ export class PdfDecomposerPage {
     if (!text) return text
 
     let html = text
-    
+
     // Escape HTML special characters first
     html = html
       .replace(/&/g, '&amp;')
@@ -280,7 +280,7 @@ export class PdfDecomposerPage {
     // Apply formatting based on font attributes
     const fontSize = attributes.fontSize || 0
     const fontFamily = attributes.fontFamily || ''
-    
+
     // Resolve readable font name from PDF internal ID
     const resolvedFontFamily = this.resolveFontFamily(fontFamily)
 
@@ -325,10 +325,10 @@ export class PdfDecomposerPage {
   private isBoldFont(fontName: string): boolean {
     if (!fontName) return false
     const lowerName = fontName.toLowerCase()
-    return lowerName.includes('bold') || 
-           lowerName.includes('black') || 
-           lowerName.includes('heavy') ||
-           lowerName.includes('extrabold')
+    return lowerName.includes('bold') ||
+      lowerName.includes('black') ||
+      lowerName.includes('heavy') ||
+      lowerName.includes('extrabold')
   }
 
   /**
@@ -337,9 +337,9 @@ export class PdfDecomposerPage {
   private isItalicFont(fontName: string): boolean {
     if (!fontName) return false
     const lowerName = fontName.toLowerCase()
-    return lowerName.includes('italic') || 
-           lowerName.includes('oblique') ||
-           lowerName.includes('-it')
+    return lowerName.includes('italic') ||
+      lowerName.includes('oblique') ||
+      lowerName.includes('-it')
   }
 
   /**
@@ -352,7 +352,7 @@ export class PdfDecomposerPage {
     const fontMapping: { [key: string]: string } = {
       // Common PDF.js internal font patterns
       'g_d0_f1': 'Arial',
-      'g_d0_f2': 'Georgia', 
+      'g_d0_f2': 'Georgia',
       'g_d0_f3': 'Times New Roman',
       'g_d0_f4': 'Helvetica',
       'g_d0_f5': 'Verdana',
@@ -361,26 +361,26 @@ export class PdfDecomposerPage {
       'g_d0_f8': 'Impact',
       'g_d0_f9': 'Trebuchet MS',
       'g_d0_f10': 'Arial Black',
-      
+
       // Times family variations
       'TimesRoman': 'Times',
-      'Times-Roman': 'Times', 
+      'Times-Roman': 'Times',
       'Times-Bold': 'Times',
       'Times-Italic': 'Times',
       'Times-BoldItalic': 'Times',
-      
+
       // Helvetica family variations
       'Helvetica': 'Helvetica',
       'Helvetica-Bold': 'Helvetica',
       'Helvetica-Oblique': 'Helvetica',
       'Helvetica-BoldOblique': 'Helvetica',
-      
-      // Arial family variations  
+
+      // Arial family variations
       'Arial': 'Arial',
       'Arial-Bold': 'Arial',
       'Arial-Italic': 'Arial',
       'Arial-BoldItalic': 'Arial',
-      
+
       // Courier family variations
       'Courier': 'Courier New',
       'Courier-Bold': 'Courier New',
@@ -395,7 +395,7 @@ export class PdfDecomposerPage {
 
     // Smart fallback based on patterns
     const lowerFontId = pdfFontId.toLowerCase()
-    
+
     if (lowerFontId.includes('arial')) {
       return 'Arial'
     }
@@ -423,7 +423,7 @@ export class PdfDecomposerPage {
     if (lowerFontId.includes('trebuchet')) {
       return 'Trebuchet MS'
     }
-    
+
     // Generic fallbacks based on characteristics
     if (lowerFontId.includes('mono') || lowerFontId.includes('code')) {
       return 'Courier New'
@@ -437,7 +437,7 @@ export class PdfDecomposerPage {
     if (lowerFontId.includes('script') || lowerFontId.includes('cursive')) {
       return 'Comic Sans MS'
     }
-    
+
     // Default fallback for unrecognized fonts
     return 'Open Sans'
   }
