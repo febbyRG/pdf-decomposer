@@ -1,4 +1,4 @@
-#!/usr/bin/env tsx
+#!/usr/bin/env node
 
 /**
  * PDF-Decomposer Comprehensive Test Suite
@@ -8,16 +8,12 @@
  * - Image extraction (embedded)
  * - Memory efficiency
  * - Error handling
- * - Node.js 20 compatibility
+ * - Node.js 16+ compatibility
  */
 
-import { existsSync, mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
-import { createRequire } from 'node:module'
-import { basename, dirname, join } from 'node:path'
-import { decomposePdf } from '../src/index.js'
-
-const require = createRequire(import.meta.url)
-const __dirname = dirname(require.resolve('../package.json'))
+import { existsSync, mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from 'fs'
+import { basename, join } from 'path'
+import { decomposePdf } from '../dist/index'
 
 interface TestResult {
   name: string
@@ -37,8 +33,8 @@ class ComprehensiveTest {
   private pdfFile: string = 'demo.pdf'
 
   constructor(customPdfPath?: string) {
-    this.baseOutputDir = join(__dirname, 'scripts', 'test-output')
-    this.pdfPath = customPdfPath || join(__dirname, 'scripts', 'test-input', this.pdfFile)
+    this.baseOutputDir = join(__dirname, 'test-output')
+    this.pdfPath = customPdfPath || join(__dirname, 'test-input', this.pdfFile)
   }
 
   async run() {
@@ -46,7 +42,17 @@ class ComprehensiveTest {
     console.log('==========================================')
     console.log(`📊 Node.js version: ${process.version}`)
     console.log(`📄 Test PDF: ${basename(this.pdfPath)}`)
+    console.log(`📁 PDF Full Path: ${this.pdfPath}`)
     console.log(`📁 Output directory: ${this.baseOutputDir}\n`)
+
+    // Verify PDF file exists
+    if (!existsSync(this.pdfPath)) {
+      console.error(`❌ PDF file not found: ${this.pdfPath}`)
+      process.exit(1)
+    }
+
+    const pdfStats = statSync(this.pdfPath)
+    console.log(`📏 PDF file size: ${Math.round(pdfStats.size / 1024)} KB`)
 
     // Clean up previous test results
     if (existsSync(this.baseOutputDir)) {

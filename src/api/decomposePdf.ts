@@ -1,5 +1,6 @@
 import fs from 'fs'
 import path from 'path'
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.js'
 import { Package, PdfDecomposer } from '../core/PdfDecomposer.js'
 import { PdfDocument } from '../core/PdfDocument.js'
 import type { PdfPageContent } from '../models/PdfPageContent.js'
@@ -188,8 +189,8 @@ async function loadPdfDocument(filePath: string): Promise<PdfDocument> {
       throw new InvalidPdfError(`File not found: ${filePath}`)
     }
 
-    const pdfjsLib = await import('pdfjs-dist')
-    const { getDocument } = pdfjsLib.default || pdfjsLib
+    // Use the imported pdfjs-dist library
+    const { getDocument } = pdfjsLib
 
     if (!getDocument) {
       throw new PdfProcessingError('Failed to load PDF.js getDocument function')
