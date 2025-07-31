@@ -47,6 +47,13 @@ export async function decomposePdf(
 ): Promise<PdfPageContent[]> {
   console.log('🔧 Starting buffer-based PDF decomposition...')
 
+  // Configure PDF.js worker for browser compatibility (if not already set)
+  if (typeof window !== 'undefined' && !pdfjsLib.GlobalWorkerOptions.workerSrc) {
+    // Browser environment - use CDN worker matching our pdfjs-dist version (2.6.347)
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.6.347/pdf.worker.min.js'
+    console.log('🔧 PDF.js worker configured for browser:', pdfjsLib.GlobalWorkerOptions.workerSrc)
+  }
+
   // Validate input type
   if (!input) {
     throw new InvalidPdfError('Input buffer is required')
