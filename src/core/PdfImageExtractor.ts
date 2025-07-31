@@ -35,8 +35,7 @@ export class PdfImageExtractor {
   private static readonly MAX_DIMENSION = 4000
 
   /**
-   * Browser-compatible image processing using Canvas API (FlexPDF approach)
-   * Replaces zlib dependency with native browser compression
+   * Browser-compatible image processing using Canvas API
    */
   private static async imageToBlob(pixelData: Uint8Array, width: number, height: number, hasAlpha: boolean = false): Promise<string> {
     if (!isBrowser) {
