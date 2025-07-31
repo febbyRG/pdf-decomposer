@@ -10,6 +10,7 @@ export interface DecomposeOptions {
   readonly endPage?: number // Last page to process (1-indexed, default: all pages)
   readonly generateImages?: boolean // Generate page images and thumbnails (default: false)
   readonly extractEmbeddedImages?: boolean // Extract individual images embedded in PDF content
+  readonly outputDir?: string // Output directory for generated files (default: current directory)
   readonly elementComposer?: boolean // Group text elements into paragraphs for better structure (default: false)
   readonly pageComposer?: boolean // Combine pages with continuous content flow (default: false)
   readonly imageWidth?: number // Width for rendered page images (default: 1200)
@@ -70,7 +71,7 @@ export async function decomposePdf(
 
     // Create in-memory package (no file system dependencies)
     const pkg: Package = {
-      pkgDir: new MemoryPackageDir(),
+      pkgDir: new MemoryPackageDir(options.outputDir),
       pages: [],
       state: {
         progress: 0,
@@ -177,7 +178,10 @@ async function loadPdfDocumentFromBuffer(input: Buffer | ArrayBuffer | Uint8Arra
  * Memory-only package directory (no file system operations)
  */
 class MemoryPackageDir {
-  constructor() {
+  public readonly dir: string
+
+  constructor(outputDir = '.') {
+    this.dir = outputDir
     console.log('🧠 Memory package directory initialized (no file system access)')
   }
 

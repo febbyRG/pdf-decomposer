@@ -30,7 +30,7 @@ class ComprehensiveTest {
   private results: TestResult[] = []
   private baseOutputDir: string
   private pdfPath: string
-  private pdfFile: string = 'demo.pdf'
+  private pdfFile = 'demo.pdf'
 
   constructor(customPdfPath?: string) {
     this.baseOutputDir = join(__dirname, 'test-output')
@@ -149,6 +149,7 @@ class ComprehensiveTest {
       const pdfBuffer = this.readPdfBuffer()
       const result = await decomposePdf(pdfBuffer, {
         ...options,
+        outputDir,                    // Specify output directory
         generateImages: false,        // No Canvas-based page rendering
         extractEmbeddedImages: true   // Use our PdfImageExtractor with EXACT working logic
       })
@@ -172,18 +173,31 @@ class ComprehensiveTest {
 
         for (let j = 0; j < imageElements.length; j++) {
           const imageElement = imageElements[j]
+          // Determine display filename - check if it's a data URL or actual filename
+          let displayFilename: string
+          if (imageElement.data && typeof imageElement.data === 'string') {
+            if (imageElement.data.startsWith('data:image/')) {
+              // It's a base64 data URL, extract just the format and show data size
+              const base64Data = imageElement.data.split(',')[1] || ''
+              const sizeKB = base64Data ? Math.round(base64Data.length * 0.75 / 1024) : 0
+              displayFilename = `base64 data (${sizeKB}KB)`
+            } else {
+              displayFilename = imageElement.data
+            }
+          } else {
+            displayFilename = 'unknown'
+          }
+
           const analysis = {
-            page: pageNum,
-            imageIndex: j + 1,
             id: imageElement.id,
-            width: imageElement.attributes?.width || imageElement.width,
-            height: imageElement.attributes?.height || imageElement.height,
-            format: imageElement.attributes?.format || imageElement.format,
-            hasData: !!imageElement.data,
-            dataSize: 0,
+            width: imageElement.width,
+            height: imageElement.height,
+            format: imageElement.format,
             scaled: imageElement.attributes?.scaled,
             scaleFactor: imageElement.attributes?.scaleFactor,
-            filename: imageElement.data // This is the filename now
+            filename: displayFilename,
+            data: imageElement.data, // Keep original data for processing
+            dataSize: 0 // Will be set later if file exists
           }
           imageAnalysis.push(analysis)
 
@@ -191,7 +205,7 @@ class ComprehensiveTest {
 
           // Check if the file actually exists (PdfImageExtractor saves them directly)
           if (imageElement.data && typeof imageElement.data === 'string' && imageElement.data.endsWith('.png')) {
-            // Check in multiple possible locations
+            // Check in multiple possible locations for actual file path
             const possiblePaths = [
               imageElement.data, // Current working directory
               join(process.cwd(), imageElement.data), // Explicit current directory
@@ -209,6 +223,11 @@ class ComprehensiveTest {
                 break
               }
             }
+          } else if (imageElement.data && typeof imageElement.data === 'string' && imageElement.data.startsWith('data:image/')) {
+            // It's base64 data - calculate the data size
+            const base64Data = imageElement.data.split(',')[1] || ''
+            analysis.dataSize = base64Data ? Math.round(base64Data.length * 0.75) : 0
+            console.log(`      💾 Base64 data available: ${(analysis.dataSize / 1024).toFixed(1)}KB in memory`)
           }
         }
       }
@@ -227,10 +246,15 @@ class ComprehensiveTest {
         })
       }
 
-      if (directAssetImages.length > 0) {
-        console.log(`   📁 Found ${directAssetImages.length} additional saved images in output dir:`)
-        directAssetImages.forEach((file: string) => {
-          const filePath = join(outputDir, file)
+      // ALSO CHECK ROOT DIRECTORY for image files (current bug: files saved to root)
+      const rootDir = process.cwd()
+      const rootFiles = existsSync(rootDir) ? readdirSync(rootDir) : []
+      const rootImageFiles = rootFiles.filter((file: string) => file.startsWith('img_') && (file.endsWith('.png') || file.endsWith('.jpg') || file.endsWith('.jpeg')))
+
+      if (rootImageFiles.length > 0) {
+        console.log(`   📁 Found ${rootImageFiles.length} images in root directory (path handling bug):`)
+        rootImageFiles.forEach((file: string) => {
+          const filePath = join(rootDir, file)
           const stats = statSync(filePath)
           console.log(`     📄 ${file} - ${(stats.size / 1024).toFixed(1)}KB`)
           generatedFiles.push(filePath)

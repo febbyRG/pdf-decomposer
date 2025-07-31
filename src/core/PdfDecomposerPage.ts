@@ -30,7 +30,7 @@ export class PdfDecomposerPage {
     const thumbFilename = `${baseId}-${pageNumber}.thumb.jpg`
     let outputDir = '.'
     if (this.decomposer.pkg.pkgDir && typeof this.decomposer.pkg.pkgDir === 'object' && 'dir' in this.decomposer.pkg.pkgDir) {
-      outputDir = (this.decomposer.pkg.pkgDir as any).dir
+      outputDir = (this.decomposer.pkg.pkgDir as any).dir || '.'
     }
 
     // Extract text and embedded images without page rendering

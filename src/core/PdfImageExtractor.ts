@@ -37,7 +37,7 @@ export class PdfImageExtractor {
   /**
    * Browser-compatible image processing using Canvas API
    */
-  private static async imageToBlob(pixelData: Uint8Array, width: number, height: number, hasAlpha: boolean = false): Promise<string> {
+  private static async imageToBlob(pixelData: Uint8Array, width: number, height: number, hasAlpha = false): Promise<string> {
     if (!isBrowser) {
       throw new Error('Canvas-based image processing requires browser environment')
     }
@@ -335,10 +335,10 @@ export class PdfImageExtractor {
     pixelData: any,
     width: number,
     height: number,
-    imageId: string = 'unknown',
-    pageNumber: number = 1,
-    imageIndex: number = 0,
-    source: string = 'unknown'
+    imageId = 'unknown',
+    pageNumber = 1,
+    imageIndex = 0,
+    source = 'unknown'
   ): Promise<ExtractedImage | null> {
     try {
       // Auto-scaling limits for memory safety (EXACT from Editor)
@@ -630,7 +630,8 @@ export class PdfImageExtractor {
   }
 
   /**
-   * Create minimal but valid PNG using proper deflate compression
+   * Create minimal but valid uncompressed PNG (zero dependencies approach)
+   * PNG format supports uncompressed data - perfect for universal compatibility
    */
   private static createMinimalValidPNG(pixelData: Uint8Array, width: number, height: number, hasAlpha: boolean): Uint8Array {
     // PNG signature
@@ -643,20 +644,22 @@ export class PdfImageExtractor {
     ihdrData.writeUInt32BE(height, 4)
     ihdrData[8] = 8   // bit depth
     ihdrData[9] = colorType
-    ihdrData[10] = 0  // compression
-    ihdrData[11] = 0  // filter
-    ihdrData[12] = 0  // interlace
+    ihdrData[10] = 0  // compression method (deflate/inflate)
+    ihdrData[11] = 0  // filter method
+    ihdrData[12] = 0  // interlace method
 
     const ihdr = this.createSimplePNGChunk('IHDR', ihdrData)
 
-    // Prepare raw image data - add filter bytes
+    // Create uncompressed IDAT with minimal deflate wrapper
+    // This is the key: we create a minimal deflate stream without actual compression
     const bytesPerPixel = hasAlpha ? 4 : 3
     const rawDataSize = height * (1 + width * bytesPerPixel) // +1 for filter byte per row
     const rawData = Buffer.alloc(rawDataSize)
 
+    // Add filter bytes and copy pixel data
     for (let y = 0; y < height; y++) {
       const rowOffset = y * (1 + width * bytesPerPixel)
-      rawData[rowOffset] = 0 // Filter type 0 (None)
+      rawData[rowOffset] = 0 // Filter type 0 (None) - no filtering
 
       // Copy pixel data for this row
       for (let x = 0; x < width; x++) {
@@ -669,27 +672,78 @@ export class PdfImageExtractor {
       }
     }
 
-    // Compress the raw data using pako (deflate)
-    let compressedData: Buffer
-    try {
-      // Dynamic import for Node.js compatibility
-      const pako = eval('require')('pako')
-      const compressed = pako.deflate(rawData)
-      compressedData = Buffer.from(compressed)
-      console.log(`🗜️ Compressed ${rawData.length} → ${compressedData.length} bytes (${Math.round((1 - compressedData.length / rawData.length) * 100)}% reduction)`)
-    } catch (error) {
-      console.warn('⚠️ Failed to compress PNG data, using uncompressed:', error)
-      compressedData = rawData
-    }
+    // Create minimal deflate stream (uncompressed blocks)
+    // This creates a valid deflate stream without compression libraries
+    const uncompressedData = this.createUncompressedDeflateStream(rawData)
 
-    // Create IDAT with compressed data
-    const idat = this.createSimplePNGChunk('IDAT', compressedData)
+    console.log(`🔧 Created uncompressed PNG: ${width}x${height}, raw=${rawData.length}b, deflate=${uncompressedData.length}b`)
+
+    // Create IDAT with uncompressed deflate data
+    const idat = this.createSimplePNGChunk('IDAT', uncompressedData)
 
     // IEND chunk
     const iend = this.createSimplePNGChunk('IEND', Buffer.alloc(0))
 
-    // Combine all
+    // Combine all chunks
     return Buffer.concat([signature, ihdr, idat, iend])
+  }
+
+  /**
+   * Create uncompressed deflate stream manually (zero dependencies)
+   * This creates a valid deflate format without using compression libraries
+   */
+  private static createUncompressedDeflateStream(data: Buffer): Buffer {
+    const chunks: Buffer[] = []
+
+    // Deflate header (minimal)
+    chunks.push(Buffer.from([0x78, 0x01])) // CMF=0x78, FLG=0x01 (no preset dict, fastest compression)
+
+    const maxBlockSize = 65535 // Max size for uncompressed block
+    let offset = 0
+
+    while (offset < data.length) {
+      const blockSize = Math.min(maxBlockSize, data.length - offset)
+      const isLastBlock = (offset + blockSize >= data.length) ? 1 : 0
+
+      // Block header: BFINAL(1bit) + BTYPE(2bits) = 000 for uncompressed block
+      chunks.push(Buffer.from([isLastBlock])) // BFINAL=isLastBlock, BTYPE=00 (uncompressed)
+
+      // Length and complement (little-endian) - fix the complement calculation
+      const lenBuffer = Buffer.alloc(4)
+      lenBuffer.writeUInt16LE(blockSize, 0)              // LEN
+      lenBuffer.writeUInt16LE((~blockSize) & 0xFFFF, 2)  // NLEN (one's complement, masked to 16-bit)
+      chunks.push(lenBuffer)
+
+      // Actual data
+      chunks.push(data.subarray(offset, offset + blockSize))
+
+      offset += blockSize
+    }
+
+    // Adler-32 checksum (simplified)
+    const adler32 = this.calculateAdler32(data)
+    const adlerBuffer = Buffer.alloc(4)
+    adlerBuffer.writeUInt32BE(adler32, 0)
+    chunks.push(adlerBuffer)
+
+    return Buffer.concat(chunks)
+  }
+
+  /**
+   * Calculate Adler-32 checksum (required for deflate format)
+   */
+  private static calculateAdler32(data: Buffer): number {
+    let a = 1
+    let b = 0
+    const MOD_ADLER = 65521
+
+    for (let i = 0; i < data.length; i++) {
+      a = (a + data[i]) % MOD_ADLER
+      b = (b + a) % MOD_ADLER
+    }
+
+    // Use unsigned 32-bit arithmetic to prevent overflow
+    return ((b << 16) | a) >>> 0
   }
 
   /**
