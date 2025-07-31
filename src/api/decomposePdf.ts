@@ -5,6 +5,56 @@ import type { PdfPageContent } from '../models/PdfPageContent.js'
 import { InvalidPdfError, PdfProcessingError } from '../types/pdf.types.js'
 import '../utils/DOMMatrixPolyfill.js' // Polyfill for Node.js PDF.js compatibility
 
+// Configure PDF.js worker for browser environments
+if (typeof globalThis !== 'undefined' && typeof globalThis.window !== 'undefined' && typeof globalThis.document !== 'undefined') {
+  // Browser environment - configure worker with multiple strategies
+  const configureWorker = () => {
+    // Default to legacy worker for legacy build
+    let workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.2.146/legacy/build/pdf.worker.min.js'
+
+    // Strategy 1: Check if external configuration is available
+    if ((globalThis as any).window.pdfjsWorkerSrc) {
+      workerSrc = (globalThis as any).window.pdfjsWorkerSrc
+      console.log('🔧 Using external worker config:', workerSrc)
+    }
+
+    // Strategy 2: Check if external pdfjsLib is configured
+    if ((globalThis as any).window.pdfjsLib && (globalThis as any).window.pdfjsLib.GlobalWorkerOptions && (globalThis as any).window.pdfjsLib.GlobalWorkerOptions.workerSrc) {
+      workerSrc = (globalThis as any).window.pdfjsLib.GlobalWorkerOptions.workerSrc
+      console.log('🔧 Using external pdfjsLib worker config:', workerSrc)
+      // Copy worker configuration from external pdfjsLib
+      pdfjsLib.GlobalWorkerOptions.workerSrc = (globalThis as any).window.pdfjsLib.GlobalWorkerOptions.workerSrc
+    }
+
+    // Strategy 3: Force configuration
+    pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc
+
+    // Strategy 4: Backup configuration verification
+    if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc
+      console.log('🔧 Backup worker configuration applied:', workerSrc)
+    }
+
+    console.log('🔧 PDF.js worker configured in pdf-decomposer:', pdfjsLib.GlobalWorkerOptions.workerSrc)
+
+    // Verify configuration
+    if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
+      throw new Error('Critical: Failed to configure PDF.js worker in pdf-decomposer')
+    }
+
+    // Additional debug info
+    console.log('🔧 PDF.js version:', pdfjsLib.version || 'unknown')
+    console.log('🔧 Worker configured successfully for legacy build')
+  }
+
+  try {
+    configureWorker()
+  } catch (error) {
+    console.error('❌ Failed to configure PDF.js worker:', error)
+    throw error
+  }
+}
+
 export interface DecomposeOptions {
   readonly startPage?: number // First page to process (1-indexed, default: 1)
   readonly endPage?: number // Last page to process (1-indexed, default: all pages)
