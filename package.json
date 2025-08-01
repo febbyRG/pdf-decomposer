@@ -19,6 +19,8 @@
   },
   "scripts": {
     "build": "tsc",
+    "build:watch": "tsc --watch",
+    "dev": "tsc --watch",
     "prepare": "npm run build",
     "prepublishOnly": "npm run build && npm test",
     "test": "npx ts-node scripts/test.ts",

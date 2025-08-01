@@ -25,16 +25,41 @@ export class MemoryManager {
    * Get current memory usage statistics
    */
   static getMemoryStats(): MemoryStats {
-    const usage = process.memoryUsage()
-    const used = Math.round(usage.heapUsed / 1024 / 1024)
-    const total = Math.round(usage.heapTotal / 1024 / 1024)
-    const external = Math.round(usage.external / 1024 / 1024)
+    // Browser environment - use performance.memory if available
+    if (typeof window !== 'undefined' && typeof (globalThis as any).performance !== 'undefined' && (globalThis as any).performance?.memory) {
+      const memory = (globalThis as any).performance.memory
+      const used = Math.round(memory.usedJSHeapSize / 1024 / 1024)
+      const total = Math.round(memory.totalJSHeapSize / 1024 / 1024)
 
+      return {
+        used,
+        total,
+        external: 0, // Not available in browser
+        percentUsed: Math.round((used / total) * 100)
+      }
+    }
+
+    // Node.js environment
+    if (typeof process !== 'undefined' && process.memoryUsage) {
+      const usage = process.memoryUsage()
+      const used = Math.round(usage.heapUsed / 1024 / 1024)
+      const total = Math.round(usage.heapTotal / 1024 / 1024)
+      const external = Math.round(usage.external / 1024 / 1024)
+
+      return {
+        used,
+        total,
+        external,
+        percentUsed: Math.round((used / total) * 100)
+      }
+    }
+
+    // Fallback for environments without memory API
     return {
-      used,
-      total,
-      external,
-      percentUsed: Math.round((used / total) * 100)
+      used: 0,
+      total: 256, // Assume 256MB default
+      external: 0,
+      percentUsed: 0
     }
   }
 
@@ -51,8 +76,17 @@ export class MemoryManager {
    * Force garbage collection if available
    */
   static forceGarbageCollection(): void {
-    if (global.gc) {
-      global.gc()
+    // Try global.gc (Node.js with --expose-gc)
+    if (typeof (globalThis as any).global !== 'undefined' && (globalThis as any).global.gc) {
+      (globalThis as any).global.gc()
+    }
+    // Try window.gc (some browsers with debugging enabled)
+    else if (typeof (globalThis as any).window !== 'undefined' && (globalThis as any).window.gc) {
+      (globalThis as any).window.gc()
+    }
+    // Try direct gc on globalThis
+    else if ((globalThis as any).gc) {
+      (globalThis as any).gc()
     }
   }
 
@@ -63,8 +97,12 @@ export class MemoryManager {
     // Force garbage collection
     MemoryManager.forceGarbageCollection()
 
-    // Give the GC a chance to run
-    await new Promise(resolve => setImmediate(resolve))
+    // Give the GC a chance to run - use setTimeout if setImmediate not available
+    if (typeof setImmediate !== 'undefined') {
+      await new Promise(resolve => setImmediate(resolve))
+    } else {
+      await new Promise(resolve => setTimeout(resolve, 0))
+    }
 
     // Force another GC cycle
     MemoryManager.forceGarbageCollection()

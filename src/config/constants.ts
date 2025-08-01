@@ -51,19 +51,19 @@ export const PDF_CONFIG = {
  */
 export const ENV_CONFIG = {
   // Node.js memory constraints
-  isLowMemory: process.env.NODE_ENV === 'production' ||
-    parseInt(process.env.MAX_OLD_SPACE_SIZE || '0') < 2048,
+  isLowMemory: (typeof process !== 'undefined' && process.env?.NODE_ENV === 'production') ||
+    (typeof process !== 'undefined' && parseInt(process.env?.MAX_OLD_SPACE_SIZE || '0') < 2048),
 
   // Debug mode
-  isDebug: process.env.NODE_ENV === 'development' ||
-    process.env.DEBUG === 'true',
+  isDebug: (typeof process !== 'undefined' && process.env?.NODE_ENV === 'development') ||
+    (typeof process !== 'undefined' && process.env?.DEBUG === 'true'),
 
   // Concurrent processing limits
-  maxConcurrentPages: parseInt(process.env.MAX_CONCURRENT_PAGES || '1'),
+  maxConcurrentPages: typeof process !== 'undefined' ? parseInt(process.env?.MAX_CONCURRENT_PAGES || '1') : 1,
 
   // Output format preferences
-  preferWebP: process.env.PREFER_WEBP === 'true',
+  preferWebP: typeof process !== 'undefined' ? process.env?.PREFER_WEBP === 'true' : false,
 
   // Logging level
-  logLevel: process.env.LOG_LEVEL || 'info'
+  logLevel: typeof process !== 'undefined' ? (process.env?.LOG_LEVEL || 'info') : 'info'
 } as const
