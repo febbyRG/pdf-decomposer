@@ -33,15 +33,12 @@ export class PdfDecomposer {
     public pdfDoc: PdfDocument,
     public pkg: Package,
     private skipDecompose = false,
-    private generateImages = false,
-    private extractEmbeddedImages = false,
+    private extractImages = false,
     private elementComposer = false,
-    private pageComposer = false,
-    private imageWidth = 1200,
-    private imageQuality = 90
+    private pageComposer = false
   ) { }
 
-  async decompose(startPage: number = 1, endPage: number = Infinity) {
+  async decompose(startPage = 1, endPage = Infinity) {
     this.notify({ progress: 0, message: 'Loading ...', processing: true })
     this.currentProgress = 0
     this.update('Preparing your PDF...', 0)
@@ -69,7 +66,7 @@ export class PdfDecomposer {
       try {
         // Monitor memory before page processing
         await MemoryManager.withMemoryMonitoring(async () => {
-          const page = new PdfDecomposerPage(this, actualPageNumber, this.skipDecompose, this.generateImages, this.extractEmbeddedImages, this.imageWidth, this.imageQuality)
+          const page = new PdfDecomposerPage(this, actualPageNumber, this.skipDecompose, this.extractImages)
           this.pkg.pages[pageIndex] = await page.decompose()
 
           if (pageIndex === 0 && this.pkg.pages[0]) {

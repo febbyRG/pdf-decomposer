@@ -31,18 +31,18 @@ import { decomposePdf } from 'pdf-decomposer'
 // Memory-efficient text extraction (default)
 const result = await decomposePdf('document.pdf')
 
-// With page images (Node.js only)
-const result = await decomposePdf('document.pdf', {
-  generateImages: true,
+// Generate page screenshots separately
+const screenshots = await screenshotPdf('document.pdf', {
   imageWidth: 1200,
-  imageQuality: 90
+  imageQuality: 90,
+  outputDir: './screenshots'
 })
 
 // Process specific pages with advanced image extraction
 const result = await decomposePdf('document.pdf', {
   startPage: 2,
   endPage: 5,
-  extractEmbeddedImages: true // Enhanced extraction from BC Editor
+  extractImages: true // Enhanced extraction from BC Editor
 })
 ```
 
@@ -96,7 +96,7 @@ npm run test:usage    # Usage test with images
 ## Browser Compatibility
 
 - ✅ Chrome 60+
-- ✅ Firefox 55+  
+- ✅ Firefox 55+
 - ✅ Safari 11+
 - ✅ Edge 79+
 - ✅ Mobile browsers

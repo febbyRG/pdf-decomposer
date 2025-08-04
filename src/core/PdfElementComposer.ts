@@ -54,13 +54,13 @@ export class PdfElementComposer {
 
     // FlexPDF 3-stage algorithm system
     let composites = this.convertToComposites(textElements)
-    
+
     // Stage 1: OverlappingTextAlgorithm (Priority 30) - Spatial merging
     composites = this.runOverlappingTextAlgorithm(composites)
-    
-    // Stage 2: OrderCompositesAlgorithm (Priority 40) - Reading order detection  
+
+    // Stage 2: OrderCompositesAlgorithm (Priority 40) - Reading order detection
     composites = this.runOrderCompositesAlgorithm(composites)
-    
+
     // Stage 3: ComputeTextTypesAlgorithm (Priority 50) - Text type classification
     composites = this.runComputeTextTypesAlgorithm(composites)
 
@@ -79,7 +79,7 @@ export class PdfElementComposer {
       const yDiff = aTop - bTop
 
       if (Math.abs(yDiff) > 10) return yDiff
-      
+
       const aLeft = a.boundingBox?.left || 0
       const bLeft = b.boundingBox?.left || 0
       return aLeft - bLeft
@@ -95,7 +95,9 @@ export class PdfElementComposer {
       const nonTextEl = nonTextIndex < sortedNonTextElements.length ? sortedNonTextElements[nonTextIndex] : null
 
       if (!textEl) {
-        finalElements.push(nonTextEl!)
+        if (nonTextEl) {
+          finalElements.push(nonTextEl)
+        }
         nonTextIndex++
       } else if (!nonTextEl) {
         finalElements.push(textEl)
@@ -104,7 +106,7 @@ export class PdfElementComposer {
         // Compare positions to interleave properly
         const textTop = textEl.boundingBox?.top || 0
         const nonTextTop = nonTextEl.boundingBox?.top || 0
-        
+
         if (textTop <= nonTextTop + 10) { // Text element comes first or same line
           finalElements.push(textEl)
           textIndex++
@@ -149,7 +151,7 @@ export class PdfElementComposer {
   private static convertToElements(composites: Composite[]): PdfElement[] {
     return composites.map(composite => {
       const firstOriginal = composite.originalElements[0]
-      
+
       // Determine element type based on classification
       let elementType = firstOriginal.type
       if (composite.attributes.type === 'paragraph') {
@@ -157,7 +159,7 @@ export class PdfElementComposer {
       } else if (['h1', 'h2', 'h3', 'h4', 'h5'].includes(composite.attributes.type || '')) {
         elementType = 'header'
       }
-      
+
       return {
         ...firstOriginal,
         type: elementType,
@@ -194,9 +196,9 @@ export class PdfElementComposer {
       const nextElement = i + 1 < elements.length ? elements[i + 1] : null
 
       // Check if current element is a drop cap pattern
-      if (this.isDropCap(currentElement, nextElement)) {
+      if (this.isDropCap(currentElement, nextElement) && nextElement) {
         // Merge drop cap with next paragraph
-        const mergedElement = this.mergeDropCapWithParagraph(currentElement, nextElement!)
+        const mergedElement = this.mergeDropCapWithParagraph(currentElement, nextElement)
         result.push(mergedElement)
         i += 2 // Skip both elements as they're merged
       } else {
@@ -238,7 +240,7 @@ export class PdfElementComposer {
   private static areVerticallyClose(element1: PdfElement, element2: PdfElement, threshold: number): boolean {
     const top2 = element2.boundingBox?.top || 0
     const bottom1 = (element1.boundingBox?.top || 0) + (element1.boundingBox?.height || 0)
-    
+
     // Check if element2 starts within threshold distance from element1's bottom
     const verticalDistance = Math.abs(top2 - bottom1)
     return verticalDistance <= threshold
@@ -250,10 +252,10 @@ export class PdfElementComposer {
   private static mergeDropCapWithParagraph(dropCap: PdfElement, paragraph: PdfElement): PdfElement {
     const dropCapText = (dropCap.data || '').trim()
     const paragraphText = (paragraph.data || '').trim()
-    
+
     // Combine the texts
     const combinedText = dropCapText + paragraphText
-    
+
     // Use paragraph's bounding box as the main area, but extend to include drop cap
     const combinedBoundingBox = {
       top: Math.min(dropCap.boundingBox?.top || 0, paragraph.boundingBox?.top || 0),
@@ -288,25 +290,25 @@ export class PdfElementComposer {
    */
   private static combineDropCapFormatting(dropCap: PdfElement, paragraph: PdfElement): string {
     const paragraphFormatted = paragraph.formattedData || paragraph.data || ''
-    
+
     // Extract the drop cap letter and paragraph content
     const dropCapText = (dropCap.data || '').trim()
     const paragraphText = (paragraph.data || '').trim()
-    
+
     if (!dropCapText || !paragraphText) {
       return paragraphFormatted
     }
 
     // Create a styled drop cap followed by paragraph content
     const dropCapStyled = `<span style="font-size: ${dropCap.attributes?.fontSize}px; font-family: ${dropCap.attributes?.fontFamily}"><strong>${dropCapText}</strong></span>`
-    
+
     // Remove the drop cap letter from paragraph formatting if it exists
     let cleanParagraphFormatted = paragraphFormatted
     if (paragraphText.toLowerCase().startsWith(dropCapText.toLowerCase())) {
       // If paragraph text starts with same letter, we need to handle it carefully
       cleanParagraphFormatted = paragraphFormatted
     }
-    
+
     return `${dropCapStyled}${cleanParagraphFormatted}`
   }
 
@@ -319,24 +321,24 @@ export class PdfElementComposer {
 
     // Calculate page statistics for dynamic thresholds
     const pageStats = this.calculatePageStatisticsFromComposites(composites)
-    
+
     const processed = new Set<string>()
     const result: Composite[] = []
-    
+
     for (const composite of composites) {
       if (processed.has(composite.id)) continue
-      
+
       const cluster = [composite]
       processed.add(composite.id)
-      
+
       // Find all overlapping/adjacent composites
       let foundMatch = true
       while (foundMatch) {
         foundMatch = false
-        
+
         for (const candidate of composites) {
           if (processed.has(candidate.id)) continue
-          
+
           // Check if candidate should merge with any composite in cluster
           for (const clusterComposite of cluster) {
             if (this.shouldMergeComposites(clusterComposite, candidate, pageStats)) {
@@ -346,20 +348,20 @@ export class PdfElementComposer {
               break
             }
           }
-          
+
           if (foundMatch) break
         }
       }
-      
+
       // Create merged composite from cluster
       result.push(this.createMergedComposite(cluster))
     }
-    
+
     return result
   }
 
   /**
-   * FlexPDF Stage 2: OrderCompositesAlgorithm (Priority 40) 
+   * FlexPDF Stage 2: OrderCompositesAlgorithm (Priority 40)
    * Reading order detection with beam scanning for multi-column layout
    */
   private static runOrderCompositesAlgorithm(composites: Composite[]): Composite[] {
@@ -367,24 +369,24 @@ export class PdfElementComposer {
 
     // Use beam scanning to detect column layout
     const columns = this.detectColumnsWithBeamScanning(composites)
-    
+
     if (columns.length <= 1) {
       // Single column - simple top-to-bottom sorting
       return composites.sort((a, b) => a.boundingBox.top - b.boundingBox.top)
     }
-    
+
     // Multi-column - sort by column first, then by position within column
     const sortedComposites: Composite[] = []
-    
+
     // Process each column left-to-right
     columns.sort((a, b) => a.leftBoundary - b.leftBoundary)
-    
+
     for (const column of columns) {
       // Sort elements within column by top-to-bottom
       const columnElements = column.elements.sort((a, b) => a.boundingBox.top - b.boundingBox.top)
       sortedComposites.push(...columnElements)
     }
-    
+
     return sortedComposites
   }
 
@@ -401,18 +403,18 @@ export class PdfElementComposer {
     // Calculate page boundaries
     const leftMost = Math.min(...composites.map(c => c.boundingBox.left))
     const rightMost = Math.max(...composites.map(c => c.boundingBox.right))
-    
+
     // Sort elements by left position to find gaps
     const sortedByLeft = [...composites].sort((a, b) => a.boundingBox.left - b.boundingBox.left)
-    
+
     // Find significant gaps between elements (column separators)
     const columnBreaks: number[] = []
-    
+
     for (let i = 0; i < sortedByLeft.length - 1; i++) {
       const currentRight = sortedByLeft[i].boundingBox.right
       const nextLeft = sortedByLeft[i + 1].boundingBox.left
       const gap = nextLeft - currentRight
-      
+
       // If gap is significant (>= 15pt), it's a column break
       if (gap >= 15) {
         const breakPoint = (currentRight + nextLeft) / 2
@@ -424,7 +426,7 @@ export class PdfElementComposer {
 
     // Create columns based on detected breaks
     const columns: Array<{ leftBoundary: number, rightBoundary: number, elements: Composite[] }> = []
-    
+
     if (columnBreaks.length === 0) {
       // No significant gaps - single column
       return [{
@@ -436,18 +438,18 @@ export class PdfElementComposer {
 
     // Multiple columns detected - sort breaks
     columnBreaks.sort((a, b) => a - b)
-    
+
     let currentLeft = leftMost
-    
+
     for (let i = 0; i <= columnBreaks.length; i++) {
       const currentRight = i < columnBreaks.length ? columnBreaks[i] : rightMost
-      
+
       // Find elements in this column (element center must be within column bounds)
       const columnElements = composites.filter(comp => {
         const elementCenter = (comp.boundingBox.left + comp.boundingBox.right) / 2
         return elementCenter >= currentLeft && elementCenter <= currentRight
       })
-      
+
       if (columnElements.length > 0) {
         columns.push({
           leftBoundary: currentLeft,
@@ -455,7 +457,7 @@ export class PdfElementComposer {
           elements: columnElements
         })
       }
-      
+
       currentLeft = currentRight
     }
 
@@ -513,11 +515,11 @@ export class PdfElementComposer {
       comp.attributes.fontSize,
       comp.data.length
     ])
-    
+
     const totalCharacters = weightedPairs.reduce((sum, [_, charCount]) => sum + charCount, 0)
     const aggregatedSum = weightedPairs.reduce((sum, [fontSize, charCount]) => sum + fontSize * charCount, 0)
     const averageFontSize = totalCharacters > 0 ? aggregatedSum / totalCharacters : 12
-    
+
     return { averageFontSize, totalCharacters }
   }
 
@@ -529,18 +531,18 @@ export class PdfElementComposer {
     const fontSizeA = compA.attributes.fontSize
     const fontSizeB = compB.attributes.fontSize
     const relativeFontDiff = Math.abs(fontSizeA / fontSizeB - 1)
-    
+
     if (relativeFontDiff > 0.1) return false
-    
+
     // Spatial proximity check with enhanced expansion (FlexPDF frontend behavior)
     const avgFontSize = (fontSizeA + fontSizeB) / 2
     const correctedFontSize = Math.max(Math.pow(avgFontSize, 2) / pageStats.averageFontSize, avgFontSize)
-    
+
     // Enhanced expansion calculation to match FlexPDF frontend composite behavior
     const baseExpansion = correctedFontSize / 3.5
     const minExpansion = Math.max(avgFontSize * 0.8, 5) // Minimum based on font size, at least 5px
     const expansionAmount = Math.min(Math.max(baseExpansion, minExpansion), 15)
-    
+
     return this.intersectsWithExpansionComposite(compA.boundingBox, compB.boundingBox, expansionAmount)
   }
 
@@ -554,11 +556,11 @@ export class PdfElementComposer {
       right: boxA.right + expansion,
       bottom: boxA.bottom + expansion
     }
-    
-    return !(expandedA.right < boxB.left || 
-             expandedA.left > boxB.right ||
-             expandedA.bottom < boxB.top ||
-             expandedA.top > boxB.bottom)
+
+    return !(expandedA.right < boxB.left ||
+      expandedA.left > boxB.right ||
+      expandedA.bottom < boxB.top ||
+      expandedA.top > boxB.bottom)
   }
 
   /**
@@ -626,18 +628,18 @@ export class PdfElementComposer {
       el.attributes?.fontSize || 12,
       (el.data || '').length
     ])
-    
+
     const totalCharacters = weightedPairs.reduce((sum, [_, charCount]) => sum + charCount, 0)
     const aggregatedSum = weightedPairs.reduce((sum, [fontSize, charCount]) => sum + fontSize * charCount, 0)
     const averageFontSize = totalCharacters > 0 ? aggregatedSum / totalCharacters : 12
-    
+
     // Font size distribution for better analysis
     const fontSizeDistribution = new Map<number, number>()
     textElements.forEach(el => {
       const fontSize = Math.round((el.attributes?.fontSize || 12) * 10) / 10
       fontSizeDistribution.set(fontSize, (fontSizeDistribution.get(fontSize) || 0) + 1)
     })
-    
+
     return { averageFontSize, totalCharacters, fontSizeDistribution }
   }
 
@@ -662,7 +664,7 @@ export class PdfElementComposer {
 
     // Use FlexPDF-inspired overlapping algorithm
     const clusters = this.findOverlappingClusters(sortedElements, pageStats)
-    
+
     // Convert clusters to composed paragraphs
     const paragraphs = clusters
       .filter(cluster => cluster.length > 0)
@@ -677,21 +679,21 @@ export class PdfElementComposer {
   private static findOverlappingClusters(elements: PdfElement[], pageStats: any): PdfElement[][] {
     const clusters: PdfElement[][] = []
     const processed = new Set<number>()
-    
+
     for (let i = 0; i < elements.length; i++) {
       if (processed.has(i)) continue
-      
+
       const cluster = [elements[i]]
       processed.add(i)
-      
+
       // Find all overlapping/adjacent elements
       let foundMatch = true
       while (foundMatch) {
         foundMatch = false
-        
+
         for (let j = 0; j < elements.length; j++) {
           if (processed.has(j)) continue
-          
+
           // Check if current element should merge with any element in cluster
           for (const clusterElement of cluster) {
             if (this.shouldMergeElements(clusterElement, elements[j], pageStats)) {
@@ -701,14 +703,14 @@ export class PdfElementComposer {
               break
             }
           }
-          
+
           if (foundMatch) break
         }
       }
-      
+
       clusters.push(cluster)
     }
-    
+
     return clusters
   }
 
@@ -720,14 +722,14 @@ export class PdfElementComposer {
     const fontSizeA = elementA.attributes?.fontSize || 12
     const fontSizeB = elementB.attributes?.fontSize || 12
     const relativeFontDiff = Math.abs(fontSizeA / fontSizeB - 1)
-    
+
     if (relativeFontDiff > 0.1) return false
-    
+
     // Spatial proximity check with dynamic expansion (FlexPDF-inspired)
     const avgFontSize = (fontSizeA + fontSizeB) / 2
     const correctedFontSize = Math.max(Math.pow(avgFontSize, 2) / pageStats.averageFontSize, avgFontSize)
     const expansionAmount = Math.min(Math.max(correctedFontSize / 3.5, 2), 10)
-    
+
     return this.intersectsWithExpansion(elementA.boundingBox, elementB.boundingBox, expansionAmount)
   }
 
@@ -736,18 +738,18 @@ export class PdfElementComposer {
    */
   private static intersectsWithExpansion(boxA: any, boxB: any, expansion: number): boolean {
     if (!boxA || !boxB) return false
-    
+
     const expandedA = {
       left: boxA.left - expansion,
       top: boxA.top - expansion,
       right: (boxA.left + boxA.width) + expansion,
       bottom: (boxA.top + boxA.height) + expansion
     }
-    
-    return !(expandedA.right < boxB.left || 
-             expandedA.left > (boxB.left + boxB.width) ||
-             expandedA.bottom < boxB.top ||
-             expandedA.top > (boxB.top + boxB.height))
+
+    return !(expandedA.right < boxB.left ||
+      expandedA.left > (boxB.left + boxB.width) ||
+      expandedA.bottom < boxB.top ||
+      expandedA.top > (boxB.top + boxB.height))
   }
 
   /**
@@ -774,10 +776,10 @@ export class PdfElementComposer {
 
     // Question patterns (generic interview/conversation starters)
     const isQuestion = /^(Can you|How do|What|Where|When|Why|Would you|Tell us|Share|Describe|Explain)/i.test(text)
-    
+
     // Formal introduction patterns
     const isFormalIntro = /^(Mr\.|Ms\.|Dr\.|Prof\.)\s/i.test(text)
-    
+
     return isQuestion || isFormalIntro
   }
 
@@ -790,7 +792,7 @@ export class PdfElementComposer {
 
     // Combine plain text content
     const paragraphText = elements.map(el => el.data).join(' ')
-    
+
     // Combine formatted HTML content preserving individual formatting
     const formattedHtml = this.combineFormattedText(elements)
 
@@ -859,7 +861,7 @@ export class PdfElementComposer {
    */
   private static combineFormattedText(elements: PdfElement[]): string {
     if (elements.length === 0) return ''
-    
+
     // Join formatted text with appropriate spacing
     const formattedParts = elements.map(el => {
       const formatted = el.formattedData || el.data || ''
@@ -873,11 +875,11 @@ export class PdfElementComposer {
     for (let i = 1; i < formattedParts.length; i++) {
       const prev = formattedParts[i - 1]
       const current = formattedParts[i]
-      
+
       // Check if we need space between parts
-      const needsSpace = !prev.endsWith('>') && !current.startsWith('<') && 
-                        !prev.endsWith(' ') && !current.startsWith(' ')
-      
+      const needsSpace = !prev.endsWith('>') && !current.startsWith('<') &&
+        !prev.endsWith(' ') && !current.startsWith(' ')
+
       result += (needsSpace ? ' ' : '') + current
     }
 

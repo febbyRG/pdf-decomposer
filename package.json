@@ -20,10 +20,10 @@
   "scripts": {
     "build": "tsc",
     "build:watch": "tsc --watch",
-    "dev": "tsc --watch",
     "prepare": "npm run build",
     "prepublishOnly": "npm run build && npm test",
     "test": "npx ts-node scripts/test.ts",
+    "test:screenshot": "npx ts-node scripts/test-screenshot.ts",
     "lint": "eslint . --ext .ts"
   },
   "repository": {

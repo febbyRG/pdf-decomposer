@@ -58,19 +58,17 @@ if (typeof globalThis !== 'undefined' && typeof globalThis.window !== 'undefined
 export interface DecomposeOptions {
   readonly startPage?: number // First page to process (1-indexed, default: 1)
   readonly endPage?: number // Last page to process (1-indexed, default: all pages)
-  readonly generateImages?: boolean // Generate page images and thumbnails (default: false)
-  readonly extractEmbeddedImages?: boolean // Extract individual images embedded in PDF content
+  readonly extractImages?: boolean // Extract individual images embedded in PDF content
   readonly outputDir?: string // Output directory for generated files (default: current directory)
   readonly elementComposer?: boolean // Group text elements into paragraphs for better structure (default: false)
   readonly pageComposer?: boolean // Combine pages with continuous content flow (default: false)
-  readonly imageWidth?: number // Width for rendered page images (default: 1200)
-  readonly imageQuality?: number // JPEG quality for page images (default: 90)
   readonly minify?: boolean // Simplify return data from decomposePdf (default: false)
 }
 
 /**
  * Decompose a PDF buffer and extract all page content (text, images, annotations, etc.) into JSON format.
  * Works in both Node.js and browser environments without file system dependencies.
+ * For page screenshots, use screenshotPdf() function instead.
  *
  * @param input PDF buffer (Buffer, ArrayBuffer, or Uint8Array)
  * @param options Optional configuration for decomposition
@@ -81,12 +79,16 @@ export interface DecomposeOptions {
  * // Node.js usage (if fs available)
  * import { readFileSync } from 'fs'
  * const buffer = readFileSync('document.pdf')
- * const result = await decomposePdf(buffer, { elementComposer: true })
+ * const result = await decomposePdf(buffer, { elementComposer: true, extractImages: true })
  *
  * // Browser usage
  * const file = fileInput.files[0]
  * const arrayBuffer = await file.arrayBuffer()
  * const result = await decomposePdf(arrayBuffer, { elementComposer: true })
+ *
+ * // For page screenshots, use screenshotPdf() instead:
+ * import { screenshotPdf } from 'pdf-decomposer'
+ * const screenshots = await screenshotPdf(buffer, { imageWidth: 1024, outputDir: './screenshots' })
  * ```
  */
 export async function decomposePdf(
@@ -141,12 +143,9 @@ export async function decomposePdf(
       pdfDoc,
       pkg,
       false, // skipDecompose
-      options.generateImages ?? false,
-      options.extractEmbeddedImages ?? false,
+      options.extractImages ?? false,
       enableElementComposer,
-      enablePageComposer,
-      options.imageWidth ?? 1200,
-      options.imageQuality ?? 90
+      enablePageComposer
     )
 
     // Process all pages first to load document

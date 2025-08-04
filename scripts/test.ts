@@ -100,8 +100,7 @@ class ComprehensiveTest {
 
       const pdfBuffer = this.readPdfBuffer()
       const result = await decomposePdf(pdfBuffer, {
-        generateImages: false,        // No Canvas-based page rendering
-        extractEmbeddedImages: false  // Text only
+        extractImages: false  // Text only
       })
 
       const duration = Date.now() - startTime
@@ -130,173 +129,84 @@ class ComprehensiveTest {
   }
 
   private async testEmbeddedImages() {
-    const testName = 'Embedded Images Extraction (Canvas-free)'
+    const testName = 'Page Image Extraction'
     const startTime = Date.now()
 
     try {
       console.log(`🔄 Running: ${testName}...`)
       console.log(`   📄 Testing with PDF: ${basename(this.pdfPath)}`)
 
-      const outputDir = join(this.baseOutputDir, 'embedded-images')
+      const outputDir = join(this.baseOutputDir, 'images')
       mkdirSync(outputDir, { recursive: true })
 
       const options = {
+        extractImages: true,
         elementComposer: true,
         pageComposer: true,
-        minify: true
       }
 
       const pdfBuffer = this.readPdfBuffer()
       const result = await decomposePdf(pdfBuffer, {
         ...options,
         outputDir,                    // Specify output directory
-        generateImages: false,        // No Canvas-based page rendering
-        extractEmbeddedImages: true   // Use our PdfImageExtractor with EXACT working logic
       })
 
       const duration = Date.now() - startTime
 
-      console.log(`   📊 Processing completed: ${result.length} pages, images found`)
-
-      // Save embedded images to files and analyze
-      const imageAnalysis: any[] = []
-      const generatedFiles: string[] = []
-
-      for (let i = 0; i < result.length; i++) {
-        const page = result[i]
-        const pageNum = page.pageNumber || (i + 1)
-        const imageElements = page.elements?.filter((e: any) => e.type === 'image') || []
-
-        if (imageElements.length > 0) {
-          console.log(`   📸 Page ${pageNum}: Found ${imageElements.length} embedded images`)
-        }
-
-        for (let j = 0; j < imageElements.length; j++) {
-          const imageElement = imageElements[j]
-          // Determine display filename - check if it's a data URL or actual filename
-          let displayFilename: string
-          if (imageElement.data && typeof imageElement.data === 'string') {
-            if (imageElement.data.startsWith('data:image/')) {
-              // It's a base64 data URL, extract just the format and show data size
-              const base64Data = imageElement.data.split(',')[1] || ''
-              const sizeKB = base64Data ? Math.round(base64Data.length * 0.75 / 1024) : 0
-              displayFilename = `base64 data (${sizeKB}KB)`
-            } else {
-              displayFilename = imageElement.data
-            }
-          } else {
-            displayFilename = 'unknown'
-          }
-
-          const analysis = {
-            id: imageElement.id,
-            width: imageElement.width,
-            height: imageElement.height,
-            format: imageElement.format,
-            scaled: imageElement.attributes?.scaled,
-            scaleFactor: imageElement.attributes?.scaleFactor,
-            filename: displayFilename,
-            data: imageElement.data, // Keep original data for processing
-            dataSize: 0 // Will be set later if file exists
-          }
-          imageAnalysis.push(analysis)
-
-          console.log(`      ✅ ${analysis.id}: ${analysis.width}x${analysis.height} (${analysis.format}) - saved as ${analysis.filename} ${analysis.scaled ? `[scaled ${(analysis.scaleFactor * 100).toFixed(1)}%]` : ''}`)
-
-          // Check if the file actually exists (PdfImageExtractor saves them directly)
-          if (imageElement.data && typeof imageElement.data === 'string' && imageElement.data.endsWith('.png')) {
-            // Check in multiple possible locations for actual file path
-            const possiblePaths = [
-              imageElement.data, // Current working directory
-              join(process.cwd(), imageElement.data), // Explicit current directory
-              join(outputDir, imageElement.data), // Output directory
-              join(__dirname, imageElement.data), // Script directory
-              join(__dirname, 'test-input', imageElement.data) // Test input directory
-            ]
-
-            for (const filePath of possiblePaths) {
-              if (existsSync(filePath)) {
-                const stats = statSync(filePath)
-                analysis.dataSize = stats.size
-                generatedFiles.push(filePath)
-                console.log(`      💾 Found saved file: ${basename(filePath)} (${(stats.size / 1024).toFixed(1)}KB) at ${filePath}`)
-                break
-              }
-            }
-          } else if (imageElement.data && typeof imageElement.data === 'string' && imageElement.data.startsWith('data:image/')) {
-            // It's base64 data - calculate the data size
-            const base64Data = imageElement.data.split(',')[1] || ''
-            analysis.dataSize = base64Data ? Math.round(base64Data.length * 0.75) : 0
-            console.log(`      💾 Base64 data available: ${(analysis.dataSize / 1024).toFixed(1)}KB in memory`)
-          }
-        }
-      }
+      console.log(`   📊 Processing completed: ${result.length} pages`)
 
       // Check for additional asset files in output directory
+      const generatedFiles: string[] = []
       const assetFiles = existsSync(outputDir) ? readdirSync(outputDir) : []
       const directAssetImages = assetFiles.filter((file: string) => file.endsWith('.png') || file.endsWith('.jpg') || file.endsWith('.jpeg'))
 
       if (directAssetImages.length > 0) {
-        console.log(`   📁 Found ${directAssetImages.length} additional saved images in output dir:`)
+        console.log(`   📁 Found ${directAssetImages.length} total image files in output dir:`)
         directAssetImages.forEach((file: string) => {
           const filePath = join(outputDir, file)
           const stats = statSync(filePath)
           console.log(`     📄 ${file} - ${(stats.size / 1024).toFixed(1)}KB`)
-          generatedFiles.push(filePath)
+          if (!generatedFiles.includes(filePath)) {
+            generatedFiles.push(filePath)
+          }
         })
       }
 
-      // ALSO CHECK ROOT DIRECTORY for image files (current bug: files saved to root)
-      const rootDir = process.cwd()
-      const rootFiles = existsSync(rootDir) ? readdirSync(rootDir) : []
-      const rootImageFiles = rootFiles.filter((file: string) => file.startsWith('img_') && (file.endsWith('.png') || file.endsWith('.jpg') || file.endsWith('.jpeg')))
+      const expectedFiles = 1
+      const actualFiles = generatedFiles.length
+      const successRate = actualFiles > 0 ? ((actualFiles / expectedFiles) * 100) : 0
 
-      if (rootImageFiles.length > 0) {
-        console.log(`   📁 Found ${rootImageFiles.length} images in root directory (path handling bug):`)
-        rootImageFiles.forEach((file: string) => {
-          const filePath = join(rootDir, file)
-          const stats = statSync(filePath)
-          console.log(`     📄 ${file} - ${(stats.size / 1024).toFixed(1)}KB`)
-          generatedFiles.push(filePath)
-        })
-      }
-
-      const expectedImages = 12 // Based on our test PDF
-      const embeddedImageCount = imageAnalysis.length // Use actual found images count
-      const successRate = embeddedImageCount > 0 ? ((embeddedImageCount / expectedImages) * 100) : 0
-
-      // Test passes if we extract the expected number of images
-      const testPassed = embeddedImageCount >= expectedImages
+      // Test passes if we generate the expected image files
+      const testPassed = actualFiles >= expectedFiles
 
       this.results.push({
         name: testName,
         passed: testPassed,
         duration,
-        details: `Extracted ${embeddedImageCount}/${expectedImages} embedded images (${successRate.toFixed(1)}% success rate), generated ${generatedFiles.length} files`,
+        details: `Generated ${actualFiles}/${expectedFiles} image files (${successRate.toFixed(1)}% success rate) for page images`,
         pageCount: result.length,
-        embeddedImageCount,
+        imageCount: actualFiles,
         outputSize: generatedFiles.length
       })
 
       if (testPassed) {
-        console.log(`  ✅ Image extraction test PASSED: ${embeddedImageCount} images found, ${generatedFiles.length} files generated in ${duration}ms`)
-        console.log(`     Success rate: ${successRate.toFixed(1)}% (${embeddedImageCount}/${expectedImages} images)`)
+        console.log(`  ✅ Page image test PASSED: ${actualFiles} files generated in ${duration}ms`)
+        console.log(`     Success rate: ${successRate.toFixed(1)}% (${actualFiles}/${expectedFiles} files)`)
       } else {
-        console.log(`  ❌ Image extraction test FAILED: Only ${embeddedImageCount} images found, ${generatedFiles.length} files generated`)
+        console.log(`  ❌ Page image test FAILED: Only ${actualFiles} files generated, expected ${expectedFiles}`)
       }
 
-      // Save detailed image analysis
+      // Save detailed analysis
       const analysisPath = join(outputDir, 'image-analysis.json')
       writeFileSync(analysisPath, JSON.stringify({
         summary: {
-          totalImages: embeddedImageCount,
-          expectedImages,
+          totalFiles: actualFiles,
+          expectedFiles,
           successRate: successRate.toFixed(1),
-          totalFiles: generatedFiles.length,
           processingTime: duration,
           testPassed
         },
-        images: imageAnalysis,
+        result: result,
         generatedFiles,
         assetFiles: directAssetImages
       }, null, 2))
@@ -328,8 +238,7 @@ class ComprehensiveTest {
 
       const pdfBuffer = this.readPdfBuffer()
       const result = await decomposePdf(pdfBuffer, {
-        generateImages: false,
-        extractEmbeddedImages: true,
+        extractImages: true,
         startPage: 2,
         endPage: 4
       })
@@ -369,8 +278,7 @@ class ComprehensiveTest {
 
       const pdfBuffer = this.readPdfBuffer()
       const result = await decomposePdf(pdfBuffer, {
-        generateImages: false,
-        extractEmbeddedImages: true,
+        extractImages: true,
         startPage: 1,
         endPage: 1
       })

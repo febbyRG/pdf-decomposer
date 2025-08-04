@@ -1,7 +1,7 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import { v4 as uuidv4 } from 'uuid'
-import type { PdfDecomposer } from './PdfDecomposer.js'
+import { PdfDecomposer } from './PdfDecomposer.js'
 import { PdfImageExtractor } from './PdfImageExtractor.js'
 
 export class PdfDecomposerPage {
@@ -9,10 +9,7 @@ export class PdfDecomposerPage {
     private decomposer: PdfDecomposer,
     private pageIndex: number,
     private skipParser: boolean = false,
-    private generateImages: boolean = false,
-    private extractEmbeddedImages: boolean = false,
-    private imageWidth: number = 1200,
-    private imageQuality: number = 90
+    private extractImages: boolean = false
   ) { }
 
   async decompose(): Promise<any> {
@@ -24,41 +21,29 @@ export class PdfDecomposerPage {
     const pageIndex = this.pageIndex - 1
     const title = `Page ${pageNumber}`
 
-    // Generate unique filenames and determine output directory
-    const baseId = uuidv4()
-    const imageFilename = `${baseId}-${pageNumber}.jpg`
-    const thumbFilename = `${baseId}-${pageNumber}.thumb.jpg`
+    // Determine output directory for embedded images
     let outputDir = '.'
     if (this.decomposer.pkg.pkgDir && typeof this.decomposer.pkg.pkgDir === 'object' && 'dir' in this.decomposer.pkg.pkgDir) {
       outputDir = (this.decomposer.pkg.pkgDir as any).dir || '.'
     }
 
-    // Extract text and embedded images without page rendering
+    // Extract text and embedded images
     console.log(`📝 Extracting content for page ${pageNumber} (no page images)`)
 
     const elements: any[] = [
       ...await this.extractTextElements(pdfPage, pageIndex),
       // Extract embedded images if enabled
-      ...(this.extractEmbeddedImages ? await this.extractImageElements(pdfPage, pageIndex, outputDir) : [])
+      ...(this.extractImages ? await this.extractImageElements(pdfPage, pageIndex, outputDir) : [])
     ]
 
-    // Return page data without generating page images
+    // Return page data
     const result = {
       pageIndex,
       pageNumber,
       width,
       height,
       title,
-      image: this.generateImages ? imageFilename : null,
-      thumbnail: this.generateImages ? thumbFilename : null,
       elements
-    }
-
-    // Create placeholder files if image generation is enabled
-    if (this.generateImages) {
-      console.log(`📋 Creating placeholder images for page ${pageNumber}`)
-      this.createPlaceholderImage(path.join(outputDir, imageFilename), width, height, pageNumber, false)
-      this.createPlaceholderImage(path.join(outputDir, thumbFilename), 120, 160, pageNumber, true)
     }
 
     return result
@@ -216,49 +201,6 @@ export class PdfDecomposerPage {
       width,
       height
     }
-  }
-
-  /**
-   * Create a placeholder image without using canvas operations
-   */
-  private createPlaceholderImage(filePath: string, width: number, height: number, pageNumber: number, isThumbnail: boolean): void {
-    // For now, create a simple text file that represents the image placeholder
-    // This avoids any canvas memory allocation
-    const placeholderInfo = {
-      type: 'placeholder',
-      width,
-      height,
-      pageNumber,
-      isThumbnail,
-      note: 'This is a placeholder to avoid memory issues with canvas operations'
-    }
-
-    // Write placeholder info as a small text file
-    const infoPath = filePath.replace(/\.(jpg|png)$/, '.placeholder.json')
-    fs.writeFileSync(infoPath, JSON.stringify(placeholderInfo, null, 2))
-
-    // Create a minimal 1x1 pixel placeholder image to satisfy file existence checks
-    // This is the smallest possible image file we can create
-    const minimalImageBuffer = Buffer.from([
-      0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46, 0x00, 0x01,
-      0x01, 0x01, 0x00, 0x48, 0x00, 0x48, 0x00, 0x00, 0xFF, 0xDB, 0x00, 0x43,
-      0x00, 0x08, 0x06, 0x06, 0x07, 0x06, 0x05, 0x08, 0x07, 0x07, 0x07, 0x09,
-      0x09, 0x08, 0x0A, 0x0C, 0x14, 0x0D, 0x0C, 0x0B, 0x0B, 0x0C, 0x19, 0x12,
-      0x13, 0x0F, 0x14, 0x1D, 0x1A, 0x1F, 0x1E, 0x1D, 0x1A, 0x1C, 0x1C, 0x20,
-      0x24, 0x2E, 0x27, 0x20, 0x22, 0x2C, 0x23, 0x1C, 0x1C, 0x28, 0x37, 0x29,
-      0x2C, 0x30, 0x31, 0x34, 0x34, 0x34, 0x1F, 0x27, 0x39, 0x3D, 0x38, 0x32,
-      0x3C, 0x2E, 0x33, 0x34, 0x32, 0xFF, 0xC0, 0x00, 0x11, 0x08, 0x00, 0x01,
-      0x00, 0x01, 0x01, 0x01, 0x11, 0x00, 0x02, 0x11, 0x01, 0x03, 0x11, 0x01,
-      0xFF, 0xC4, 0x00, 0x14, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0xFF, 0xC4,
-      0x00, 0x14, 0x10, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xDA, 0x00, 0x0C,
-      0x03, 0x01, 0x00, 0x02, 0x11, 0x03, 0x11, 0x00, 0x3F, 0x00, 0x8A, 0x00,
-      0xFF, 0xD9
-    ])
-
-    fs.writeFileSync(filePath, minimalImageBuffer)
-    console.log(`📋 Created placeholder image: ${path.basename(filePath)} (${minimalImageBuffer.length} bytes)`)
   }
 
   /**

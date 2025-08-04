@@ -1,5 +1,6 @@
 // Main API (Buffer-based, works in both Node.js and browser)
 export * from './api/decomposePdf.js'
+export * from './api/screenshotPdf.js'
 
 // Core classes (Node.js environment)
 export * from './core/PdfDocument.js'

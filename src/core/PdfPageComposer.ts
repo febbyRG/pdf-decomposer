@@ -30,7 +30,7 @@ export class PdfPageComposer {
 
       // Check if content continues to next page
       const continuestoNext = nextPage && this.hasContentContinuity(currentPage, nextPage)
-      
+
       console.log(`   → Continues to next page: ${continuestoNext}`)
 
       if (!continuestoNext) {
@@ -45,7 +45,7 @@ export class PdfPageComposer {
           composedPages.push(composedPage)
           console.log(`   ✅ Composed pages ${currentPageGroup.map(p => p.pageNumber).join(', ')} into single page`)
         }
-        
+
         // Reset for next group
         currentPageGroup = []
       }
@@ -86,7 +86,7 @@ export class PdfPageComposer {
     // 3. Content type analysis
     const currentContentType = this.analyzeContentType(currentPage)
     const nextContentType = this.analyzeContentType(nextPage)
-    
+
     console.log(`   Current content type: ${currentContentType}`)
     console.log(`   Next content type: ${nextContentType}`)
 
@@ -111,11 +111,11 @@ export class PdfPageComposer {
     // Decision: require at least 1 strong indicator OR 2 weaker indicators OR special case for feature articles
     const continuityScore = [hasTextFlow, hasTypographyConsistency, hasStructuralContinuity].filter(Boolean).length
     const strongIndicators = [hasTextFlow && hasTypographyConsistency, hasTextFlow && hasStructuralContinuity].filter(Boolean).length
-    
+
     // Special case: if both pages are feature content and have text flow, be more lenient
     const isFeatureContent = currentContentType === 'feature' && nextContentType === 'feature'
     const featureContinuity = isFeatureContent && hasTextFlow
-    
+
     const hasContinuity = strongIndicators > 0 || continuityScore >= 2 || featureContinuity
 
     console.log(`   🎯 Continuity score: ${continuityScore}/3, strong indicators: ${strongIndicators}, feature continuity: ${featureContinuity} → ${hasContinuity ? 'CONTINUES' : 'BREAKS'}`)
@@ -127,12 +127,12 @@ export class PdfPageComposer {
    */
   private static isCoverPage(page: PdfPageContent): boolean {
     const textElements = this.getTextElements(page)
-    
+
     if (textElements.length === 0) return true
 
     // Cover page indicators
     const pageText = this.getCleanPageText(page)
-    
+
     // 1. High ratio of header/title elements vs paragraphs
     const headerElements = textElements.filter(el => el.type === 'header' || (el.attributes?.type && ['h1', 'h2', 'h3', 'h4', 'h5'].includes(el.attributes.type)))
     const headerRatio = headerElements.length / textElements.length
@@ -143,15 +143,15 @@ export class PdfPageComposer {
 
     // 3. Contains typical cover elements
     const hasCoverKeywords = /beyond boundaries|exploring new horizons|featuring/i.test(pageText)
-    
+
     // 4. Large font elements (covers often have big titles)
     const largeFontElements = textElements.filter(el => (el.attributes?.fontSize || 0) > 20)
     const hasLargeFonts = largeFontElements.length > 0
 
     const isCover = (headerRatio > 0.6 && isShortText) || (hasCoverKeywords && hasLargeFonts)
-    
+
     console.log(`   Cover indicators: headerRatio=${headerRatio.toFixed(2)}, textLength=${totalTextLength}, coverKeywords=${hasCoverKeywords}, largeFonts=${hasLargeFonts} → ${isCover}`)
-    
+
     return isCover
   }
 
@@ -163,7 +163,7 @@ export class PdfPageComposer {
     if (textElements.length === 0) return false
 
     const firstElements = textElements.slice(0, 3)
-    
+
     // Look for section title patterns
     for (const element of firstElements) {
       const text = this.getCleanText(element)
@@ -198,15 +198,15 @@ export class PdfPageComposer {
     if (this.isCoverPage(page)) return 'cover'
 
     // Interview content
-    if (pageText.includes('mohammad alawi') || 
-        /can you|what inspired|how does|tell us about/i.test(pageText) ||
-        /chairman of the executive committee|red sea markets/i.test(pageText)) {
+    if (pageText.includes('mohammad alawi') ||
+      /can you|what inspired|how does|tell us about/i.test(pageText) ||
+      /chairman of the executive committee|red sea markets/i.test(pageText)) {
       return 'interview'
     }
 
-    // Feature content  
+    // Feature content
     if (/^feature/i.test(pageText) ||
-        /the future|robotics|automation|multi-generational|multi-cultural|phil kim|jerde/i.test(pageText)) {
+      /the future|robotics|automation|multi-generational|multi-cultural|phil kim|jerde/i.test(pageText)) {
       return 'feature'
     }
 
@@ -235,15 +235,15 @@ export class PdfPageComposer {
 
     // 1. Check if last text ends abruptly (incomplete sentence)
     const hasIncompleteEnding = !/[.!?]\\s*$/.test(lastText.trim())
-    
+
     // 2. Check if first text continues a thought (starts with connector or lowercase)
-    const hasTextContinuation = /^[a-z]/.test(firstText.trim()) || 
-                                /^(and|but|however|therefore|thus|moreover|also|furthermore)/i.test(firstText.trim())
+    const hasTextContinuation = /^[a-z]/.test(firstText.trim()) ||
+      /^(and|but|however|therefore|thus|moreover|also|furthermore)/i.test(firstText.trim())
 
     // 3. Check for topic continuity (same subject matter)
     const lastWords = lastText.toLowerCase().split(/\\s+/).slice(-10).join(' ')
     const firstWords = firstText.toLowerCase().split(/\\s+/).slice(0, 10).join(' ')
-    
+
     // Look for common keywords that indicate continuity
     const commonKeywords = ['mohammad', 'alawi', 'point', 'abha', 'project', 'red sea', 'tourism', 'mall', 'retail']
     const lastHasKeywords = commonKeywords.some(keyword => lastWords.includes(keyword))
@@ -381,24 +381,28 @@ export class PdfPageComposer {
   private static orderElementsSpatially(elements: PdfElement[]): PdfElement[] {
     // Group elements by their original page
     const elementsByPage = new Map<number, PdfElement[]>()
-    
+
     elements.forEach(element => {
       const pageIndex = element.pageIndex || 0
       if (!elementsByPage.has(pageIndex)) {
         elementsByPage.set(pageIndex, [])
       }
-      elementsByPage.get(pageIndex)!.push(element)
+      const pageElementsList = elementsByPage.get(pageIndex)
+      if (pageElementsList) {
+        pageElementsList.push(element)
+      }
     })
 
     // Sort elements within each page group by reading order
     const orderedElements: PdfElement[] = []
-    
+
     // Process pages in order
     const sortedPageIndexes = Array.from(elementsByPage.keys()).sort((a, b) => a - b)
-    
+
     for (const pageIndex of sortedPageIndexes) {
-      const pageElements = elementsByPage.get(pageIndex)!
-      
+      const pageElements = elementsByPage.get(pageIndex)
+      if (!pageElements) continue
+
       // Sort elements within this page by reading order (top-to-bottom, left-to-right)
       const sortedPageElements = pageElements.sort((a, b) => {
         const aTop = a.boundingBox?.top || 0
@@ -407,7 +411,7 @@ export class PdfPageComposer {
 
         // If elements are on different lines (>10pt difference), sort by Y position
         if (Math.abs(yDiff) > 10) return yDiff
-        
+
         // If on same line, sort by X position (left-to-right)
         const aLeft = a.boundingBox?.left || (Array.isArray(a.boundingBox) ? a.boundingBox[0] : 0)
         const bLeft = b.boundingBox?.left || (Array.isArray(b.boundingBox) ? b.boundingBox[0] : 0)
