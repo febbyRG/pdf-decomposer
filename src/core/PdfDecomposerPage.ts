@@ -9,7 +9,8 @@ export class PdfDecomposerPage {
     private decomposer: PdfDecomposerPageData,
     private pageIndex: number,
     private skipParser: boolean = false,
-    private extractImages: boolean = false
+    private extractImages: boolean = false,
+    private outputDir?: string  // Add outputDir parameter
   ) { }
 
   async decompose(): Promise<any> {
@@ -21,11 +22,8 @@ export class PdfDecomposerPage {
     const pageIndex = this.pageIndex - 1
     const title = `Page ${pageNumber}`
 
-    // Determine output directory for embedded images
-    let outputDir = '.'
-    if (this.decomposer.pkg.pkgDir && typeof this.decomposer.pkg.pkgDir === 'object' && 'dir' in this.decomposer.pkg.pkgDir) {
-      outputDir = (this.decomposer.pkg.pkgDir as any).dir || '.'
-    }
+    // Use provided outputDir, fallback to pkg dir, or undefined for base64 mode
+    const outputDir = this.outputDir
 
     // Extract text and embedded images
     console.log(`📝 Extracting content for page ${pageNumber} (no page images)`)
@@ -50,7 +48,7 @@ export class PdfDecomposerPage {
   }
 
   // Use universal image extraction (works in both Node.js and Browser)
-  private async extractImageElements(pdfPage: any, pageIndex: number, outputDir: string): Promise<any[]> {
+  private async extractImageElements(pdfPage: any, pageIndex: number, outputDir?: string): Promise<any[]> {
     if (this.skipParser) { return [] }
 
     try {
@@ -62,9 +60,9 @@ export class PdfDecomposerPage {
       const imageElements: any[] = []
       for (const img of universalImages) {
         try {
-          const dataReference = img.data // Always use data URL for universal compatibility
+          let dataReference = img.data // Default to data URL
 
-          // In Node.js environment, optionally save to file but keep data URL for return value
+          // In Node.js environment, save to file and use filename if outputDir exists
           if (typeof process !== 'undefined' && process.versions && process.versions.node && outputDir) {
             try {
               // Convert base64 to buffer and save
@@ -74,13 +72,18 @@ export class PdfDecomposerPage {
                 const fileName = `${img.id}.png`
                 const filePath = path.join(outputDir, fileName)
                 fs.writeFileSync(filePath, buffer)
-                // Keep dataReference as data URL for universal compatibility
-                console.log(`    💾 Saved to file: ${fileName} (keeping data URL for compatibility)`)
+                
+                // Use filename instead of data URL when outputDir is provided
+                dataReference = fileName
+                console.log(`    💾 Saved to file: ${fileName} (using filename in result)`)
               }
             } catch (saveError) {
               console.warn(`Failed to save image ${img.id} to file, keeping as data URL:`, saveError)
               // Keep as data URL if file save fails
+              dataReference = img.data
             }
+          } else {
+            console.log('    � Using base64 data URL (no outputDir specified)')
           }
 
           imageElements.push({
@@ -126,15 +129,19 @@ export class PdfDecomposerPage {
               throw new Error('Unknown image data type')
             }
             const fileName = `${objectId}.png`
-            const filePath = path.join(outputDir, fileName)
-            fs.writeFileSync(filePath, buffer)
+            
+            if (outputDir) {
+              const filePath = path.join(outputDir, fileName)
+              fs.writeFileSync(filePath, buffer)
+            }
+            
             const attributes = { type: 'legacy' }
             return {
               id: uuidv4(),
               pageIndex,
               type: 'image',
               boundingBox,
-              data: fileName,
+              data: outputDir ? fileName : `data:image/png;base64,${buffer.toString('base64')}`,
               attributes
             }
           }))

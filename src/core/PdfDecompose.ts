@@ -199,7 +199,8 @@ export async function pdfDecompose(
             mockDecomposer,
             actualPageNumber, 
             false, // skipDecompose
-            finalOptions.extractImages ?? false
+            finalOptions.extractImages ?? false,
+            finalOptions.outputDir  // Pass outputDir to page
           )
           pkg.pages[pageIndex] = await page.decompose()
 
