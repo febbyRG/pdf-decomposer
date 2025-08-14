@@ -13,7 +13,7 @@
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'fs'
 import { basename, join } from 'path'
-import { decomposePdf } from '../dist/index'
+import { PdfDecomposer } from '../dist/index'
 
 interface TestResult {
   name: string
@@ -31,6 +31,7 @@ class ComprehensiveTest {
   private baseOutputDir: string
   private pdfPath: string
   private pdfFile = 'demo.pdf'
+  private decomposer!: PdfDecomposer
 
   constructor(customPdfPath?: string) {
     this.baseOutputDir = join(__dirname, 'test-output')
@@ -39,6 +40,13 @@ class ComprehensiveTest {
 
   private readPdfBuffer(): Buffer {
     return readFileSync(this.pdfPath)
+  }
+
+  private async initializeDecomposer(): Promise<void> {
+    const pdfBuffer = this.readPdfBuffer()
+    this.decomposer = new PdfDecomposer(pdfBuffer)
+    await this.decomposer.initialize()
+    console.log('🚀 PDF decomposer initialized and ready for tests')
   }
 
   async run() {
@@ -65,23 +73,26 @@ class ComprehensiveTest {
     mkdirSync(this.baseOutputDir, { recursive: true })
 
     try {
+      // Initialize decomposer once for all tests
+      await this.initializeDecomposer()
+
       // Test: Embedded images extraction
       await this.testEmbeddedImages()
 
       // Test: Memory-efficient mode
-      // await this.testMemoryEfficientMode()
+      await this.testMemoryEfficientMode()
 
       // Test: Page range processing
-      // await this.testPageRange()
+      await this.testPageRange()
 
       // Test: Single page processing
-      // await this.testSinglePage()
+      await this.testSinglePage()
 
       // Test: Error handling
-      // await this.testErrorHandling()
+      await this.testErrorHandling()
 
       // Print results
-      // this.printResults()
+      this.printResults()
 
       process.exit(0)
 
@@ -97,9 +108,9 @@ class ComprehensiveTest {
 
     try {
       console.log(`🔄 Running: ${testName}...`)
-
-      const pdfBuffer = this.readPdfBuffer()
-      const result = await decomposePdf(pdfBuffer, {
+      
+      // Use already initialized decomposer
+      const result = await this.decomposer.decompose({
         extractImages: false  // Text only
       })
 
@@ -111,7 +122,7 @@ class ComprehensiveTest {
         name: testName,
         passed: result.length > 0,
         duration,
-        details: `Extracted ${textElements} text elements from ${result.length} pages, no Canvas dependencies`,
+        details: `Extracted ${textElements.length} text elements from ${result.length} pages, no Canvas dependencies`,
         pageCount: result.length
       })
 
@@ -134,7 +145,7 @@ class ComprehensiveTest {
 
     try {
       console.log(`🔄 Running: ${testName}...`)
-      console.log(`   📄 Testing with PDF: ${basename(this.pdfPath)}`)
+      console.log(`📄 Testing with PDF: ${basename(this.pdfPath)}`)
 
       const outputDir = join(this.baseOutputDir, 'images')
       mkdirSync(outputDir, { recursive: true })
@@ -144,16 +155,16 @@ class ComprehensiveTest {
         elementComposer: true,
         pageComposer: true,
       }
-
-      const pdfBuffer = this.readPdfBuffer()
-      const result = await decomposePdf(pdfBuffer, {
+      
+      // Use already initialized decomposer
+      const result = await this.decomposer.decompose({
         ...options,
         outputDir,                    // Specify output directory
       })
 
       const duration = Date.now() - startTime
 
-      console.log(`   📊 Processing completed: ${result.length} pages`)
+      console.log(`📊 Processing completed: ${result.length} pages`)
 
       // Check for additional asset files in output directory
       const generatedFiles: string[] = []
@@ -161,11 +172,11 @@ class ComprehensiveTest {
       const directAssetImages = assetFiles.filter((file: string) => file.endsWith('.png') || file.endsWith('.jpg') || file.endsWith('.jpeg'))
 
       if (directAssetImages.length > 0) {
-        console.log(`   📁 Found ${directAssetImages.length} total image files in output dir:`)
+        console.log(`📁 Found ${directAssetImages.length} total image files in output dir:`)
         directAssetImages.forEach((file: string) => {
           const filePath = join(outputDir, file)
           const stats = statSync(filePath)
-          console.log(`     📄 ${file} - ${(stats.size / 1024).toFixed(1)}KB`)
+          console.log(`📄 ${file} - ${(stats.size / 1024).toFixed(1)}KB`)
           if (!generatedFiles.includes(filePath)) {
             generatedFiles.push(filePath)
           }
@@ -190,10 +201,10 @@ class ComprehensiveTest {
       })
 
       if (testPassed) {
-        console.log(`  ✅ Page image test PASSED: ${actualFiles} files generated in ${duration}ms`)
-        console.log(`     Success rate: ${successRate.toFixed(1)}% (${actualFiles}/${expectedFiles} files)`)
+        console.log(`✅ Page image test PASSED: ${actualFiles} files generated in ${duration}ms`)
+        console.log(`Success rate: ${successRate.toFixed(1)}% (${actualFiles}/${expectedFiles} files)`)
       } else {
-        console.log(`  ❌ Page image test FAILED: Only ${actualFiles} files generated, expected ${expectedFiles}`)
+        console.log(`❌ Page image test FAILED: Only ${actualFiles} files generated, expected ${expectedFiles}`)
       }
 
       // Save detailed analysis
@@ -215,7 +226,7 @@ class ComprehensiveTest {
       const resultPath = join(outputDir, 'result.json')
       writeFileSync(resultPath, JSON.stringify(result, null, 2), 'utf-8')
 
-      console.log(`   📄 Complete decompose result saved to: ${basename(resultPath)}`)
+      console.log(`📄 Complete decompose result saved to: ${basename(resultPath)}`)
 
     } catch (error) {
       this.results.push({
@@ -224,8 +235,8 @@ class ComprehensiveTest {
         duration: Date.now() - startTime,
         details: `Error: ${(error as Error).message}`
       })
-      console.log(`  ❌ Failed: ${(error as Error).message}`)
-      console.error('   Full error:', error)
+      console.log(`❌ Failed: ${(error as Error).message}`)
+      console.error('Full error:', error)
     }
   }
 
@@ -235,9 +246,9 @@ class ComprehensiveTest {
 
     try {
       console.log(`🔄 Running: ${testName}...`)
-
-      const pdfBuffer = this.readPdfBuffer()
-      const result = await decomposePdf(pdfBuffer, {
+      
+      // Use already initialized decomposer
+      const result = await this.decomposer.decompose({
         extractImages: true,
         startPage: 2,
         endPage: 4
@@ -275,9 +286,9 @@ class ComprehensiveTest {
 
     try {
       console.log(`🔄 Running: ${testName}...`)
-
-      const pdfBuffer = this.readPdfBuffer()
-      const result = await decomposePdf(pdfBuffer, {
+      
+      // Use already initialized decomposer
+      const result = await this.decomposer.decompose({
         extractImages: true,
         startPage: 1,
         endPage: 1
@@ -294,7 +305,7 @@ class ComprehensiveTest {
         pageCount: result.length
       })
 
-      console.log(`  ✓ Processed single page 1 correctly in ${duration}ms`)
+      console.log(`✓ Processed single page 1 correctly in ${duration}ms`)
 
     } catch (error) {
       this.results.push({
@@ -303,7 +314,7 @@ class ComprehensiveTest {
         duration: Date.now() - startTime,
         details: `Error: ${(error as Error).message}`
       })
-      console.log(`  ❌ Failed: ${(error as Error).message}`)
+      console.log(`❌ Failed: ${(error as Error).message}`)
     }
   }
 
@@ -314,22 +325,21 @@ class ComprehensiveTest {
     try {
       console.log(`🔄 Running: ${testName}...`)
 
-      const pdfBuffer = this.readPdfBuffer()
       let errorsCaught = 0
 
-      // Test invalid startPage
+      // Test invalid startPage (reuse decomposer, should fail at validation level)
       try {
-        await decomposePdf(pdfBuffer, { startPage: 0 })
+        await this.decomposer.decompose({ startPage: 0 })
       } catch { errorsCaught++ }
 
-      // Test startPage > endPage
+      // Test startPage > endPage (reuse decomposer, should fail at validation level)
       try {
-        await decomposePdf(pdfBuffer, { startPage: 5, endPage: 3 })
+        await this.decomposer.decompose({ startPage: 5, endPage: 3 })
       } catch { errorsCaught++ }
 
-      // Test startPage beyond document
+      // Test startPage beyond document (reuse decomposer, should process 0 pages)
       try {
-        await decomposePdf(pdfBuffer, { startPage: 100 })
+        await this.decomposer.decompose({ startPage: 100 })
       } catch { errorsCaught++ }
 
       const duration = Date.now() - startTime
@@ -341,7 +351,7 @@ class ComprehensiveTest {
         details: `Correctly caught ${errorsCaught}/3 expected error conditions`
       })
 
-      console.log(`  ✓ Error handling working correctly (${errorsCaught}/3 errors caught) in ${duration}ms`)
+      console.log(`✓ Error handling working correctly (${errorsCaught}/3 errors caught) in ${duration}ms`)
 
     } catch (error) {
       this.results.push({
@@ -350,7 +360,7 @@ class ComprehensiveTest {
         duration: Date.now() - startTime,
         details: `Unexpected error: ${(error as Error).message}`
       })
-      console.log(`  ❌ Failed: ${(error as Error).message}`)
+      console.log(`❌ Failed: ${(error as Error).message}`)
     }
   }
 
@@ -368,13 +378,13 @@ class ComprehensiveTest {
     this.results.forEach((result, i) => {
       const status = result.passed ? '✅' : '❌'
       console.log(`${i + 1}. ${status} ${result.name}`)
-      console.log(`   Duration: ${result.duration}ms`)
-      console.log(`   Details: ${result.details}`)
+      console.log(`Duration: ${result.duration}ms`)
+      console.log(`Details: ${result.details}`)
 
-      if (result.pageCount) console.log(`   Pages processed: ${result.pageCount}`)
-      if (result.imageCount) console.log(`   Images generated: ${result.imageCount}`)
-      if (result.embeddedImageCount) console.log(`   Embedded images: ${result.embeddedImageCount}`)
-      if (result.outputSize) console.log(`   Output files: ${result.outputSize}`)
+      if (result.pageCount) console.log(`Pages processed: ${result.pageCount}`)
+      if (result.imageCount) console.log(`Images generated: ${result.imageCount}`)
+      if (result.embeddedImageCount) console.log(`Embedded images: ${result.embeddedImageCount}`)
+      if (result.outputSize) console.log(`Output files: ${result.outputSize}`)
       console.log('')
     })
 

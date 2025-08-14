@@ -12,20 +12,7 @@
 // Browser environment check
 const isBrowser = typeof window !== 'undefined' && typeof document !== 'undefined'
 
-export interface ExtractedImage {
-  id: string
-  data: string // base64 data URL
-  format: 'png' | 'jpg' | 'jpeg'
-  width: number
-  height: number
-  actualWidth?: number
-  actualHeight?: number
-  scaled?: boolean
-  scaleFactor?: number
-  pageNumber: number
-  alt: string
-  type: 'embedded'
-}
+import type { ExtractedImage } from '../types/image.types.js'
 
 export class PdfImageExtractor {
   /**

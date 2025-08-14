@@ -1,6 +1,5 @@
-// Main API (Buffer-based, works in both Node.js and browser)
-export * from './api/decomposePdf.js'
-export * from './api/screenshotPdf.js'
+// Enhanced Class-based API (Load once, use many times)
+export { PdfDecomposer } from './api/PdfDecomposer.js'
 
 // Core classes (Node.js environment)
 export * from './core/PdfDocument.js'
@@ -12,9 +11,13 @@ export * from './core/PdfPage.js'
 export * from './core/PdfTextEvaluator.js'
 export * from './core/PdfUtil.js'
 
+// Shared utilities for enhanced API
+export { PdfLoader } from './core/PdfLoader.js'
+export { PdfWorkerConfig } from './core/PdfWorkerConfig.js'
+
 // Advanced Image Extraction (Enhanced from BC Editor)
 export { PdfImageExtractor } from './core/PdfImageExtractor.js'
-export type { ExtractedImage } from './core/PdfImageExtractor.js'
+export type { ExtractedImage } from './types/image.types.js'
 
 // Models and types
 export * from './models/PdfElement.js'
@@ -27,6 +30,7 @@ export type {
 export { Logger, logger } from './utils/Logger.js'
 export { MemoryManager } from './utils/MemoryManager.js'
 export { ValidationUtils } from './utils/ValidationUtils.js'
+export { MemoryPackageDir } from './utils/MemoryPackageDir.js'
 
 // Configuration
 export { ENV_CONFIG, PDF_CONFIG } from './config/constants.js'

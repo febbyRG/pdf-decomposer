@@ -8,7 +8,7 @@
 
 import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'fs'
 import { basename, join } from 'path'
-import { screenshotPdf } from '../dist/index'
+import { PdfDecomposer } from '../dist/index'
 
 class ScreenshotTest {
   private baseOutputDir: string
@@ -76,7 +76,13 @@ class ScreenshotTest {
       }
 
       const pdfBuffer = this.readPdfBuffer()
-      const result = await screenshotPdf(pdfBuffer, options)
+      
+      // Create decomposer instance  
+      const decomposer = new PdfDecomposer(pdfBuffer)
+      await decomposer.initialize()
+      
+      // Generate screenshots
+      const result = await decomposer.screenshot(options)
 
       const resultPath = join(this.baseOutputDir, 'result.json')
       writeFileSync(resultPath, JSON.stringify(result, null, 2), 'utf-8')
@@ -87,7 +93,6 @@ class ScreenshotTest {
 
       for (const pageResult of result.screenshots) {
         console.log(`   ✅ Page ${pageResult.pageNumber}: ${pageResult.width}x${pageResult.height}`)
-        console.log(`      📝 Base64 length: ${pageResult.screenshot.length} chars`)
 
         // Check if file was written (when outputDir is provided)
         if (pageResult.filePath) {
@@ -130,7 +135,13 @@ class ScreenshotTest {
       }
 
       const pdfBuffer = this.readPdfBuffer()
-      const result = await screenshotPdf(pdfBuffer, options)
+      
+      // Create decomposer instance  
+      const decomposer = new PdfDecomposer(pdfBuffer)
+      await decomposer.initialize()
+      
+      // Generate screenshots (base64 only)
+      const result = await decomposer.screenshot(options)
 
       const duration = Date.now() - startTime
 
@@ -138,7 +149,6 @@ class ScreenshotTest {
 
       for (const pageResult of result.screenshots) {
         console.log(`   ✅ Page ${pageResult.pageNumber}: ${pageResult.width}x${pageResult.height}`)
-        console.log(`      📝 Base64 length: ${pageResult.screenshot.length} chars`)
 
         if (pageResult.filePath) {
           console.log('      ⚠️ Unexpected: filePath provided when no outputDir specified')

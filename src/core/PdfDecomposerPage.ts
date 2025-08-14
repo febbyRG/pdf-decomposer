@@ -1,12 +1,12 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import { v4 as uuidv4 } from 'uuid'
-import { PdfDecomposer } from './PdfDecomposer.js'
 import { PdfImageExtractor } from './PdfImageExtractor.js'
+import type { PdfDecomposerPageData, PdfDecomposerBoundingBox, PdfDecomposerTextAttributes } from '../types/decomposer.types.js'
 
 export class PdfDecomposerPage {
   constructor(
-    private decomposer: PdfDecomposer,
+    private decomposer: PdfDecomposerPageData,
     private pageIndex: number,
     private skipParser: boolean = false,
     private extractImages: boolean = false
@@ -182,7 +182,7 @@ export class PdfDecomposerPage {
   }
 
   // Helper to get bounding box from PDF.js text item
-  private getTextBoundingBox(item: any, pageHeight: number) {
+  private getTextBoundingBox(item: any, pageHeight: number): PdfDecomposerBoundingBox {
     // PDF.js text item transform: [scaleX, skewX, skewY, scaleY, transX, transY]
     // PDF coordinate system has origin at bottom-left, we need to convert to top-left
     const [a, , , d, e, f] = item.transform
@@ -206,7 +206,7 @@ export class PdfDecomposerPage {
   /**
    * Generate formatted HTML text based on font attributes
    */
-  private generateFormattedText(text: string, attributes: any): string {
+  private generateFormattedText(text: string, attributes: PdfDecomposerTextAttributes): string {
     if (!text) return text
 
     let html = text
