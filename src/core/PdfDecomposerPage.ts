@@ -10,8 +10,7 @@ export class PdfDecomposerPage {
     private pageIndex: number,
     private skipParser: boolean = false,
     private extractImages: boolean = false,
-    private outputDir?: string,  // Add outputDir parameter
-    private minify: boolean = false  // Add minify parameter
+    private outputDir?: string  // Add outputDir parameter
   ) { }
 
   async decompose(): Promise<any> {
@@ -97,33 +96,25 @@ export class PdfDecomposerPage {
             const width = img.width
             const height = img.height
             
-            if (this.minify) {
-              // Compact format: [x, y, width, height]
-              boundingBox = [left, top, width, height]
-            } else {
-              // Full object format
-              boundingBox = {
-                top: top,
-                left: left,
-                bottom: top + height,
-                right: left + width,
-                width: width,
-                height: height
-              }
+            // Always use full object format - minify happens centrally in PdfDecompose.ts
+            boundingBox = {
+              top: top,
+              left: left,
+              bottom: top + height,
+              right: left + width,
+              width: width,
+              height: height
             }
           } else {
             // Fallback to default position if no transform available
-            if (this.minify) {
-              boundingBox = [0, 0, img.width, img.height]
-            } else {
-              boundingBox = {
-                top: 0,
-                left: 0,
-                bottom: img.height,
-                right: img.width,
-                width: img.width,
-                height: img.height
-              }
+            // Always use full object format - minify happens centrally in PdfDecompose.ts
+            boundingBox = {
+              top: 0,
+              left: 0,
+              bottom: img.height,
+              right: img.width,
+              width: img.width,
+              height: img.height
             }
           }
 
@@ -178,17 +169,8 @@ export class PdfDecomposerPage {
             
             const attributes = { type: 'legacy' }
             
-            // Apply conditional bounding box format
-            let formattedBoundingBox = boundingBox
-            if (this.minify && boundingBox && typeof boundingBox === 'object') {
-              // Convert object format to array format: [x, y, width, height]
-              formattedBoundingBox = [
-                boundingBox.left || 0,
-                boundingBox.top || 0, 
-                boundingBox.width || 0,
-                boundingBox.height || 0
-              ]
-            }
+            // Always use original boundingBox format - minify happens centrally in PdfDecompose.ts
+            const formattedBoundingBox = boundingBox
             
             return {
               id: uuidv4(),
@@ -230,12 +212,8 @@ export class PdfDecomposerPage {
       // Generate formatted HTML version based on font attributes
       const formattedData = this.generateFormattedText(item.str, attributes)
 
-      // Apply conditional bounding box format
-      let boundingBox: any = bbox
-      if (this.minify) {
-        // Convert to compact format: [x, y, width, height]
-        boundingBox = [bbox.left, bbox.top, bbox.width, bbox.height]
-      }
+      // Always use original boundingBox format - minify happens centrally in PdfDecompose.ts
+      const boundingBox = bbox
 
       return {
         id: uuidv4(),

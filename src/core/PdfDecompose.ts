@@ -200,8 +200,7 @@ export async function pdfDecompose(
             actualPageNumber, 
             false, // skipDecompose
             finalOptions.extractImages ?? false,
-            finalOptions.outputDir,  // Pass outputDir to page
-            finalOptions.minify ?? false  // Pass minify option to page
+            finalOptions.outputDir  // Pass outputDir to page
           )
           pkg.pages[pageIndex] = await page.decompose()
 
