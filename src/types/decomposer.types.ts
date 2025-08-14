@@ -78,7 +78,7 @@ export interface PdfDecomposerOptions {
   elementComposer?: boolean
   pageComposer?: boolean
   extractImages?: boolean
-  minify?: boolean // Missing feature: minify option for compressed output
+  minify?: boolean // When true, use compact bounding box format [x, y, width, height]
 }
 
 /**

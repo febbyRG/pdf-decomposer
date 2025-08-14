@@ -12,4 +12,8 @@ export interface ExtractedImage {
   scaleFactor?: number
   alt?: string
   type?: string
+  // Position information from PDF transform matrix
+  x?: number
+  y?: number
+  transform?: number[] // [a, b, c, d, e, f] transformation matrix
 }

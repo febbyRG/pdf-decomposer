@@ -10,7 +10,8 @@ export class PdfDecomposerPage {
     private pageIndex: number,
     private skipParser: boolean = false,
     private extractImages: boolean = false,
-    private outputDir?: string  // Add outputDir parameter
+    private outputDir?: string,  // Add outputDir parameter
+    private minify: boolean = false  // Add minify parameter
   ) { }
 
   async decompose(): Promise<any> {
@@ -86,11 +87,51 @@ export class PdfDecomposerPage {
             console.log('    � Using base64 data URL (no outputDir specified)')
           }
 
+          // Calculate proper bounding box from position and size
+          let boundingBox: any
+          
+          if (img.x !== undefined && img.y !== undefined) {
+            // Use actual position from PDF transform
+            const left = img.x || 0
+            const top = img.y || 0
+            const width = img.width
+            const height = img.height
+            
+            if (this.minify) {
+              // Compact format: [x, y, width, height]
+              boundingBox = [left, top, width, height]
+            } else {
+              // Full object format
+              boundingBox = {
+                top: top,
+                left: left,
+                bottom: top + height,
+                right: left + width,
+                width: width,
+                height: height
+              }
+            }
+          } else {
+            // Fallback to default position if no transform available
+            if (this.minify) {
+              boundingBox = [0, 0, img.width, img.height]
+            } else {
+              boundingBox = {
+                top: 0,
+                left: 0,
+                bottom: img.height,
+                right: img.width,
+                width: img.width,
+                height: img.height
+              }
+            }
+          }
+
           imageElements.push({
             id: img.id,
             pageIndex,
             type: 'image',
-            boundingBox: [0, 0, img.width, img.height], // Default bbox
+            boundingBox: boundingBox,
             data: dataReference,
             attributes: {
               type: 'embedded',
@@ -136,11 +177,24 @@ export class PdfDecomposerPage {
             }
             
             const attributes = { type: 'legacy' }
+            
+            // Apply conditional bounding box format
+            let formattedBoundingBox = boundingBox
+            if (this.minify && boundingBox && typeof boundingBox === 'object') {
+              // Convert object format to array format: [x, y, width, height]
+              formattedBoundingBox = [
+                boundingBox.left || 0,
+                boundingBox.top || 0, 
+                boundingBox.width || 0,
+                boundingBox.height || 0
+              ]
+            }
+            
             return {
               id: uuidv4(),
               pageIndex,
               type: 'image',
-              boundingBox,
+              boundingBox: formattedBoundingBox,
               data: outputDir ? fileName : `data:image/png;base64,${buffer.toString('base64')}`,
               attributes
             }
@@ -176,11 +230,18 @@ export class PdfDecomposerPage {
       // Generate formatted HTML version based on font attributes
       const formattedData = this.generateFormattedText(item.str, attributes)
 
+      // Apply conditional bounding box format
+      let boundingBox: any = bbox
+      if (this.minify) {
+        // Convert to compact format: [x, y, width, height]
+        boundingBox = [bbox.left, bbox.top, bbox.width, bbox.height]
+      }
+
       return {
         id: uuidv4(),
         pageIndex,
         type: 'text',
-        boundingBox: bbox,
+        boundingBox: boundingBox,
         data: item.str, // Plain text
         formattedData: formattedData, // HTML formatted text
         attributes

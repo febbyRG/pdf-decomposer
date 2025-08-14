@@ -154,6 +154,7 @@ class ComprehensiveTest {
         extractImages: true,
         elementComposer: true,
         pageComposer: true,
+        minify: true
       }
       
       // Use already initialized decomposer

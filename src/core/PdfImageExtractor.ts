@@ -97,9 +97,6 @@ export class PdfImageExtractor {
       // Get actual page number from the page proxy
       const pageNumber = pdfPageProxy._pageIndex + 1 // _pageIndex is 0-based
 
-      console.log('🔍 Page type:', page.constructor?.name || typeof page)
-      console.log(`� Processing page ${pageNumber}`)
-
       // Method 1: Check operator list for image operations (MAIN METHOD - like editor)
       const operatorImages = await this.extractFromOperatorList(pdfPageProxy, pageNumber)
       images.push(...operatorImages)
@@ -121,7 +118,6 @@ export class PdfImageExtractor {
 
       // Remove duplicates based on content and dimensions
       const uniqueImages = PdfImageExtractor.removeDuplicateImages(images)
-      console.log(`🎯 Total images found on page ${pageNumber}: ${images.length} (${uniqueImages.length} unique)`)
 
       return uniqueImages
     } catch (error) {
@@ -138,17 +134,17 @@ export class PdfImageExtractor {
     const images: ExtractedImage[] = []
 
     try {
-      console.log('🔍 Analyzing operator list for images...')
-
       // Check if getOperatorList is available
       if (typeof page.getOperatorList !== 'function') {
-        console.log('⚠️ getOperatorList not available, skipping operator analysis')
         return []
       }
 
       const operatorList = await page.getOperatorList()
+      const viewport = page.getViewport({ scale: 1 })
 
-      console.log('📋 Found', operatorList.fnArray.length, 'operations')
+      // Track current transformation matrix for position calculations
+      let currentTransform = [1, 0, 0, 1, 0, 0] // Identity matrix [a, b, c, d, e, f]
+      const transformStack: number[][] = [] // Stack for q/Q operations
 
       // Look for image operations - SIMPLIFIED APPROACH like editor
       // Only check Do (XObject) operations which are most common
@@ -156,23 +152,75 @@ export class PdfImageExtractor {
         const op = operatorList.fnArray[i]
         const args = operatorList.argsArray[i]
 
-        if (op === 85 && args && args.length > 0) { // Do operation - paint XObject
+        // Track graphics state operations
+        if (op === 4) { // q - save graphics state
+          transformStack.push([...currentTransform])
+        } else if (op === 5) { // Q - restore graphics state
+          if (transformStack.length > 0) {
+            const restored = transformStack.pop()
+            if (restored) {
+              currentTransform = restored
+            }
+          }
+        } else if (op === 12) { // cm - concatenate matrix (correct operator code!)
+          if (args && args.length === 6) {
+            // For images, use the transform directly instead of accumulating
+            // Check if next operation is Do (image)
+            const nextOp = i + 1 < operatorList.fnArray.length ? operatorList.fnArray[i + 1] : null
+            if (nextOp === 1) {
+              // This transform is directly for the next image, use it directly
+              currentTransform = [...args]
+            } else {
+              // Update current transform with matrix multiplication for other cases
+              const [a, b, c, d, e, f] = args
+              const [a1, b1, c1, d1, e1, f1] = currentTransform
+              
+              currentTransform = [
+                a * a1 + b * c1,
+                a * b1 + b * d1,
+                c * a1 + d * c1,
+                c * b1 + d * d1,
+                e * a1 + f * c1 + e1,
+                e * b1 + f * d1 + f1
+              ]
+            }
+          }
+        } else if (op === 16) { // Alternative cm operator (keep as backup)
+          if (args && args.length === 6) {
+            // Similar logic for alternative operator
+            const nextOp = i + 1 < operatorList.fnArray.length ? operatorList.fnArray[i + 1] : null
+            if (nextOp === 1) {
+              currentTransform = [...args]
+            } else {
+              const [a, b, c, d, e, f] = args
+              const [a1, b1, c1, d1, e1, f1] = currentTransform
+              
+              currentTransform = [
+                a * a1 + b * c1,
+                a * b1 + b * d1,
+                c * a1 + d * c1,
+                c * b1 + d * d1,
+                e * a1 + f * c1 + e1,
+                e * b1 + f * d1 + f1
+              ]
+            }
+          }
+        } else if (op === 1 && args && args.length > 0) { // Do operation - paint XObject (correct code!)
           const imageName = args[0]
-          console.log(`🔍 Extracting XObject image: ${imageName}`)
 
           // Use DIRECT ACCESS to page.objs like editor approach
           if (page.objs && page.objs.has(imageName)) {
             const imageObj = page.objs.get(imageName)
 
             if (PdfImageExtractor.isImageObject(imageObj)) {
-              console.log(`✅ Processing ${imageName} from page.objs`)
-
-              const extractedImage = await PdfImageExtractor.createExtractedImageFromObject(
+              const extractedImage = await PdfImageExtractor.createExtractedImageFromObjectWithTransform(
                 imageObj,
                 imageName,
                 pageNumber, // Use actual page number
                 i,
-                'document'
+                'document',
+                currentTransform,
+                viewport
               )
 
               if (extractedImage) {
@@ -183,14 +231,14 @@ export class PdfImageExtractor {
             const imageObj = page.commonObjs.get(imageName)
 
             if (PdfImageExtractor.isImageObject(imageObj)) {
-              console.log(`✅ Processing ${imageName} from commonObjs`)
-
-              const extractedImage = await PdfImageExtractor.createExtractedImageFromObject(
+              const extractedImage = await PdfImageExtractor.createExtractedImageFromObjectWithTransform(
                 imageObj,
                 imageName,
                 pageNumber, // Use actual page number
                 i,
-                'document'
+                'document',
+                currentTransform,
+                viewport
               )
 
               if (extractedImage) {
@@ -201,11 +249,9 @@ export class PdfImageExtractor {
         }
       }
 
-      console.log('📊 Operator list found', images.length, 'images')
       return images
 
     } catch (error) {
-      console.log('⚠️ Operator list analysis failed, continuing with other methods:', (error as Error).message)
       return []
     }
   }
@@ -270,46 +316,88 @@ export class PdfImageExtractor {
     source: string
   ): Promise<ExtractedImage | null> {
     try {
-      console.log(`🖼️ Analyzing image object for ${objId}:`, {
-        type: typeof obj,
-        constructor: obj?.constructor?.name,
-        width: obj?.width,
-        height: obj?.height,
-        hasData: !!obj?.data,
-        hasBitmap: !!obj?.bitmap,
-        keys: Object.keys(obj),
-        dataType: obj?.data?.constructor?.name,
-        dataFirstBytes: obj?.data ? Array.from(obj.data.slice(0, 20)) : 'N/A'
-      })
-
       const width = obj?.width || 0
       const height = obj?.height || 0
 
       if (!width || !height) {
-        console.log(`❌ Invalid image dimensions: ${width}x${height}`)
         return null
       }
 
       // **EXACT LOGIC from Editor**: Handle objects with pixel data
       if (obj.data && obj.data.length > 0) {
-        console.log(`📊 Processing pixel data: ${obj.data.length} bytes`)
         return await this.createImageDataFromPixelData(obj.data, width, height, objId, pageNumber, imageIndex, source)
       }
 
       // **EXACT LOGIC from Editor**: Handle bitmap objects
       if (obj.bitmap) {
-        console.log('🔧 Processing bitmap object')
-
         if (obj.bitmap.data && obj.bitmap.data.length > 0) {
           return await this.createImageDataFromPixelData(obj.bitmap.data, width, height, objId, pageNumber, imageIndex, source)
         }
       }
 
-      console.log('❌ No supported extraction method found for image object type')
       return null
 
     } catch (error) {
-      console.error('❌ Error extracting image data:', error)
+      return null
+    }
+  }
+
+  /**
+   * Create extracted image from object with position information from transform matrix
+   */
+  private static async createExtractedImageFromObjectWithTransform(
+    obj: any,
+    objId: string,
+    pageNumber: number,
+    imageIndex: number,
+    source: string,
+    transform: number[],
+    viewport: any
+  ): Promise<ExtractedImage | null> {
+    try {
+      // First create the basic extracted image
+      const baseImage = await this.createExtractedImageFromObject(obj, objId, pageNumber, imageIndex, source)
+      
+      if (!baseImage) {
+        return null
+      }
+
+      // Calculate position and size from transform matrix
+      // PDF.js transform: [a, b, c, d, e, f] where:
+      // a = horizontal scaling, d = vertical scaling  
+      // e = horizontal translation (x), f = vertical translation (y)
+      const [a, , , d, e, f] = transform
+      
+      // Calculate actual rendered size from transform matrix
+      const transformWidth = Math.abs(a)
+      const transformHeight = Math.abs(d)
+      
+      // Convert PDF coordinates (bottom-left origin) to top-left origin
+      const pageHeight = viewport.height
+      const bottomY = f
+      const topY = pageHeight - bottomY - transformHeight
+
+      // Add position and size information from transform matrix
+      const result = {
+        ...baseImage,
+        // Override with transformed dimensions
+        width: transformWidth,
+        height: transformHeight,
+        // Store original dimensions for reference
+        actualWidth: baseImage.width,
+        actualHeight: baseImage.height,
+        // Position from transform
+        x: e,
+        y: topY,
+        transform: transform
+      }
+      
+      console.log(`🎯 Updated image ${objId}: ${baseImage.width}x${baseImage.height} → ${transformWidth}x${transformHeight}`)
+      
+      return result
+
+    } catch (error) {
+      console.error('❌ Error extracting image data with transform:', error)
       return null
     }
   }
