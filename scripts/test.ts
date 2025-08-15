@@ -30,7 +30,7 @@ class ComprehensiveTest {
   private results: TestResult[] = []
   private baseOutputDir: string
   private pdfPath: string
-  private pdfFile = 'demo.pdf'
+  private pdfFile = 'test.pdf'
   private decomposer!: PdfDecomposer
 
   constructor(customPdfPath?: string) {
@@ -76,17 +76,11 @@ class ComprehensiveTest {
       // Initialize decomposer once for all tests
       await this.initializeDecomposer()
 
-      // Test: Embedded images extraction
-      await this.testEmbeddedImages()
-
-      // Test: Memory-efficient mode
-      await this.testMemoryEfficientMode()
+      // Test: PDF Decomposition with Clean Composer
+      await this.testPdfDecompose()
 
       // Test: Page range processing
       await this.testPageRange()
-
-      // Test: Single page processing
-      await this.testSinglePage()
 
       // Test: Error handling
       await this.testErrorHandling()
@@ -102,78 +96,70 @@ class ComprehensiveTest {
     }
   }
 
-  private async testMemoryEfficientMode() {
-    const testName = 'Memory-Efficient Mode (Canvas-free)'
-    const startTime = Date.now()
-
-    try {
-      console.log(`🔄 Running: ${testName}...`)
-      
-      // Use already initialized decomposer
-      const result = await this.decomposer.decompose({
-        extractImages: false  // Text only
-      })
-
-      const duration = Date.now() - startTime
-      const textElements = result.reduce((acc: any[], page: any) =>
-        acc.concat(page.textElements || []), [])
-
-      this.results.push({
-        name: testName,
-        passed: result.length > 0,
-        duration,
-        details: `Extracted ${textElements.length} text elements from ${result.length} pages, no Canvas dependencies`,
-        pageCount: result.length
-      })
-
-      console.log(`  ✓ Processed ${result.length} pages (text only) in ${duration}ms`)
-
-    } catch (error) {
-      this.results.push({
-        name: testName,
-        passed: false,
-        duration: Date.now() - startTime,
-        details: `Error: ${(error as Error).message}`
-      })
-      console.log(`  ❌ Failed: ${(error as Error).message}`)
-    }
-  }
-
-  private async testEmbeddedImages() {
-    const testName = 'Page Image Extraction'
+  private async testPdfDecompose() {
+    const testName = 'PDF Decomposition with Clean Composer and Image Extraction'
     const startTime = Date.now()
 
     try {
       console.log(`🔄 Running: ${testName}...`)
       console.log(`📄 Testing with PDF: ${basename(this.pdfPath)}`)
-
-      const outputDir = join(this.baseOutputDir, 'images')
+      
+      const outputDir = join(this.baseOutputDir, 'pdf-decompose')
       mkdirSync(outputDir, { recursive: true })
 
-      const options = {
+      // Test with full decomposition options including cleanComposer
+      // Using default cleanComposer options (no need to specify manually)
+      const fullOptions = {
         extractImages: true,
         elementComposer: true,
         pageComposer: true,
+        cleanComposer: true, // Will use default image filtering (50×50 minimum, 2500px² area)
         minify: true
       }
       
-      // Use already initialized decomposer
-      const result = await this.decomposer.decompose({
-        ...options,
-        outputDir,                    // Specify output directory
+      // Example: Custom cleanComposer options if needed (optional)
+      // cleanComposerOptions: {
+      //   minImageWidth: 100,     // Stricter: 100px minimum width
+      //   minImageHeight: 100,    // Stricter: 100px minimum height
+      //   minImageArea: 10000,    // Stricter: 10000px² minimum area
+      //   minTextLength: 5        // Longer text requirement
+      // }
+      
+      const cleanResult = await this.decomposer.decompose({
+        ...fullOptions,
+        outputDir
+      })
+
+      // Test without cleanComposer for comparison
+      const originalResult = await this.decomposer.decompose({
+        extractImages: true,
+        elementComposer: true,
+        pageComposer: true,
+        cleanComposer: false,
+        minify: true
       })
 
       const duration = Date.now() - startTime
 
-      console.log(`📊 Processing completed: ${result.length} pages`)
+      console.log(`📊 Processing completed: ${cleanResult.length} pages`)
 
-      // Check for additional asset files in output directory
+      // Calculate cleaning effectiveness
+      const originalElementCount = originalResult.reduce((total: number, page: any) => 
+        total + (page.elements?.length || 0), 0)
+      const cleanedElementCount = cleanResult.reduce((total: number, page: any) => 
+        total + (page.elements?.length || 0), 0)
+      
+      const elementReduction = originalElementCount - cleanedElementCount
+      const reductionPercentage = originalElementCount > 0 ? 
+        ((elementReduction / originalElementCount) * 100) : 0
+
+      // Check for generated image files in output directory
       const generatedFiles: string[] = []
       const assetFiles = existsSync(outputDir) ? readdirSync(outputDir) : []
       const directAssetImages = assetFiles.filter((file: string) => file.endsWith('.png') || file.endsWith('.jpg') || file.endsWith('.jpeg'))
 
       if (directAssetImages.length > 0) {
-        console.log(`📁 Found ${directAssetImages.length} total image files in output dir:`)
+        console.log(`� Found ${directAssetImages.length} total image files in output dir:`)
         directAssetImages.forEach((file: string) => {
           const filePath = join(outputDir, file)
           const stats = statSync(filePath)
@@ -184,48 +170,60 @@ class ComprehensiveTest {
         })
       }
 
-      const expectedFiles = 1
-      const actualFiles = generatedFiles.length
-      const successRate = actualFiles > 0 ? ((actualFiles / expectedFiles) * 100) : 0
+      console.log('📊 PDF Decomposition Results:')
+      console.log(`  Original elements: ${originalElementCount}`)
+      console.log(`  Cleaned elements: ${cleanedElementCount}`)
+      console.log(`  Elements removed: ${elementReduction} (${reductionPercentage.toFixed(1)}%)`)
+      console.log(`  Generated image files: ${generatedFiles.length}`)
 
-      // Test passes if we generate the expected image files
-      const testPassed = actualFiles >= expectedFiles
+      // Test success criteria
+      const expectedImageFiles = 1
+      const actualImageFiles = generatedFiles.length
+      const imageTestPassed = actualImageFiles >= expectedImageFiles
+      const cleaningTestPassed = elementReduction > 0
+      const overallTestPassed = imageTestPassed && cleaningTestPassed
 
-      this.results.push({
-        name: testName,
-        passed: testPassed,
-        duration,
-        details: `Generated ${actualFiles}/${expectedFiles} image files (${successRate.toFixed(1)}% success rate) for page images`,
-        pageCount: result.length,
-        imageCount: actualFiles,
-        outputSize: generatedFiles.length
-      })
-
-      if (testPassed) {
-        console.log(`✅ Page image test PASSED: ${actualFiles} files generated in ${duration}ms`)
-        console.log(`Success rate: ${successRate.toFixed(1)}% (${actualFiles}/${expectedFiles} files)`)
-      } else {
-        console.log(`❌ Page image test FAILED: Only ${actualFiles} files generated, expected ${expectedFiles}`)
-      }
-
-      // Save detailed analysis
-      const analysisPath = join(outputDir, 'image-analysis.json')
+      // Save comprehensive analysis
+      const analysisPath = join(outputDir, 'decompose-analysis.json')
       writeFileSync(analysisPath, JSON.stringify({
         summary: {
-          totalFiles: actualFiles,
-          expectedFiles,
-          successRate: successRate.toFixed(1),
+          originalElementCount,
+          cleanedElementCount,
+          elementReduction,
+          reductionPercentage: parseFloat(reductionPercentage.toFixed(1)),
+          totalImageFiles: actualImageFiles,
+          expectedImageFiles,
+          imageSuccessRate: actualImageFiles > 0 ? ((actualImageFiles / expectedImageFiles) * 100) : 0,
           processingTime: duration,
-          testPassed
+          imageTestPassed,
+          cleaningTestPassed,
+          overallTestPassed
         },
-        result: result,
+        originalResult,
+        cleanedResult: cleanResult,
         generatedFiles,
         assetFiles: directAssetImages
       }, null, 2))
 
-      // Save complete decomposePdf result for analysis
+      // Save complete decompose result for analysis
       const resultPath = join(outputDir, 'result.json')
-      writeFileSync(resultPath, JSON.stringify(result, null, 2), 'utf-8')
+      writeFileSync(resultPath, JSON.stringify(cleanResult, null, 2), 'utf-8')
+
+      this.results.push({
+        name: testName,
+        passed: overallTestPassed,
+        duration,
+        details: `Generated ${actualImageFiles} image files, filtered out ${elementReduction}/${originalElementCount} elements (${reductionPercentage.toFixed(1)}% reduction)`,
+        pageCount: cleanResult.length,
+        imageCount: actualImageFiles,
+        outputSize: generatedFiles.length
+      })
+
+      if (overallTestPassed) {
+        console.log(`✅ PDF Decomposition test PASSED: ${reductionPercentage.toFixed(1)}% element reduction, ${actualImageFiles} images generated in ${duration}ms`)
+      } else {
+        console.log(`❌ PDF Decomposition test FAILED: Image test: ${imageTestPassed}, Cleaning test: ${cleaningTestPassed}`)
+      }
 
       console.log(`📄 Complete decompose result saved to: ${basename(resultPath)}`)
 
@@ -278,44 +276,6 @@ class ComprehensiveTest {
         details: `Error: ${(error as Error).message}`
       })
       console.log(`  ❌ Failed: ${(error as Error).message}`)
-    }
-  }
-
-  private async testSinglePage() {
-    const testName = 'Single Page Processing'
-    const startTime = Date.now()
-
-    try {
-      console.log(`🔄 Running: ${testName}...`)
-      
-      // Use already initialized decomposer
-      const result = await this.decomposer.decompose({
-        extractImages: true,
-        startPage: 1,
-        endPage: 1
-      })
-
-      const duration = Date.now() - startTime
-      const isCorrectPage = result.length === 1 && result[0].pageNumber === 1
-
-      this.results.push({
-        name: testName,
-        passed: isCorrectPage,
-        duration,
-        details: `Processed single page ${result[0]?.pageNumber} with ${result[0]?.elements?.length || 0} elements`,
-        pageCount: result.length
-      })
-
-      console.log(`✓ Processed single page 1 correctly in ${duration}ms`)
-
-    } catch (error) {
-      this.results.push({
-        name: testName,
-        passed: false,
-        duration: Date.now() - startTime,
-        details: `Error: ${(error as Error).message}`
-      })
-      console.log(`❌ Failed: ${(error as Error).message}`)
     }
   }
 

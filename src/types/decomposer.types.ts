@@ -79,6 +79,99 @@ export interface PdfDecomposerOptions {
   pageComposer?: boolean
   extractImages?: boolean
   minify?: boolean // When true, use compact bounding box format [x, y, width, height]
+  cleanComposer?: boolean // When true, clean content to include only main content area
+  cleanComposerOptions?: PdfCleanComposerOptions // Options for content cleaning
+}
+
+/**
+ * Options for content cleaning and filtering
+ * Controls how the cleanComposer feature filters and cleans content
+ */
+export interface PdfCleanComposerOptions {
+  /**
+   * Margin from top to exclude headers (as percentage of page height)
+   * Default: 0.1 (10%)
+   */
+  topMarginPercent?: number
+
+  /**
+   * Margin from bottom to exclude footers (as percentage of page height)
+   * Default: 0.1 (10%)
+   */
+  bottomMarginPercent?: number
+
+  /**
+   * Margin from left and right to exclude side elements (as percentage of page width)
+   * Default: 0.05 (5%)
+   */
+  sideMarginPercent?: number
+
+  /**
+   * Minimum height for text elements (in points)
+   * Elements smaller than this will be filtered out
+   * Default: 8
+   */
+  minTextHeight?: number
+
+  /**
+   * Minimum width for text elements (in points)
+   * Elements smaller than this will be filtered out
+   * Default: 10
+   */
+  minTextWidth?: number
+
+  /**
+   * Maximum allowed spacing between words (as ratio of font size)
+   * Text with excessive spacing will be cleaned
+   * Default: 3.0
+   */
+  maxWordSpacingRatio?: number
+
+  /**
+   * Remove elements with non-printable or control characters
+   * Default: true
+   */
+  removeControlCharacters?: boolean
+
+  /**
+   * Minimum meaningful text length
+   * Text shorter than this will be filtered out
+   * Default: 3
+   */
+  minTextLength?: number
+
+  /**
+   * Remove isolated single characters or symbols
+   * Default: true
+   */
+  removeIsolatedCharacters?: boolean
+
+  /**
+   * Minimum width for image elements (in points/pixels)
+   * Images smaller than this will be filtered out as decorative elements
+   * Default: 50
+   */
+  minImageWidth?: number
+
+  /**
+   * Minimum height for image elements (in points/pixels)
+   * Images smaller than this will be filtered out as decorative elements
+   * Default: 50
+   */
+  minImageHeight?: number
+
+  /**
+   * Minimum area for image elements (width × height)
+   * Images with smaller area will be filtered out
+   * Default: 2500 (50×50)
+   */
+  minImageArea?: number
+
+  /**
+   * Output directory path for cleaning image files
+   * If provided, removed image files will be deleted from disk
+   */
+  outputDir?: string
 }
 
 /**

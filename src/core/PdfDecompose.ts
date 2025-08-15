@@ -5,12 +5,14 @@ import type {
   PdfDecomposerPackage, 
   PdfDecomposerState, 
   PdfDecomposerError,
-  PdfDecomposerPageData
+  PdfDecomposerPageData,
+  PdfCleanComposerOptions
 } from '../types/decomposer.types.js'
 import { PdfDocument } from './PdfDocument.js'
 import { PdfDecomposerPage } from './PdfDecomposerPage.js'
 import { PdfElementComposer } from './PdfElementComposer.js'
 import { PdfPageComposer } from './PdfPageComposer.js'
+import { PdfCleanComposer } from './PdfCleanComposer.js'
 import { MemoryManager } from '../utils/MemoryManager.js'
 import { MemoryPackageDir } from '../utils/MemoryPackageDir.js'
 
@@ -247,6 +249,37 @@ export async function pdfDecompose(
       updateProgress(88, 'Composing elements into paragraphs')
       console.log('🔧 Composing elements into paragraphs...')
       pkg.pages = PdfElementComposer.composeElements(pkg.pages)
+    }
+
+    // Apply content cleaning if requested
+    if (finalOptions.cleanComposer) {
+      updateProgress(90, 'Cleaning content area and elements')
+      console.log('🧹 Cleaning content area and elements...')
+      
+      // Merge default cleanComposer options with user-provided options
+      const defaultCleanOptions: PdfCleanComposerOptions = {
+        topMarginPercent: 0.1,
+        bottomMarginPercent: 0.1,
+        sideMarginPercent: 0.05,
+        minTextHeight: 8,
+        minTextWidth: 10,
+        maxWordSpacingRatio: 3.0,
+        removeControlCharacters: true,
+        minTextLength: 3,
+        removeIsolatedCharacters: true,
+        minImageWidth: 50,
+        minImageHeight: 50,
+        minImageArea: 2500,
+        outputDir: options.outputDir
+      }
+      
+      const cleanOptions = {
+        ...defaultCleanOptions,
+        ...options.cleanComposerOptions,
+        outputDir: options.outputDir // Always use outputDir from main options
+      }
+      
+      pkg.pages = PdfCleanComposer.cleanPages(pkg.pages, cleanOptions)
     }
 
     // Apply page composition if requested

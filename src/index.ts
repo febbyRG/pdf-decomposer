@@ -25,6 +25,9 @@ export * from './models/PdfPageContent.js'
 export type {
   BoundingBox, FontInfo, ImageData, InvalidPdfError, MemoryError, PdfProcessingError, RenderOptions
 } from './types/pdf.types.js'
+export type {
+  PdfDecomposerOptions, PdfDecomposerState, PdfDecomposerError, PdfCleanComposerOptions
+} from './types/decomposer.types.js'
 
 // Utilities
 export { Logger, logger } from './utils/Logger.js'
