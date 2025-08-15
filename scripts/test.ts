@@ -30,7 +30,7 @@ class ComprehensiveTest {
   private results: TestResult[] = []
   private baseOutputDir: string
   private pdfPath: string
-  private pdfFile = 'test.pdf'
+  private pdfFile = 'demo.pdf'
   private decomposer!: PdfDecomposer
 
   constructor(customPdfPath?: string) {
@@ -110,8 +110,6 @@ class ComprehensiveTest {
       // Test with full decomposition options including cleanComposer
       // Using default cleanComposer options (no need to specify manually)
       const fullOptions = {
-        startPage: 1,
-        endPage: 2,
         extractImages: true,
         elementComposer: true,
         pageComposer: true,
