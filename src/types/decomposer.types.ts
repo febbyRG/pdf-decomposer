@@ -168,6 +168,26 @@ export interface PdfCleanComposerOptions {
   minImageArea?: number
 
   /**
+   * Enable cover page detection and screenshot generation
+   * If the first page is detected as a cover (full-page image), generate a screenshot instead
+   * Default: true
+   */
+  coverPageDetection?: boolean
+
+  /**
+   * Cover page threshold (percentage of page area that an image must cover)
+   * Used to determine if a page is a cover page
+   * Default: 0.8 (80% of page area)
+   */
+  coverPageThreshold?: number
+
+  /**
+   * Screenshot quality for cover pages (1-100)
+   * Default: 95
+   */
+  coverPageScreenshotQuality?: number
+
+  /**
    * Output directory path for cleaning image files
    * If provided, removed image files will be deleted from disk
    */

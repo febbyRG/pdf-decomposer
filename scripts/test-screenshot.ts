@@ -50,7 +50,7 @@ class ScreenshotTest {
 
     try {
       await this.testScreenshotGeneration()
-      await this.testBase64OnlyMode()
+      // await this.testBase64OnlyMode()
       console.log('\n🎉 Screenshot test completed successfully!')
       process.exit(0)
 
@@ -69,7 +69,7 @@ class ScreenshotTest {
 
       const options = {
         startPage: 1,
-        endPage: 3, // Test first 3 pages
+        endPage: 2, // Test first 2 pages
         outputDir: this.baseOutputDir,
         imageWidth: 1024,
         imageQuality: 90

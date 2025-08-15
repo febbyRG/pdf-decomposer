@@ -13,6 +13,7 @@
  */
 
 import type { PdfPageContent } from '../models/PdfPageContent.js'
+import type { PdfDocument } from './PdfDocument.js'
 
 // Environment detection
 const isNodeJS = typeof process !== 'undefined' && process.versions && process.versions.node
@@ -115,6 +116,26 @@ export interface PdfCleanComposerOptions {
   minImageArea?: number
 
   /**
+   * Enable cover page detection and screenshot generation
+   * If the first page is detected as a cover (full-page image), generate a screenshot instead
+   * Default: true
+   */
+  coverPageDetection?: boolean
+
+  /**
+   * Cover page threshold (percentage of page area that an image must cover)
+   * Used to determine if a page is a cover page
+   * Default: 0.8 (80% of page area)
+   */
+  coverPageThreshold?: number
+
+  /**
+   * Screenshot quality for cover pages (1-100)
+   * Default: 95
+   */
+  coverPageScreenshotQuality?: number
+
+  /**
    * Output directory path for cleaning image files
    * If provided, removed image files will be deleted from disk
    */
@@ -148,9 +169,14 @@ export class PdfCleanComposer {
    * 
    * @param pages Array of PDF page content to clean
    * @param options Cleaning configuration options
+   * @param pdfDocument Optional PDF document for cover page detection and screenshot
    * @returns Cleaned array of PDF page content
    */
-  static cleanPages(pages: PdfPageContent[], options: PdfCleanComposerOptions = {}): PdfPageContent[] {
+  static async cleanPages(
+    pages: PdfPageContent[], 
+    options: PdfCleanComposerOptions = {},
+    pdfDocument?: PdfDocument
+  ): Promise<PdfPageContent[]> {
     const defaultOptions = {
       topMarginPercent: 0.1,
       bottomMarginPercent: 0.1,
@@ -164,6 +190,9 @@ export class PdfCleanComposer {
       minImageWidth: 50,
       minImageHeight: 50,
       minImageArea: 2500,
+      coverPageDetection: true,
+      coverPageThreshold: 0.8,
+      coverPageScreenshotQuality: 95,
       outputDir: undefined
     }
 
@@ -171,6 +200,19 @@ export class PdfCleanComposer {
 
     console.log('🧹 Starting PDF content cleaning...')
     console.log('📊 Cleaning options:', finalOptions)
+
+    // Check for cover page detection if enabled and pdfDocument is provided
+    if (finalOptions.coverPageDetection && pdfDocument && pages.length > 0) {
+      console.log('🔍 Checking for cover page...')
+      const coverPageResult = await this.detectAndProcessCoverPage(pages[0], pdfDocument, finalOptions)
+      if (coverPageResult) {
+        console.log('📸 Cover page detected and processed as screenshot')
+        pages[0] = coverPageResult
+        // Skip normal processing for cover page, but continue with rest
+        const restPages = pages.slice(1)
+        return [coverPageResult, ...restPages.map((page, _index) => this.cleanPage(page, finalOptions))]
+      }
+    }
 
     return pages.map((page, pageIndex) => {
       console.log(`🔍 Cleaning page ${pageIndex + 1} of ${pages.length}`)
@@ -577,6 +619,152 @@ export class PdfCleanComposer {
       }
     } catch (error) {
       console.warn('⚠️  Failed to remove image file for element:', error)
+    }
+  }
+
+  /**
+   * Detect if the page is a cover page and process it as screenshot
+   * Cover page is detected by having a large image that covers most of the page area
+   */
+  private static async detectAndProcessCoverPage(
+    page: PdfPageContent, 
+    pdfDocument: PdfDocument, 
+    options: PdfCleanComposerOptions
+  ): Promise<PdfPageContent | null> {
+    try {
+      console.log(`🔍 Analyzing page ${page.pageIndex + 1} for cover detection...`)
+      
+      const pageArea = page.width * page.height
+      const threshold = options.coverPageThreshold || 0.8
+      
+      // Check if page has large images that might indicate a cover
+      const imageElements = (page.elements || []).filter(element => this.isImageElement(element))
+      console.log(`📊 Found ${imageElements.length} image elements on page ${page.pageIndex + 1}`)
+      
+      for (const imageElement of imageElements) {
+        const bbox = this.normalizeBoundingBox(imageElement.boundingBox)
+        const imageArea = bbox.width * bbox.height
+        const coverageRatio = imageArea / pageArea
+        
+        console.log(`🖼️  Image coverage: ${Math.round(coverageRatio * 100)}% (${Math.round(bbox.width)}×${Math.round(bbox.height)} of ${Math.round(page.width)}×${Math.round(page.height)})`)
+        
+        if (coverageRatio >= threshold) {
+          console.log(`✅ Cover page detected! Image covers ${Math.round(coverageRatio * 100)}% of page area`)
+          
+          // Generate screenshot for cover page
+          const screenshot = await this.generatePageScreenshot(page, pdfDocument, options)
+          if (screenshot) {
+            return {
+              ...page,
+              elements: [screenshot],
+              metadata: {
+                ...page.metadata,
+                coverPage: true,
+                coverageRatio,
+                originalElementCount: page.elements?.length || 0,
+                processedAsScreenshot: true
+              }
+            }
+          }
+        }
+      }
+      
+      console.log(`ℹ️  Page ${page.pageIndex + 1} is not a cover page (max coverage: ${Math.round(Math.max(...imageElements.map(el => {
+        const bbox = this.normalizeBoundingBox(el.boundingBox)
+        return (bbox.width * bbox.height) / pageArea
+      }), 0) * 100)}%)`)
+      
+      return null
+    } catch (error) {
+      console.warn(`⚠️  Cover page detection failed for page ${page.pageIndex + 1}:`, error)
+      return null
+    }
+  }
+
+  /**
+   * Generate screenshot for cover page
+   */
+  private static async generatePageScreenshot(
+    page: PdfPageContent, 
+    pdfDocument: PdfDocument, 
+    options: PdfCleanComposerOptions
+  ): Promise<any | null> {
+    try {
+      console.log(`📸 Generating screenshot for cover page ${page.pageIndex + 1}...`)
+      
+      // Get PDF page
+      const pdfPage = await pdfDocument.getPage(page.pageIndex + 1)
+      
+      // Import PageRenderer dynamically for universal screenshot support
+      const { PageRenderer } = await import('../utils/PageRenderer.js')
+      
+      // Generate screenshot with high quality using raw PDF.js objects
+      const screenshotResult = await PageRenderer.renderPageToBase64(pdfPage.rawProxy, pdfDocument.rawProxy, {
+        quality: options.coverPageScreenshotQuality || 95,
+        scale: 2.0 // High quality screenshot with proper scaling
+      })
+      
+      console.log(`✅ Cover page screenshot generated: ${screenshotResult.width}×${screenshotResult.height}`)
+      
+      // Generate consistent filename pattern like other images
+      const screenshotFilename = `cover_screenshot_p${page.pageIndex}_1.png`
+      
+      // Handle output data like other image elements
+      let screenshotData: string
+      if (options.outputDir) {
+        try {
+          // Save screenshot to file and return filename (consistent with image pattern)
+          const fs = await import('fs')
+          const path = await import('path')
+          
+          // Ensure output directory exists
+          if (!fs.existsSync(options.outputDir)) {
+            fs.mkdirSync(options.outputDir, { recursive: true })
+          }
+          
+          // Convert base64 to buffer and save
+          const base64Data = screenshotResult.base64.replace(/^data:image\/png;base64,/, '')
+          const buffer = Buffer.from(base64Data, 'base64')
+          const filePath = path.join(options.outputDir, screenshotFilename)
+          
+          fs.writeFileSync(filePath, buffer)
+          console.log(`💾 Cover screenshot saved: ${screenshotFilename}`)
+          
+          // Return filename like other image elements
+          screenshotData = screenshotFilename
+        } catch (fileError) {
+          console.warn('⚠️ Failed to save cover screenshot file, using base64:', fileError)
+          screenshotData = screenshotResult.base64
+        }
+      } else {
+        // Use base64 data URL when no outputDir specified
+        screenshotData = screenshotResult.base64
+        console.log('📄 Using base64 data URL for cover screenshot (no outputDir specified)')
+      }
+      
+      // Create screenshot element with consistent structure
+      const screenshotElement = {
+        type: 'image',
+        id: `cover_screenshot_p${page.pageIndex}_1`,
+        data: screenshotData,
+        boundingBox: [0, 0, page.width, page.height],
+        width: screenshotResult.width,
+        height: screenshotResult.height,
+        attributes: {
+          type: 'cover-screenshot',
+          extraction: 'cover-page-detection',
+          originalPageWidth: page.width,
+          originalPageHeight: page.height,
+          scale: 2.0,
+          quality: options.coverPageScreenshotQuality || 95,
+          isCoverPage: true
+        }
+      }
+      
+      return screenshotElement
+    } catch (error) {
+      console.error(`❌ Failed to generate cover page screenshot for page ${page.pageIndex + 1}:`, error)
+      return null
     }
   }
 }

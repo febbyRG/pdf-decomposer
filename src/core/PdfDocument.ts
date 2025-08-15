@@ -27,4 +27,7 @@ export class PdfDocument {
 
   get fingerprint() { return this.proxy.fingerprint }
   get numPages() { return this.proxy.numPages }
+  
+  // Expose raw PDF.js proxy for screenshot functionality
+  get rawProxy() { return this.proxy }
 }

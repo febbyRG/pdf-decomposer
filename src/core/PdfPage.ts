@@ -192,4 +192,7 @@ export class PdfPage {
     const [left, bottom, right, top] = this.proxy.view
     return { left, right, bottom, top, width: right - left, height: top - bottom }
   }
+  
+  // Expose raw PDF.js page proxy for screenshot functionality
+  get rawProxy() { return this.proxy }
 }

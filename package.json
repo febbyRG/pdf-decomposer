@@ -54,6 +54,9 @@
     "pdfjs-dist": "3.2.146",
     "uuid": "^9.0.0"
   },
+  "optionalDependencies": {
+    "canvas": "^2.11.2"
+  },
   "devDependencies": {
     "@types/md5": "^2.3.5",
     "@types/node": "^16.0.0",

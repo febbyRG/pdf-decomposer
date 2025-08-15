@@ -33,30 +33,31 @@ export class PageRenderer {
 
   static async renderPageToBase64(
     pdfPage: any,
+    pdfDocument: any,
     options: PageRenderOptions = {}
   ): Promise<{ width: number; height: number; base64: string }> {
     const { scale = 1.0 } = options
 
-    console.log('================= version: 3')
+    console.log('🎯 PDF Page Screenshot Rendering v1.0')
 
     try {
       if (!pdfPage) {
         throw new Error('Invalid PDF page object')
       }
 
-      // CRITICAL: Get ORIGINAL viewport first (scale 1.0)
-      const originalViewport = pdfPage.getViewport({ scale: 1.0 })
-      console.log(`📐 Original viewport: ${originalViewport.width}x${originalViewport.height}`)
-
-      // THEN apply the scale to get final viewport
+      // Get viewport for scaling
       const viewport = pdfPage.getViewport({ scale })
-      console.log(`📐 Scaled viewport: ${viewport.width}x${viewport.height} (scale: ${scale})`)
+      console.log(`📐 Viewport: ${viewport.width}x${viewport.height} (scale: ${scale})`)
+      
+      // Validate viewport
+      if (!viewport || viewport.width <= 0 || viewport.height <= 0) {
+        throw new Error(`Invalid viewport: ${viewport?.width}x${viewport?.height}`)
+      }
 
       if (this.isBrowser()) {
-        // EXACT working pattern from successful test - NO MODIFICATIONS
-        console.log('🌐 Browser rendering (FIXED SCALE approach)')
+        // Browser rendering using HTML5 Canvas
+        console.log('🌐 Browser rendering with HTML5 Canvas')
 
-        // Step 1: Create canvas exactly like working test
         const doc = (globalThis as any).document
         const canvas = doc.createElement('canvas')
         const context = canvas.getContext('2d')
@@ -65,67 +66,30 @@ export class PageRenderer {
           throw new Error('Failed to get 2D context')
         }
 
-        // Step 2: Set canvas dimensions using SCALED viewport
+        // Set canvas dimensions
         canvas.width = Math.floor(viewport.width)
         canvas.height = Math.floor(viewport.height)
 
         console.log(`📐 Canvas: ${canvas.width}x${canvas.height}`)
 
-        // Step 3: Clear canvas exactly like working test
+        // Clear canvas with white background
         context.fillStyle = 'white'
         context.fillRect(0, 0, canvas.width, canvas.height)
-        console.log('✅ Canvas cleared with white background')
 
-        // Step 4: Render exactly like working test - USE SCALED VIEWPORT
+        // Render PDF page to canvas
         const renderContext = {
           canvasContext: context,
-          viewport: viewport  // Use SCALED viewport that matches canvas size
+          viewport: viewport
         }
 
-        console.log('🔄 Starting PDF page render...')
-        console.log('🔧 Render context:', {
-          hasCanvas: !!renderContext.canvasContext,
-          hasViewport: !!renderContext.viewport,
-          viewportWidth: renderContext.viewport.width,
-          viewportHeight: renderContext.viewport.height,
-          canvasWidth: canvas.width,
-          canvasHeight: canvas.height,
-          scale: scale
-        })
-
+        console.log('🔄 Rendering PDF page to canvas...')
         const renderTask = pdfPage.render(renderContext)
         await renderTask.promise
-        console.log('✅ Page rendered successfully')
+        console.log('✅ PDF page rendered successfully')
 
-        // Step 5: Check content immediately - no delay
-        const imageData = context.getImageData(0, 0, Math.min(100, canvas.width), Math.min(100, canvas.height))
-        const hasContent = Array.from(imageData.data).some((value, index) => {
-          if (index % 4 === 3) return false // Skip alpha channel
-          return value !== 255 // Not white
-        })
-
-        console.log(`🔍 Canvas content check: ${hasContent ? 'HAS CONTENT' : 'APPEARS BLANK'}`)
-
-        // Log render context details for debugging
-        console.log('🔧 Post-render analysis:')
-        console.log('  - Canvas dimensions:', canvas.width, 'x', canvas.height)
-        console.log('  - Viewport dimensions:', viewport.width, 'x', viewport.height)
-        console.log('  - Context state:', {
-          fillStyle: context.fillStyle,
-          globalAlpha: context.globalAlpha,
-          globalCompositeOperation: context.globalCompositeOperation
-        })
-
-        // Check if there are any transforms applied
-        const transform = context.getTransform()
-        console.log('  - Canvas transform:', {
-          a: transform.a, b: transform.b, c: transform.c,
-          d: transform.d, e: transform.e, f: transform.f
-        })
-
-        // Step 6: Convert to base64 exactly like working test
+        // Convert to base64
         const dataUrl = canvas.toDataURL('image/png', 1.0)
-        console.log(`📸 Data URL generated: ${dataUrl.length} chars`)
+        console.log(`� Screenshot generated: ${canvas.width}x${canvas.height}`)
 
         return {
           width: canvas.width,
@@ -133,15 +97,53 @@ export class PageRenderer {
           base64: dataUrl
         }
       } else {
-        // Node.js fallback
-        console.log('⚠️ Node.js environment')
-        const canvasWidth = Math.floor(viewport.width * scale)
-        const canvasHeight = Math.floor(viewport.height * scale)
-
-        return {
-          width: canvasWidth,
-          height: canvasHeight,
-          base64: 'data:image/png;base64,placeholder'
+        // Node.js server-side rendering - ngx-pdfjs style (simplified)
+        console.log('🖥️ Node.js server-side rendering (ngx-pdfjs approach)')
+        
+        try {
+          // Import Canvas directly (like ngx-pdfjs but for Node.js)
+          const canvas = await import('canvas')
+          
+          const canvasWidth = Math.floor(viewport.width)
+          const canvasHeight = Math.floor(viewport.height)
+          
+          console.log(`📐 Creating Node.js Canvas: ${canvasWidth}x${canvasHeight}`)
+          
+          // Create simple Node.js canvas (no canvasFactory complexity)
+          const nodeCanvas = canvas.createCanvas(canvasWidth, canvasHeight)
+          const context = nodeCanvas.getContext('2d')
+          
+          // Clear canvas with white background
+          context.fillStyle = 'white'
+          context.fillRect(0, 0, canvasWidth, canvasHeight)
+          
+          // Simple render context (ngx-pdfjs style)
+          const renderContext = {
+            canvasContext: context,
+            viewport: viewport
+          }
+          
+          console.log('🔄 Rendering PDF page to Node.js canvas...')
+          const renderTask = pdfPage.render(renderContext)
+          
+          await renderTask.promise
+          console.log('✅ PDF page rendered successfully')
+          
+          // Convert to PNG buffer
+          const pngBuffer = nodeCanvas.toBuffer('image/png')
+          const base64 = `data:image/png;base64,${pngBuffer.toString('base64')}`
+          
+          console.log(`📸 Screenshot generated: ${canvasWidth}x${canvasHeight}, ${pngBuffer.length} bytes`)
+          
+          return {
+            width: canvasWidth,
+            height: canvasHeight,
+            base64: base64
+          }
+          
+        } catch (canvasError) {
+          console.error('❌ Node.js Canvas rendering failed:', canvasError)
+          throw new Error(`Node.js rendering failed: ${canvasError}`)
         }
       }
 

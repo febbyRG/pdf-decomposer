@@ -270,6 +270,9 @@ export async function pdfDecompose(
         minImageWidth: 50,
         minImageHeight: 50,
         minImageArea: 2500,
+        coverPageDetection: true,
+        coverPageThreshold: 0.8,
+        coverPageScreenshotQuality: 95,
         outputDir: options.outputDir
       }
       
@@ -279,7 +282,7 @@ export async function pdfDecompose(
         outputDir: options.outputDir // Always use outputDir from main options
       }
       
-      pkg.pages = PdfCleanComposer.cleanPages(pkg.pages, cleanOptions)
+      pkg.pages = await PdfCleanComposer.cleanPages(pkg.pages, cleanOptions, pdfDocument)
     }
 
     // Apply page composition if requested

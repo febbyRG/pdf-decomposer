@@ -99,7 +99,7 @@ export async function pdfScreenshot(
         const pdfPage = await pdfDocument.getPage(pageNum)
         console.log(`📄 Page ${pageNum} loaded successfully`)
 
-        const viewport = pdfPage.getViewport({ scale: 1 })
+        const viewport = pdfPage.rawProxy.getViewport({ scale: 1 })
         console.log(`📐 Page ${pageNum} viewport:`, {
           width: viewport.width,
           height: viewport.height
@@ -118,7 +118,8 @@ export async function pdfScreenshot(
           console.log(`🎨 Starting screenshot generation for page ${pageNum}...`)
 
           const screenshotResult = await PageRenderer.renderPageToBase64(
-            pdfPage,
+            pdfPage.rawProxy,
+            pdfDocument.rawProxy,
             {
               quality: imageQuality,
               scale: imageWidth / viewport.width

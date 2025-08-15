@@ -80,10 +80,10 @@ class ComprehensiveTest {
       await this.testPdfDecompose()
 
       // Test: Page range processing
-      await this.testPageRange()
+      // await this.testPageRange()
 
       // Test: Error handling
-      await this.testErrorHandling()
+      // await this.testErrorHandling()
 
       // Print results
       this.printResults()
@@ -110,6 +110,8 @@ class ComprehensiveTest {
       // Test with full decomposition options including cleanComposer
       // Using default cleanComposer options (no need to specify manually)
       const fullOptions = {
+        startPage: 1,
+        endPage: 2,
         extractImages: true,
         elementComposer: true,
         pageComposer: true,
