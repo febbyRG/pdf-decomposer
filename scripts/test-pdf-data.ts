@@ -1,0 +1,121 @@
+#!/usr/bin/env tsx
+
+/**
+ * PDF Data Generator Test
+ * 
+ * Tests the new pdfData generation functionality for pwa-admin integration
+ */
+
+import { existsSync, mkdirSync, writeFileSync, readFileSync, rmSync, statSync } from 'fs'
+import { join } from 'path'
+// Import using relative path from scripts directory to dist  
+import { PdfDecomposer } from '../dist/index.js'
+
+async function testPdfDataGeneration() {
+  console.log('🧪 Testing PDF Data Generation for pwa-admin')
+  console.log('='.repeat(50))
+
+  const testDir = join(__dirname, 'test-output', 'pdf-data-test')
+  const pdfPath = join(__dirname, 'test-input', 'publication.pdf')
+  
+  // Clean up previous test results
+  if (existsSync(testDir)) {
+    console.log('🧹 Cleaning up previous test results...')
+    rmSync(testDir, { recursive: true })
+  }
+  
+  // Ensure output directory exists
+  mkdirSync(testDir, { recursive: true })
+  console.log(`📁 Output directory ready: ${testDir}`)
+  
+  if (!existsSync(pdfPath)) {
+    console.error(`❌ Test PDF not found: ${pdfPath}`)
+    return
+  }
+
+  // Show PDF file stats
+  const pdfStats = statSync(pdfPath)
+  console.log(`📏 PDF file size: ${Math.round(pdfStats.size / 1024)} KB`)
+
+  try {
+    // Initialize PDF decomposer
+    const pdfBuffer = readFileSync(pdfPath)
+    const decomposer = new PdfDecomposer(pdfBuffer)
+    await decomposer.initialize()
+    
+    console.log(`📄 PDF loaded: ${decomposer.numPages} pages`)
+    
+    // Test: Generate pdfData using new API
+    console.log('\n🔄 Generating pdfData using decompose() with pdfData option...')
+    
+    const result = await decomposer.decompose({
+      pdfData: true,
+      elementComposer: true,
+      extractImages: true,
+      minify: false
+    })
+    
+    const pdfDataResult = result.pdfData
+    if (!pdfDataResult) {
+      throw new Error('pdfData not generated')
+    }
+    
+    console.log(`✅ Generated pdfData: ${pdfDataResult.length} pages, ${pdfDataResult.reduce((total: any, page: any) => total + page.areas.length, 0)} total areas`)
+    
+    // Save result
+    const resultPath = join(testDir, 'pdf-data-result.json')
+    writeFileSync(resultPath, JSON.stringify(pdfDataResult, null, 2))
+    console.log(`📄 Saved to: ${resultPath}`)
+    
+    // Show sample structures
+    if (pdfDataResult.length > 0) {
+      console.log('\n� Sample PdfData structure (first page):')
+      const samplePage = {
+        ...pdfDataResult[0],
+        areas: pdfDataResult[0].areas.slice(0, 2) // Show only first 2 areas
+      }
+      console.log(JSON.stringify(samplePage, null, 2))
+    }
+    
+    if (pdfDataResult.length > 0 && pdfDataResult[0].areas.length > 0) {
+      console.log('\n📝 Sample PdfArea structure:')
+      console.log(JSON.stringify(pdfDataResult[0].areas[0], null, 2))
+    }
+    
+    // Print results summary
+    console.log('\n📊 Results Summary:')
+    console.log(`📄 Total pages: ${pdfDataResult.length}`)
+    console.log(`🎯 Total areas: ${pdfDataResult.reduce((total: any, page: any) => total + page.areas.length, 0)}`)
+    
+    // Print areas breakdown by widget type
+    const widgetTypeCounts: Record<string, number> = {}
+    pdfDataResult.forEach(page => {
+      page.areas.forEach(area => {
+        const type = area.widgetId.split(':')[0]
+        widgetTypeCounts[type] = (widgetTypeCounts[type] || 0) + 1
+      })
+    })
+    
+    console.log('\n🔍 Widget Type Breakdown:')
+    Object.entries(widgetTypeCounts).forEach(([type, count]) => {
+      const typeName = { T: 'Text', P: 'Picture', G: 'Graphics', A: 'Annotation', E: 'Element' }[type] || type
+      console.log(`  ${type} (${typeName}): ${count}`)
+    })
+    
+    console.log('\n🎉 PDF Data generation completed successfully!')
+    console.log('\n� Usage example:')
+    console.log('```typescript')
+    console.log('const decomposer = new PdfDecomposer()')
+    console.log('await decomposer.loadFromFile("document.pdf")')
+    console.log('const pdfData = await decomposer.decompose({ pdfData: true })')
+    console.log('// Ready to use in pwa-admin!')
+    console.log('```')
+    
+  } catch (error) {
+    console.error('❌ Test failed:', error)
+    console.error(error)
+  }
+}
+
+// Run the test
+testPdfDataGeneration().catch(console.error)

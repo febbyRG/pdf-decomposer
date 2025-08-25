@@ -35,6 +35,10 @@ export { MemoryManager } from './utils/MemoryManager.js'
 export { ValidationUtils } from './utils/ValidationUtils.js'
 export { MemoryPackageDir } from './utils/MemoryPackageDir.js'
 
+// PDF Data Generator for pwa-admin compatibility
+export { PdfDataGenerator, generatePdfData } from './core/PdfDataGenerator.js'
+export type { PdfData, PdfArea, PdfDataGeneratorOptions } from './core/PdfDataGenerator.js'
+
 // Configuration
 export { ENV_CONFIG, PDF_CONFIG } from './config/constants.js'
 

@@ -24,6 +24,7 @@
     "prepublishOnly": "npm run build && npm test",
     "test": "npx ts-node scripts/test.ts",
     "test:screenshot": "npx ts-node scripts/test-screenshot.ts",
+    "test:data": "npx ts-node scripts/test-pdf-data.ts",
     "lint": "eslint . --ext .ts"
   },
   "repository": {

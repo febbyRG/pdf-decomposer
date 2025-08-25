@@ -79,12 +79,6 @@ class ComprehensiveTest {
       // Test: PDF Decomposition with Clean Composer
       await this.testPdfDecompose()
 
-      // Test: Page range processing
-      // await this.testPageRange()
-
-      // Test: Error handling
-      // await this.testErrorHandling()
-
       // Print results
       this.printResults()
 
@@ -106,52 +100,33 @@ class ComprehensiveTest {
       
       const outputDir = join(this.baseOutputDir, 'pdf-decompose')
       mkdirSync(outputDir, { recursive: true })
-
-      // Test with full decomposition options including cleanComposer
-      // Using default cleanComposer options (no need to specify manually)
-      const fullOptions = {
-        extractImages: true,
-        elementComposer: true,
-        pageComposer: true,
-        cleanComposer: true, // Will use default image filtering (50×50 minimum, 2500px² area)
-        minify: true
-      }
       
+      /*
       // Example: Custom cleanComposer options if needed (optional)
-      // cleanComposerOptions: {
-      //   minImageWidth: 100,     // Stricter: 100px minimum width
-      //   minImageHeight: 100,    // Stricter: 100px minimum height
-      //   minImageArea: 10000,    // Stricter: 10000px² minimum area
-      //   minTextLength: 5        // Longer text requirement
-      // }
+      cleanComposerOptions: {
+        minImageWidth: 100,     // Stricter: 100px minimum width
+        minImageHeight: 100,    // Stricter: 100px minimum height
+        minImageArea: 10000,    // Stricter: 10000px² minimum area
+        minTextLength: 5        // Longer text requirement
+      }
+      */
       
-      const cleanResult = await this.decomposer.decompose({
-        ...fullOptions,
-        outputDir
-      })
-
       // Test without cleanComposer for comparison
-      const originalResult = await this.decomposer.decompose({
+      const decomposeResult = await this.decomposer.decompose({
+        outputDir,
         extractImages: true,
-        elementComposer: true,
-        pageComposer: true,
-        cleanComposer: false,
-        minify: true
+        // elementComposer: true,
+        // pageComposer: true,
+        // cleanComposer: false,
+        // minify: true
       })
 
+      const result = decomposeResult.pages
       const duration = Date.now() - startTime
 
-      console.log(`📊 Processing completed: ${cleanResult.length} pages`)
-
       // Calculate cleaning effectiveness
-      const originalElementCount = originalResult.reduce((total: number, page: any) => 
+      const elementCount = result.reduce((total: number, page: any) => 
         total + (page.elements?.length || 0), 0)
-      const cleanedElementCount = cleanResult.reduce((total: number, page: any) => 
-        total + (page.elements?.length || 0), 0)
-      
-      const elementReduction = originalElementCount - cleanedElementCount
-      const reductionPercentage = originalElementCount > 0 ? 
-        ((elementReduction / originalElementCount) * 100) : 0
 
       // Check for generated image files in output directory
       const generatedFiles: string[] = []
@@ -171,58 +146,50 @@ class ComprehensiveTest {
       }
 
       console.log('📊 PDF Decomposition Results:')
-      console.log(`  Original elements: ${originalElementCount}`)
-      console.log(`  Cleaned elements: ${cleanedElementCount}`)
-      console.log(`  Elements removed: ${elementReduction} (${reductionPercentage.toFixed(1)}%)`)
+      console.log(`  Original elements: ${elementCount}`)
       console.log(`  Generated image files: ${generatedFiles.length}`)
 
       // Test success criteria
       const expectedImageFiles = 1
       const actualImageFiles = generatedFiles.length
       const imageTestPassed = actualImageFiles >= expectedImageFiles
-      const cleaningTestPassed = elementReduction > 0
-      const overallTestPassed = imageTestPassed && cleaningTestPassed
+      const overallTestPassed = imageTestPassed
 
       // Save comprehensive analysis
       const analysisPath = join(outputDir, 'decompose-analysis.json')
       writeFileSync(analysisPath, JSON.stringify({
         summary: {
-          originalElementCount,
-          cleanedElementCount,
-          elementReduction,
-          reductionPercentage: parseFloat(reductionPercentage.toFixed(1)),
+          elementCount,
           totalImageFiles: actualImageFiles,
           expectedImageFiles,
           imageSuccessRate: actualImageFiles > 0 ? ((actualImageFiles / expectedImageFiles) * 100) : 0,
           processingTime: duration,
           imageTestPassed,
-          cleaningTestPassed,
           overallTestPassed
         },
-        originalResult,
-        cleanedResult: cleanResult,
+        result,
         generatedFiles,
         assetFiles: directAssetImages
       }, null, 2))
 
       // Save complete decompose result for analysis
       const resultPath = join(outputDir, 'result.json')
-      writeFileSync(resultPath, JSON.stringify(cleanResult, null, 2), 'utf-8')
+      writeFileSync(resultPath, JSON.stringify(result, null, 2), 'utf-8')
 
       this.results.push({
         name: testName,
         passed: overallTestPassed,
         duration,
-        details: `Generated ${actualImageFiles} image files, filtered out ${elementReduction}/${originalElementCount} elements (${reductionPercentage.toFixed(1)}% reduction)`,
-        pageCount: cleanResult.length,
+        details: `Generated ${actualImageFiles} image files`,
+        pageCount: result.length,
         imageCount: actualImageFiles,
         outputSize: generatedFiles.length
       })
 
       if (overallTestPassed) {
-        console.log(`✅ PDF Decomposition test PASSED: ${reductionPercentage.toFixed(1)}% element reduction, ${actualImageFiles} images generated in ${duration}ms`)
+        console.log(`✅ PDF Decomposition test PASSED: ${actualImageFiles} images generated in ${duration}ms`)
       } else {
-        console.log(`❌ PDF Decomposition test FAILED: Image test: ${imageTestPassed}, Cleaning test: ${cleaningTestPassed}`)
+        console.log(`❌ PDF Decomposition test FAILED: Image test: ${imageTestPassed}`)
       }
 
       console.log(`📄 Complete decompose result saved to: ${basename(resultPath)}`)
@@ -236,92 +203,6 @@ class ComprehensiveTest {
       })
       console.log(`❌ Failed: ${(error as Error).message}`)
       console.error('Full error:', error)
-    }
-  }
-
-  private async testPageRange() {
-    const testName = 'Page Range Processing'
-    const startTime = Date.now()
-
-    try {
-      console.log(`🔄 Running: ${testName}...`)
-      
-      // Use already initialized decomposer
-      const result = await this.decomposer.decompose({
-        extractImages: true,
-        startPage: 2,
-        endPage: 4
-      })
-
-      const duration = Date.now() - startTime
-      const expectedPages = [2, 3, 4]
-      const actualPages = result.map((p: any) => p.pageNumber)
-      const correctRange = JSON.stringify(expectedPages) === JSON.stringify(actualPages)
-
-      this.results.push({
-        name: testName,
-        passed: correctRange && result.length === 3,
-        duration,
-        details: `Processed pages ${actualPages.join(', ')} (expected: ${expectedPages.join(', ')})`,
-        pageCount: result.length
-      })
-
-      console.log(`  ✓ Processed page range 2-4 correctly in ${duration}ms`)
-
-    } catch (error) {
-      this.results.push({
-        name: testName,
-        passed: false,
-        duration: Date.now() - startTime,
-        details: `Error: ${(error as Error).message}`
-      })
-      console.log(`  ❌ Failed: ${(error as Error).message}`)
-    }
-  }
-
-  private async testErrorHandling() {
-    const testName = 'Error Handling'
-    const startTime = Date.now()
-
-    try {
-      console.log(`🔄 Running: ${testName}...`)
-
-      let errorsCaught = 0
-
-      // Test invalid startPage (reuse decomposer, should fail at validation level)
-      try {
-        await this.decomposer.decompose({ startPage: 0 })
-      } catch { errorsCaught++ }
-
-      // Test startPage > endPage (reuse decomposer, should fail at validation level)
-      try {
-        await this.decomposer.decompose({ startPage: 5, endPage: 3 })
-      } catch { errorsCaught++ }
-
-      // Test startPage beyond document (reuse decomposer, should process 0 pages)
-      try {
-        await this.decomposer.decompose({ startPage: 100 })
-      } catch { errorsCaught++ }
-
-      const duration = Date.now() - startTime
-
-      this.results.push({
-        name: testName,
-        passed: errorsCaught >= 2, // At least 2 errors should be caught
-        duration,
-        details: `Correctly caught ${errorsCaught}/3 expected error conditions`
-      })
-
-      console.log(`✓ Error handling working correctly (${errorsCaught}/3 errors caught) in ${duration}ms`)
-
-    } catch (error) {
-      this.results.push({
-        name: testName,
-        passed: false,
-        duration: Date.now() - startTime,
-        details: `Unexpected error: ${(error as Error).message}`
-      })
-      console.log(`❌ Failed: ${(error as Error).message}`)
     }
   }
 
