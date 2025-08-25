@@ -9,6 +9,7 @@ import type {
 } from '../types/decomposer.types.js'
 import type { DecomposeResult } from '../types/decompose.types.js'
 import type { DataOptions, DataResult } from '../types/data.types.js'
+import type { SliceOptions, SliceResult } from '../types/slice.types.js'
 import '../utils/DOMMatrixPolyfill.js'
 
 // Import types only from core modules
@@ -204,6 +205,121 @@ export class PdfDecomposer {
     } catch (error) {
       console.error('❌ Data generation failed:', error)
       throw error
+    }
+  }
+
+  /**
+   * Slice PDF to include only specified number of pages and replace internal document
+   * @param options Configuration for slicing operation
+   * @returns Promise resolving to SliceResult with sliced PDF data and metadata
+   */
+  async slice(options: SliceOptions = {}): Promise<SliceResult> {
+    this.ensureInitialized()
+    
+    try {
+      console.log('✂️ Starting PDF slicing operation...', options)
+      
+      // Dynamic import for pdf-lib to avoid bundling if not used
+      const { PDFDocument } = await import('pdf-lib')
+      
+      // Get original PDF data
+      const originalPdfData = await this.pdfDocument?.getData()
+      if (!originalPdfData) {
+        throw new Error('Failed to get PDF data from document')
+      }
+      
+      const originalPdfDoc = await PDFDocument.load(originalPdfData)
+      
+      // Calculate page range
+      const originalPageCount = this.pdfDocument?.numPages ?? 0
+      const startPage = options.startPage ?? 1
+      const endPage = options.endPage ?? (options.numberPages ? Math.min(options.numberPages, originalPageCount) : originalPageCount)
+      
+      // Validate page range
+      if (startPage < 1 || startPage > originalPageCount) {
+        throw new Error(`startPage ${startPage} is out of range. PDF has ${originalPageCount} pages.`)
+      }
+      
+      if (endPage < 1 || endPage > originalPageCount) {
+        throw new Error(`endPage ${endPage} is out of range. PDF has ${originalPageCount} pages.`)
+      }
+      
+      if (startPage > endPage) {
+        throw new Error(`startPage ${startPage} cannot be greater than endPage ${endPage}`)
+      }
+      
+      console.log(`📄 Slicing pages ${startPage}-${endPage} from ${originalPageCount} total pages`)
+      
+      // Create new PDF with selected pages
+      const newPdfDoc = await PDFDocument.create()
+      
+      // Copy pages (pdf-lib uses 0-based indexing)
+      const pageIndices = []
+      for (let i = startPage - 1; i < endPage; i++) {
+        pageIndices.push(i)
+      }
+      
+      const copiedPages = await newPdfDoc.copyPages(originalPdfDoc, pageIndices)
+      
+      // Add copied pages to new document
+      for (const page of copiedPages) {
+        newPdfDoc.addPage(page)
+      }
+      
+      // Generate sliced PDF bytes
+      const slicedPdfBytes = await newPdfDoc.save()
+      const slicedUint8Array = new Uint8Array(slicedPdfBytes)
+      
+      console.log(`✅ PDF sliced successfully: ${pageIndices.length} pages`)
+      
+      // Replace internal PDF document with sliced version
+      await this.replaceInternalDocument(slicedUint8Array)
+      
+      // Return comprehensive result
+      const sliceResult: SliceResult = {
+        pdfBytes: slicedUint8Array,
+        originalPageCount,
+        slicedPageCount: pageIndices.length,
+        pageRange: {
+          startPage,
+          endPage
+        },
+        fileSize: slicedUint8Array.byteLength
+      }
+      
+      return sliceResult
+      
+    } catch (error) {
+      console.error('❌ PDF slicing failed:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Replace internal PDF document with new buffer and reinitialize
+   * @param newBuffer New PDF buffer to replace current document
+   * @private
+   */
+  private async replaceInternalDocument(newBuffer: Uint8Array): Promise<void> {
+    try {
+      console.log('🔄 Replacing internal PDF document with sliced version...')
+      
+      // Store new buffer
+      this.buffer = newBuffer
+      
+      // Reset initialization state
+      this.isInitialized = false
+      this.pdfDocument = null
+      
+      // Reinitialize with new buffer
+      await this.initialize()
+      
+      console.log(`✅ Internal PDF document replaced: ${this.numPages} pages now available`)
+      
+    } catch (error) {
+      console.error('❌ Failed to replace internal PDF document:', error)
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      throw new PdfProcessingError(`Failed to replace internal PDF document: ${errorMessage}`)
     }
   }
 
