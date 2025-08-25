@@ -3,7 +3,8 @@
 /**
  * PDF Data Generator Test
  * 
- * Tests the new pdfData generation functionality for pwa-admin integration
+ * Tests the new clean data() method for pwa-admin integration
+ * Uses the refactored API with separate functions
  */
 
 import { existsSync, mkdirSync, writeFileSync, readFileSync, rmSync, statSync } from 'fs'
@@ -12,11 +13,11 @@ import { join } from 'path'
 import { PdfDecomposer } from '../dist/index.js'
 
 async function testPdfDataGeneration() {
-  console.log('🧪 Testing PDF Data Generation for pwa-admin')
+  console.log('🧪 Testing Clean PDF Data API for pwa-admin')
   console.log('='.repeat(50))
 
   const testDir = join(__dirname, 'test-output', 'pdf-data-test')
-  const pdfPath = join(__dirname, 'test-input', 'publication.pdf')
+  const pdfPath = join(__dirname, 'test-input', 'heather.pdf')
   
   // Clean up previous test results
   if (existsSync(testDir)) {
@@ -45,22 +46,21 @@ async function testPdfDataGeneration() {
     
     console.log(`📄 PDF loaded: ${decomposer.numPages} pages`)
     
-    // Test: Generate pdfData using new API
-    console.log('\n🔄 Generating pdfData using decompose() with pdfData option...')
+    // Test: Generate pdfData using new dedicated data() method
+    console.log('\n🔄 Generating pdfData using new data() method...')
     
-    const result = await decomposer.decompose({
-      pdfData: true,
+    const dataResult = await decomposer.data({
       elementComposer: true,
-      extractImages: true,
-      minify: false
+      cleanComposer: true,
+      outputDir: join(testDir, 'data')
     })
     
-    const pdfDataResult = result.pdfData
+    const pdfDataResult = dataResult.data
     if (!pdfDataResult) {
       throw new Error('pdfData not generated')
     }
     
-    console.log(`✅ Generated pdfData: ${pdfDataResult.length} pages, ${pdfDataResult.reduce((total: any, page: any) => total + page.areas.length, 0)} total areas`)
+    console.log(`✅ Generated pdfData: ${pdfDataResult.length} pages, ${pdfDataResult.reduce((total: number, page: any) => total + page.areas.length, 0)} total areas`)
     
     // Save result
     const resultPath = join(testDir, 'pdf-data-result.json')
@@ -103,11 +103,13 @@ async function testPdfDataGeneration() {
     })
     
     console.log('\n🎉 PDF Data generation completed successfully!')
-    console.log('\n� Usage example:')
+    console.log('\n💡 Clean API Usage example:')
     console.log('```typescript')
-    console.log('const decomposer = new PdfDecomposer()')
-    console.log('await decomposer.loadFromFile("document.pdf")')
-    console.log('const pdfData = await decomposer.decompose({ pdfData: true })')
+    console.log('const decomposer = new PdfDecomposer(buffer)')
+    console.log('await decomposer.initialize()')
+    console.log('const result = await decomposer.data({ elementComposer: true })')
+    console.log('const pdfData = result.data // pwa-admin compatible format')
+    console.log('const pages = result.pages // reference pages')
     console.log('// Ready to use in pwa-admin!')
     console.log('```')
     

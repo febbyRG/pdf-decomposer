@@ -1,56 +1,11 @@
 import type { PdfPageContent } from '../models/PdfPageContent.js'
 import type { PdfElement } from '../models/PdfElement.js'
-
-/**
- * Interface for PDF Data compatible with pwa-admin
- */
-export interface PdfArea {
-  id: string
-  coords: number[] // [x1, y1, x2, y2] normalized 0-1
-  articleId: number
-  widgetId: string
-}
-
-export interface PdfData {
-  id: string
-  index: number
-  image: string
-  thumbnail: string
-  areas: PdfArea[]
-}
-
-export interface PdfDataGeneratorOptions {
-  /**
-   * Base URL for page images (will append page filename)
-   */
-  imageBaseUrl?: string
-  
-  /**
-   * Function to generate article ID for each area
-   * If not provided, will use placeholder articleId
-   */
-  articleIdGenerator?: (pageIndex: number, elementIndex: number, element: PdfElement) => number
-  
-  /**
-   * Function to generate unique IDs for pages and areas
-   * If not provided, will use simple incremental IDs
-   */
-  idGenerator?: () => string
-  
-  /**
-   * Minimum element size to include (to filter out tiny elements)
-   */
-  minElementSize?: {
-    width?: number
-    height?: number
-    area?: number
-  }
-  
-  /**
-   * Whether to group similar elements together
-   */
-  groupSimilarElements?: boolean
-}
+import type { PdfDocument } from './PdfDocument.js'
+import type { 
+  PdfDecomposerState, 
+  PdfDecomposerError 
+} from '../types/decomposer.types.js'
+import type { DataOptions, DataResult, PdfData, PdfArea, PdfDataGeneratorOptions } from '../types/data.types.js'
 
 /**
  * Generates pdfData structure compatible with pwa-admin from pdf-decomposer output
@@ -312,4 +267,156 @@ export function generatePdfData(
 ): PdfData[] {
   const generator = new PdfDataGenerator(options)
   return generator.generatePdfData(pages)
+}
+
+// =============================================================================
+// CORE FUNCTION
+// =============================================================================
+
+/**
+ * Core PDF data generation logic for already-loaded PDF documents
+ * 
+ * Generates pwa-admin compatible data format from PDF documents including:
+ * - Normalized coordinates for all elements
+ * - Widget ID mapping following epub conventions
+ * - Area-based structure for interactive content
+ * 
+ * @param pdfDocument Already loaded and processed PdfDocument instance
+ * @param options Optional configuration for data generation process
+ * @param progressCallback Optional callback for progress updates
+ * @param errorCallback Optional callback for error notifications
+ * @returns Promise resolving to DataResult with pdfData and pages
+ * 
+ * @example
+ * ```typescript
+ * import { pdfData } from 'pdf-decomposer/core'
+ * 
+ * // Load PDF first
+ * const pdfProxy = await PdfLoader.loadFromBuffer(buffer)
+ * const pdfDocument = new PdfDocument(pdfProxy)
+ * await pdfDocument.process()
+ * 
+ * // Then generate data with progress tracking
+ * const result = await pdfData(pdfDocument, {
+ *   startPage: 1,
+ *   endPage: 10,
+ *   elementComposer: true
+ * }, (state) => {
+ *   console.log(`Progress: ${state.progress}% - ${state.message}`)
+ * })
+ * ```
+ */
+export async function pdfData(
+  pdfDocument: PdfDocument,
+  options: DataOptions = {},
+  progressCallback?: (state: PdfDecomposerState) => void,
+  errorCallback?: (error: PdfDecomposerError) => void
+): Promise<DataResult> {
+  console.log('📊 Starting PDF data generation with pre-loaded document...')
+  
+  // Helper function to update progress
+  const updateProgress = (progress: number, message: string) => {
+    if (progressCallback) {
+      progressCallback({
+        progress,
+        message,
+        processing: true
+      })
+    }
+  }
+
+  updateProgress(0, 'Starting PDF data generation...')
+  
+  try {
+    // First decompose the PDF to get page content
+    updateProgress(10, 'Decomposing PDF content...')
+    const { pdfDecompose } = await import('./PdfDecompose.js')
+    
+    const decomposeResult = await pdfDecompose(
+      pdfDocument,
+      {
+        startPage: options.startPage,
+        endPage: options.endPage,
+        outputDir: options.outputDir,
+        elementComposer: options.elementComposer ?? true,
+        cleanComposer: options.cleanComposer,
+        cleanComposerOptions: options.cleanComposerOptions
+      },
+      (state) => {
+        // Forward decompose progress (10-80%)
+        const adjustedProgress = 10 + (state.progress * 0.7)
+        updateProgress(adjustedProgress, state.message)
+      },
+      errorCallback
+    )
+    
+    const pages = decomposeResult.pages
+    
+    updateProgress(80, 'Generating page screenshots...')
+    
+    // Generate page screenshots for each page
+    const { pdfScreenshot } = await import('./PdfScreenshot.js')
+    const screenshotResult = await pdfScreenshot(
+      pdfDocument,
+      {
+        outputDir: options.outputDir,
+        imageWidth: options.imageWidth,
+        imageQuality: options.imageQuality
+      },
+      (state) => {
+        // Forward screenshot progress (80-90%)
+        const adjustedProgress = 80 + (state.progress * 0.1)
+        updateProgress(adjustedProgress, `Generating screenshots: ${state.message}`)
+      },
+      errorCallback
+    )
+    
+    updateProgress(90, 'Generating pdfData structure...')
+    
+    // Generate pdfData from decomposed pages
+    const generator = new PdfDataGenerator({
+      minElementSize: {
+        width: 10,
+        height: 10,
+        area: 100
+      }
+    })
+    
+    // Map pages to screenshots and generate pdfData
+    const pdfDataResult = pages.map((page, index) => {
+      const screenshot = screenshotResult.screenshots[index]
+      let imageValue: string
+      
+      if (options.outputDir && screenshot?.filePath) {
+        // If output directory exists, use filename (extract filename from filePath)
+        const fileName = screenshot.filePath.split('/').pop() || `pg-${String(page.pageNumber).padStart(3, '0')}.png`
+        imageValue = fileName
+      } else if (screenshot?.screenshot) {
+        // If no output directory, use base64 from screenshot
+        imageValue = screenshot.screenshot
+      } else {
+        // Fallback to page image if available
+        imageValue = page.image || `pg-${String(page.pageNumber).padStart(3, '0')}.png`
+      }
+      
+      // Create modified page with actual screenshot
+      const pageWithScreenshot = {
+        ...page,
+        image: imageValue
+      }
+      
+      return generator.convertPageToPdfData(pageWithScreenshot, index)
+    })
+    
+    updateProgress(100, 'Completed')
+    console.log(`✅ PDF data generation completed: ${pdfDataResult.length} pages with ${pdfDataResult.reduce((total, page) => total + page.areas.length, 0)} total areas`)
+    
+    return {
+      data: pdfDataResult
+    }
+    
+  } catch (error) {
+    console.error('❌ PDF data generation failed:', error)
+    throw error
+  }
 }

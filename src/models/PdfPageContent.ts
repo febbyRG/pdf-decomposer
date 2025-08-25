@@ -9,7 +9,6 @@ export interface PdfPageContent {
   image: string
   thumbnail?: string
   elements: PdfElement[]
-  pdfData?: import('../core/PdfDataGenerator.js').PdfData[]  // Proper type for pwa-admin compatible format
   // Metadata for page composition
   metadata?: {
     composedFromPages?: number[]

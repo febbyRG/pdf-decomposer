@@ -28,7 +28,6 @@ export interface PdfDecomposerPageData {
 export interface PdfDecomposerPackage {
   fingerprint?: string
   pages: any[]
-  pdfData?: import('../core/PdfDataGenerator.js').PdfData[]  // Proper type for pwa-admin compatible format
   thumbnail?: any
   state?: PdfDecomposerState // Missing feature: state property in package
   pkgDir?: PdfDecomposerDirectory
@@ -82,7 +81,6 @@ export interface PdfDecomposerOptions {
   minify?: boolean // When true, use compact bounding box format [x, y, width, height]
   cleanComposer?: boolean // When true, clean content to include only main content area
   cleanComposerOptions?: PdfCleanComposerOptions // Options for content cleaning
-  pdfData?: boolean // When true, return pdfData format compatible with pwa-admin
 }
 
 /**

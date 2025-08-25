@@ -8,14 +8,11 @@ import type {
   PdfDecomposerError
 } from '../types/decomposer.types.js'
 import type { DecomposeResult } from '../types/decompose.types.js'
+import type { DataOptions, DataResult } from '../types/data.types.js'
 import '../utils/DOMMatrixPolyfill.js'
 
 // Import types only from core modules
 import type { ScreenshotOptions, ScreenshotResult } from '../types/screenshot.types.js'
-
-// Import pdfData generator
-import { PdfDataGenerator } from '../core/PdfDataGenerator.js'
-import type { PdfData, PdfDataGeneratorOptions } from '../core/PdfDataGenerator.js'
 
 // Configure PDF.js worker for browser environments
 PdfWorkerConfig.configure()
@@ -174,13 +171,39 @@ export class PdfDecomposer {
       return await pdfScreenshot(
         this.pdfDocument as PdfDocument, 
         options,
-        (state) => this.notify(state), // Pass progress callback
-        (error) => this.notifyDecomposeError(error) // Pass error callback (reuse same callback for consistency)
+        (state) => this.notify(state),
+        (error) => this.notifyDecomposeError(error)
       )
       
     } catch (error) {
       console.error('❌ Screenshot generation failed:', error)
-      throw error // Re-throw to preserve error type
+      throw error
+    }
+  }
+
+  /**
+   * Generate pdfData structure compatible with pwa-admin
+   * @param options Optional configuration for pdfData generation
+   * @returns Promise resolving to DataResult with pdfData and pages
+   */
+  async data(options: DataOptions = {}): Promise<DataResult> {
+    this.ensureInitialized()
+    
+    try {
+      console.log('📊 Starting PDF data generation using enhanced API...')
+      
+      // Use core data logic with already loaded PdfDocument and pass callbacks
+      const { pdfData } = await import('../core/PdfDataGenerator.js')
+      return await pdfData(
+        this.pdfDocument as PdfDocument, 
+        options,
+        (state) => this.notify(state),
+        (error) => this.notifyDecomposeError(error)
+      )
+      
+    } catch (error) {
+      console.error('❌ Data generation failed:', error)
+      throw error
     }
   }
 
@@ -251,59 +274,6 @@ export class PdfDecomposer {
    */
   private notifyDecomposeError(error: PdfDecomposerError) {
     for (const fn of this.decomposeError) fn(error)
-  }
-
-  /**
-   * Generate pdfData structure compatible with pwa-admin
-   * @param options Optional configuration for pdfData generation
-   * @returns Promise resolving to array of PdfData objects
-   */
-  async generatePdfData(options: PdfDataGeneratorOptions = {}): Promise<PdfData[]> {
-    this.ensureInitialized()
-    
-    try {
-      console.log('📊 Generating pdfData structure for pwa-admin...')
-      
-      // First decompose the PDF to get page content
-      const result = await this.decompose({
-        extractImages: true,
-        elementComposer: true
-      })
-      const pages = result.pages
-      
-      // Generate pdfData from decomposed pages
-      const generator = new PdfDataGenerator(options)
-      const pdfData = generator.generatePdfData(pages)
-      
-      console.log(`✅ Generated pdfData for ${pdfData.length} pages with ${pdfData.reduce((total, page) => total + page.areas.length, 0)} total areas`)
-      
-      return pdfData
-      
-    } catch (error) {
-      console.error('❌ PdfData generation failed:', error)
-      throw error
-    }
-  }
-
-  /**
-   * Generate pdfData with Magloft-specific defaults
-   * @param projectId Project ID for image URLs (default: '1371')
-   * @param articleIdGenerator Function to assign article IDs to areas
-   * @returns Promise resolving to array of PdfData objects
-   */
-  async generateMagloftPdfData(
-    projectId: string | number = '1371',
-    articleIdGenerator?: (pageIndex: number, elementIndex: number, element: any) => number
-  ): Promise<PdfData[]> {
-    return this.generatePdfData({
-      imageBaseUrl: `https://cdn.magloft.com/pdf-import/${projectId}/images/pages`,
-      articleIdGenerator,
-      minElementSize: {
-        width: 10,
-        height: 10,
-        area: 100
-      }
-    })
   }
 
   /**

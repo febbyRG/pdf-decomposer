@@ -22,6 +22,12 @@ export class PdfDocument {
   }
 
   getPage(pageNumber: number) { return this.pages[pageNumber - 1] }
+  
+  // Get raw PDF.js page for screenshot functionality
+  async getRawPage(pageNumber: number) { 
+    return await this.proxy.getPage(pageNumber)
+  }
+  
   getOutline() { return this.proxy.getOutline() }
   getData() { return this.proxy.getData() }
 

@@ -1,5 +1,4 @@
 import type { PdfPageContent } from '../models/PdfPageContent.js'
-import type { PdfData } from '../core/PdfDataGenerator.js'
 
 /**
  * Options for PDF decomposition process
@@ -19,5 +18,4 @@ export interface DecomposeOptions {
  */
 export interface DecomposeResult {
   pages: PdfPageContent[]
-  pdfData?: PdfData[]
 }

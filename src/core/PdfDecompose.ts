@@ -14,7 +14,6 @@ import { PdfDecomposerPage } from './PdfDecomposerPage.js'
 import { PdfElementComposer } from './PdfElementComposer.js'
 import { PdfPageComposer } from './PdfPageComposer.js'
 import { PdfCleanComposer } from './PdfCleanComposer.js'
-import { generatePdfData } from './PdfDataGenerator.js'
 import { MemoryManager } from '../utils/MemoryManager.js'
 import { MemoryPackageDir } from '../utils/MemoryPackageDir.js'
 
@@ -75,7 +74,7 @@ function minifyPagesData(pages: PdfPageContent[]): any[] {
  * @param options Optional configuration for decomposition process
  * @param progressCallback Optional callback for progress updates
  * @param errorCallback Optional callback for error notifications
- * @returns Promise resolving to array of PdfPageContent or PdfData objects based on options.pdfData
+ * @returns Promise resolving to DecomposeResult with pages array
  * 
  * @example
  * ```typescript
@@ -94,12 +93,6 @@ function minifyPagesData(pages: PdfPageContent[]): any[] {
  *   extractImages: true
  * }, (state) => {
  *   console.log(`Progress: ${state.progress}% - ${state.message}`)
- * })
- * 
- * // Or get pdfData format for pwa-admin
- * const pdfData = await pdfDecompose(pdfDocument, {
- *   pdfData: true,
- *   elementComposer: true
  * })
  * ```
  */
@@ -302,23 +295,6 @@ export async function pdfDecompose(
 
     updateProgress(95, 'Finalizing your PDF')
     
-    // Generate pdfData format if requested (before minify to preserve full data)
-    if (options.pdfData) {
-      updateProgress(96, 'Converting to pdfData format')
-      console.log('🔄 Converting to pdfData format for pwa-admin...')
-      const pdfDataResult = generatePdfData(pkg.pages as PdfPageContent[], {
-        minElementSize: {
-          width: 10,
-          height: 10,
-          area: 100
-        }
-      })
-      
-      // Add pdfData to package
-      pkg.pdfData = pdfDataResult
-      console.log(`✅ pdfData generated: ${pdfDataResult.length} areas`)
-    }
-    
     // Apply minify option if requested (missing feature)
     if (options.minify) {
       console.log('🗜️ Applying minify option...')
@@ -328,8 +304,7 @@ export async function pdfDecompose(
     updateProgress(100, 'Completed')
     console.log(`✅ PDF decomposition completed: ${pkg.pages.length} pages processed`)
     return {
-      pages: pkg.pages as PdfPageContent[],
-      pdfData: pkg.pdfData
+      pages: pkg.pages as PdfPageContent[]
     }
     
   } catch (error) {
