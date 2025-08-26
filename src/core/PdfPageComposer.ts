@@ -361,6 +361,12 @@ export class PdfPageComposer {
     // This ensures headers appear before paragraphs in the same reading flow
     const orderedElements = this.orderElementsSpatially(allElements)
 
+    // Calculate combined height from all original pages
+    const totalOriginalHeight = pages.reduce((sum, page) => sum + page.height, 0)
+
+    // Collect page indexes for metadata (0-based for consistency)
+    const composedFromPages = pages.map(page => page.pageIndex)
+
     // Create composed page
     const composedPage: PdfPageContent = {
       ...firstPage,
@@ -368,7 +374,14 @@ export class PdfPageComposer {
       elements: orderedElements,
       // Keep first page metadata but indicate composition
       pageNumber: firstPage.pageNumber,
-      pageIndex: firstPage.pageIndex
+      pageIndex: firstPage.pageIndex,
+      // Add composition metadata
+      metadata: {
+        composedFromPages,
+        originalHeight: totalOriginalHeight,
+        isComposed: true,
+        ...(firstPage.metadata || {}) // Preserve any existing metadata
+      }
     }
 
     return composedPage

@@ -30,7 +30,7 @@ class ComprehensiveTest {
   private results: TestResult[] = []
   private baseOutputDir: string
   private pdfPath: string
-  private pdfFile = 'heather.pdf'
+  private pdfFile = 'demo.pdf'
   private decomposer!: PdfDecomposer
 
   constructor(customPdfPath?: string) {
@@ -115,10 +115,10 @@ class ComprehensiveTest {
       const decomposeResult = await this.decomposer.decompose({
         outputDir,
         extractImages: true,
-        // elementComposer: true,
-        // pageComposer: true,
-        // cleanComposer: false,
-        // minify: true
+        elementComposer: true,
+        pageComposer: true,
+        cleanComposer: true,
+        minify: true
       })
 
       const result = decomposeResult.pages

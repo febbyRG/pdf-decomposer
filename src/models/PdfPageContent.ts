@@ -11,7 +11,7 @@ export interface PdfPageContent {
   elements: PdfElement[]
   // Metadata for page composition
   metadata?: {
-    composedFromPages?: number[]
+    composedFromPages?: number[] // Array of pageIndex values (0-based) that were composed together
     originalHeight?: number
     isComposed?: boolean
     [key: string]: any

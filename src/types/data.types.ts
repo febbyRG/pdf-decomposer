@@ -66,6 +66,7 @@ export interface DataOptions {
   startPage?: number
   endPage?: number
   outputDir?: string
+  extractImages?: boolean
   elementComposer?: boolean
   cleanComposer?: boolean
   cleanComposerOptions?: PdfCleanComposerOptions

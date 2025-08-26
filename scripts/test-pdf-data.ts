@@ -17,7 +17,7 @@ async function testPdfDataGeneration() {
   console.log('='.repeat(50))
 
   const testDir = join(__dirname, 'test-output', 'pdf-data-test')
-  const pdfPath = join(__dirname, 'test-input', 'heather.pdf')
+  const pdfPath = join(__dirname, 'test-input', 'demo.pdf')
   
   // Clean up previous test results
   if (existsSync(testDir)) {
@@ -50,6 +50,7 @@ async function testPdfDataGeneration() {
     console.log('\n🔄 Generating pdfData using new data() method...')
     
     const dataResult = await decomposer.data({
+      extractImages: true,
       elementComposer: true,
       cleanComposer: true,
       outputDir: join(testDir, 'data')

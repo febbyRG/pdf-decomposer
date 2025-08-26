@@ -18,8 +18,8 @@ export class PdfDecomposerPage {
     const viewport = pdfPage.getViewport({ scale: 1 })
     const width = viewport.width
     const height = viewport.height
-    const pageNumber = this.pageIndex
-    const pageIndex = this.pageIndex - 1
+    const pageNumber = this.pageIndex  // this.pageIndex is actually the pageNumber (1-based)
+    const pageIndex = this.pageIndex - 1  // convert to 0-based pageIndex
     const title = `Page ${pageNumber}`
 
     // Use provided outputDir, fallback to pkg dir, or undefined for base64 mode

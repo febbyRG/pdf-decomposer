@@ -57,6 +57,11 @@ function minifyPagesData(pages: PdfPageContent[]): any[] {
       })
     }
 
+    // Include metadata if it exists (important for pageComposer information)
+    if (page.metadata) {
+      minifiedPage.metadata = page.metadata
+    }
+
     return minifiedPage
   })
 }

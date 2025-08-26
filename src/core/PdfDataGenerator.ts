@@ -198,17 +198,24 @@ export class PdfDataGenerator {
     const index = pageIndex ?? page.pageIndex
     const typeCounters: Record<string, number> = {}
     
+    console.log(`🔍 Processing page ${index} elements: ${page.elements.length} total`)
+    
     // Filter and convert elements to areas
     const areas: PdfArea[] = page.elements
       .map((element, elementIndex) => {
         const coords = this.normalizeCoords(element, page.width, page.height)
         
+        console.log(`  Element ${elementIndex}: type=${element.type}, coords=${coords}`)
+        
         // Check minimum size requirements
         if (!this.meetsMinimumSize(coords, page.width, page.height)) {
+          console.log('    ❌ Filtered out: doesn\'t meet minimum size')
           return null
         }
         
         const widgetId = this.generateWidgetId(element, elementIndex, typeCounters)
+        console.log(`    ✅ Included: widgetId=${widgetId}`)
+        
         // Use placeholder articleId - will be replaced in pwa-admin
         const articleId = this.options.articleIdGenerator?.(index, elementIndex, element) ?? 999999
         
@@ -220,6 +227,8 @@ export class PdfDataGenerator {
         }
       })
       .filter((area): area is PdfArea => area !== null)
+
+    console.log(`📊 Page ${index} result: ${areas.length} areas generated from ${page.elements.length} elements`)
 
     const imageUrl = page.image || this.generateImageUrl(index)
     
@@ -338,6 +347,7 @@ export async function pdfData(
         startPage: options.startPage,
         endPage: options.endPage,
         outputDir: options.outputDir,
+        extractImages: options.extractImages,
         elementComposer: options.elementComposer ?? true,
         cleanComposer: options.cleanComposer,
         cleanComposerOptions: options.cleanComposerOptions
