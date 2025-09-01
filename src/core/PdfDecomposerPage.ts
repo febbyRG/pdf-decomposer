@@ -26,8 +26,6 @@ export class PdfDecomposerPage {
     const outputDir = this.outputDir
 
     // Extract text and embedded images
-    console.log(`📝 Extracting content for page ${pageNumber} (no page images)`)
-
     const elements: any[] = [
       ...await this.extractTextElements(pdfPage, pageIndex),
       // Extract embedded images if enabled
@@ -52,7 +50,6 @@ export class PdfDecomposerPage {
     if (this.skipParser) { return [] }
 
     try {
-      console.log(`🔧 Using universal image extraction for page ${pageIndex + 1}`)
       const extractor = new PdfImageExtractor()
       const universalImages = await extractor.extractImagesFromPage(pdfPage)
 
@@ -75,7 +72,6 @@ export class PdfDecomposerPage {
                 
                 // Use filename instead of data URL when outputDir is provided
                 dataReference = fileName
-                console.log(`    💾 Saved to file: ${fileName} (using filename in result)`)
               }
             } catch (saveError) {
               console.warn(`Failed to save image ${img.id} to file, keeping as data URL:`, saveError)
@@ -83,7 +79,7 @@ export class PdfDecomposerPage {
               dataReference = img.data
             }
           } else {
-            console.log('    � Using base64 data URL (no outputDir specified)')
+            // Using base64 data URL (no outputDir specified)
           }
 
           // Calculate proper bounding box from position and size
@@ -146,7 +142,6 @@ export class PdfDecomposerPage {
 
       // Fallback to legacy extraction (Node.js only)
       if (typeof process !== 'undefined' && process.versions && process.versions.node) {
-        console.log(`📋 Falling back to legacy image extraction for page ${pageIndex + 1}`)
         try {
           const items = await pdfPage.extractImages()
           return Promise.all(items.map(async ({ boundingBox, data, objectId, contentType: _contentType }: any) => {

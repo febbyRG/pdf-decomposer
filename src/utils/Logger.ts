@@ -63,12 +63,12 @@ export class Logger {
 
   info(message: string, context?: Record<string, any>): void {
     if (!this.shouldLog(LogLevel.INFO)) return
-    console.log(this.formatMessage('INFO', message, context))
+    console.info(this.formatMessage('INFO', message, context))
   }
 
   debug(message: string, context?: Record<string, any>): void {
     if (!this.shouldLog(LogLevel.DEBUG)) return
-    console.log(this.formatMessage('DEBUG', message, context))
+    console.debug(this.formatMessage('DEBUG', message, context))
   }
 
   /**

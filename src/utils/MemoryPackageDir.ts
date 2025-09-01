@@ -7,11 +7,10 @@ export class MemoryPackageDir {
 
   constructor(outputDir = '.') {
     this.dir = outputDir
-    console.log('🧠 Memory package directory initialized (no file system access)')
   }
 
   async create(): Promise<void> {
-    console.log('🧠 Memory mode: skipping directory creation')
+    // No-op: In memory mode, no directory creation needed
   }
 
   async exists(): Promise<boolean> {

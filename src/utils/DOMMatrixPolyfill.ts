@@ -6,7 +6,7 @@
 // ReadableStream polyfill for Node.js < 18
 if (typeof globalThis.ReadableStream === 'undefined') {
   class ReadableStreamPolyfill {
-    private _locked: boolean = false
+    private _locked = false
 
     constructor(_source?: any) {
       // Simple constructor - just initialize
@@ -50,7 +50,6 @@ if (typeof globalThis.ReadableStream === 'undefined') {
   }
 
   (globalThis as any).ReadableStream = ReadableStreamPolyfill
-  console.log('✅ ReadableStream polyfill installed for Node.js environment')
 }
 
 // structuredClone polyfill for Node.js < 17
@@ -63,45 +62,48 @@ if (typeof globalThis.structuredClone === 'undefined') {
 // Promise.withResolvers polyfill for Node.js 20
 if (typeof (Promise as any).withResolvers === 'undefined') {
   (Promise as any).withResolvers = function <T>() {
-    let resolve: (value: T | PromiseLike<T>) => void
-    let reject: (reason?: any) => void
+    const result = {} as {
+      promise: Promise<T>
+      resolve: (value: T | PromiseLike<T>) => void
+      reject: (reason?: any) => void
+    }
 
-    const promise = new Promise<T>((res, rej) => {
-      resolve = res
-      reject = rej
+    result.promise = new Promise<T>((res, rej) => {
+      result.resolve = res
+      result.reject = rej
     })
 
-    return { promise, resolve: resolve!, reject: reject! }
+    return result
   }
 }
 
 // DOMMatrix polyfill for Node.js environment
 if (typeof globalThis.DOMMatrix === 'undefined') {
   class DOMMatrix {
-    a: number = 1
-    b: number = 0
-    c: number = 0
-    d: number = 1
-    e: number = 0
-    f: number = 0
-    m11: number = 1
-    m12: number = 0
-    m13: number = 0
-    m14: number = 0
-    m21: number = 0
-    m22: number = 1
-    m23: number = 0
-    m24: number = 0
-    m31: number = 0
-    m32: number = 0
-    m33: number = 1
-    m34: number = 0
-    m41: number = 0
-    m42: number = 0
-    m43: number = 0
-    m44: number = 1
-    is2D: boolean = true
-    isIdentity: boolean = true
+    a = 1
+    b = 0
+    c = 0
+    d = 1
+    e = 0
+    f = 0
+    m11 = 1
+    m12 = 0
+    m13 = 0
+    m14 = 0
+    m21 = 0
+    m22 = 1
+    m23 = 0
+    m24 = 0
+    m31 = 0
+    m32 = 0
+    m33 = 1
+    m34 = 0
+    m41 = 0
+    m42 = 0
+    m43 = 0
+    m44 = 1
+    is2D = true
+    isIdentity = true
 
     constructor(init?: string | number[]) {
       if (init) {
@@ -211,7 +213,6 @@ if (typeof globalThis.DOMMatrix === 'undefined') {
   }
 
   (globalThis as any).DOMMatrix = DOMMatrix
-  console.log('✅ DOMMatrix polyfill installed for Node.js environment')
 }
 
 export { }

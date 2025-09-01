@@ -107,8 +107,7 @@ export async function pdfDecompose(
   progressCallback?: (state: PdfDecomposerState) => void,
   errorCallback?: (error: PdfDecomposerError) => void
 ): Promise<DecomposeResult> {
-  console.log('🔍 Starting PDF decomposition with pre-loaded document...')
-  
+
   // Helper function to update progress
   const updateProgress = (progress: number, message: string) => {
     if (progressCallback) {
@@ -187,11 +186,6 @@ export async function pdfDecompose(
 
     pkg.pages = []
 
-    // Log initial memory usage
-    const initialMemory = MemoryManager.getMemoryStats()
-    console.log(`🧠 Starting decomposition with ${initialMemory.used}MB used`)
-    console.log(`🚀 Processing pages ${actualStartPage}-${actualEndPage} (${total} pages) sequentially`)
-
     // Process pages sequentially (single-threaded)
     for (let pageIndex = 0; pageIndex < total; pageIndex++) {
       const actualPageNumber = actualStartPage + pageIndex
@@ -221,15 +215,10 @@ export async function pdfDecompose(
           aggressiveCleanup: true
         })
 
-        console.log(`📄 Processed ${loaded} pages out of ${total}`)
-
+        
         // Periodic memory cleanup every 5 pages to prevent accumulation
         if ((pageIndex + 1) % 5 === 0 && pageIndex + 1 < total) {
-          console.log(`🧹 Page ${actualPageNumber} complete, cleaning up memory...`)
           await MemoryManager.cleanupMemory()
-
-          const memoryAfterCleanup = MemoryManager.getMemoryStats()
-          console.log(`🧠 Memory after cleanup: ${memoryAfterCleanup.used}MB`)
         }
 
       } catch (error) {
@@ -247,20 +236,17 @@ export async function pdfDecompose(
     }
 
     updateProgress(85, 'Saving your Package')
-    console.log('📦 Saving package...')
     pkg.pages = pkg.pages.filter((page) => page != null)
 
     // Apply element composition if requested
     if (finalOptions.elementComposer) {
       updateProgress(88, 'Composing elements into paragraphs')
-      console.log('🔧 Composing elements into paragraphs...')
       pkg.pages = PdfElementComposer.composeElements(pkg.pages)
     }
 
     // Apply content cleaning if requested
     if (finalOptions.cleanComposer) {
       updateProgress(90, 'Cleaning content area and elements')
-      console.log('🧹 Cleaning content area and elements...')
       
       // Merge default cleanComposer options with user-provided options
       const defaultCleanOptions: PdfCleanComposerOptions = {
@@ -294,7 +280,6 @@ export async function pdfDecompose(
     // Apply page composition if requested
     if (finalOptions.pageComposer) {
       updateProgress(92, 'Composing pages with continuous content')
-      console.log('📄 Composing pages with continuous content...')
       pkg.pages = PdfPageComposer.composePages(pkg.pages)
     }
 
@@ -302,12 +287,10 @@ export async function pdfDecompose(
     
     // Apply minify option if requested (missing feature)
     if (options.minify) {
-      console.log('🗜️ Applying minify option...')
       pkg.pages = minifyPagesData(pkg.pages)
     }
 
     updateProgress(100, 'Completed')
-    console.log(`✅ PDF decomposition completed: ${pkg.pages.length} pages processed`)
     return {
       pages: pkg.pages as PdfPageContent[]
     }

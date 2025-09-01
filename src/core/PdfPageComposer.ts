@@ -14,8 +14,6 @@ export class PdfPageComposer {
   static composePages(pages: PdfPageContent[]): PdfPageContent[] {
     if (pages.length <= 1) return pages
 
-    console.log(`\n🔄 Page Composer: Analyzing ${pages.length} pages for composition`)
-
     const composedPages: PdfPageContent[] = []
     let currentPageGroup: PdfPageContent[] = []
 
@@ -23,27 +21,21 @@ export class PdfPageComposer {
       const currentPage = pages[i]
       const nextPage = i < pages.length - 1 ? pages[i + 1] : null
 
-      console.log(`\n📄 Analyzing page ${currentPage.pageNumber}:`)
-
       // Add current page to group
       currentPageGroup.push(currentPage)
 
       // Check if content continues to next page
       const continuestoNext = nextPage && this.hasContentContinuity(currentPage, nextPage)
 
-      console.log(`   → Continues to next page: ${continuestoNext}`)
-
       if (!continuestoNext) {
         // Content ends here - finalize the current group
         if (currentPageGroup.length === 1) {
           // Single page - add as-is
           composedPages.push(currentPageGroup[0])
-          console.log(`   ✅ Added standalone page ${currentPageGroup[0].pageNumber}`)
         } else {
           // Multiple pages - compose them
           const composedPage = this.composePageGroup(currentPageGroup)
           composedPages.push(composedPage)
-          console.log(`   ✅ Composed pages ${currentPageGroup.map(p => p.pageNumber).join(', ')} into single page`)
         }
 
         // Reset for next group
@@ -61,7 +53,6 @@ export class PdfPageComposer {
       }
     }
 
-    console.log(`\n🎯 Page Composer Result: ${pages.length} → ${composedPages.length} pages`)
     return composedPages
   }
 
@@ -69,17 +60,14 @@ export class PdfPageComposer {
    * Check if content flows continuously from one page to the next using structural analysis.
    */
   private static hasContentContinuity(currentPage: PdfPageContent, nextPage: PdfPageContent): boolean {
-    console.log(`\n🔍 Checking continuity: Page ${currentPage.pageNumber} → ${nextPage.pageNumber}`)
-
-    // 1. Cover page detection - covers never continue
+    
+    // Quick disqualifiers: cover pages or section changes
     if (this.isCoverPage(currentPage)) {
-      console.log('   ❌ Current page is cover - no continuity')
       return false
     }
 
     // 2. New section detection - strong section breaks prevent continuity
     if (this.isNewSectionStart(nextPage)) {
-      console.log('   ❌ Next page starts new section - no continuity')
       return false
     }
 
@@ -87,26 +75,19 @@ export class PdfPageComposer {
     const currentContentType = this.analyzeContentType(currentPage)
     const nextContentType = this.analyzeContentType(nextPage)
 
-    console.log(`   Current content type: ${currentContentType}`)
-    console.log(`   Next content type: ${nextContentType}`)
-
     // Different content types don't continue
     if (currentContentType !== nextContentType) {
-      console.log('   ❌ Different content types - no continuity')
       return false
     }
 
     // 4. Text flow analysis
     const hasTextFlow = this.hasTextFlowContinuity(currentPage, nextPage)
-    console.log(`   Text flow continuity: ${hasTextFlow}`)
 
     // 5. Typography consistency
     const hasTypographyConsistency = this.hasTypographyConsistency(currentPage, nextPage)
-    console.log(`   Typography consistency: ${hasTypographyConsistency}`)
 
     // 6. Structural continuity
     const hasStructuralContinuity = this.hasStructuralContinuity(currentPage, nextPage)
-    console.log(`   Structural continuity: ${hasStructuralContinuity}`)
 
     // Decision: require at least 1 strong indicator OR 2 weaker indicators OR special case for feature articles
     const continuityScore = [hasTextFlow, hasTypographyConsistency, hasStructuralContinuity].filter(Boolean).length
@@ -118,7 +99,6 @@ export class PdfPageComposer {
 
     const hasContinuity = strongIndicators > 0 || continuityScore >= 2 || featureContinuity
 
-    console.log(`   🎯 Continuity score: ${continuityScore}/3, strong indicators: ${strongIndicators}, feature continuity: ${featureContinuity} → ${hasContinuity ? 'CONTINUES' : 'BREAKS'}`)
     return hasContinuity
   }
 
@@ -150,8 +130,6 @@ export class PdfPageComposer {
 
     const isCover = (headerRatio > 0.6 && isShortText) || (hasCoverKeywords && hasLargeFonts)
 
-    console.log(`   Cover indicators: headerRatio=${headerRatio.toFixed(2)}, textLength=${totalTextLength}, coverKeywords=${hasCoverKeywords}, largeFonts=${hasLargeFonts} → ${isCover}`)
-
     return isCover
   }
 
@@ -173,14 +151,12 @@ export class PdfPageComposer {
       if (fontSize > 20 && text.length < 100) {
         // Check for specific section titles
         if (/^(FEATURE|THE FUTURE|SECTION|CHAPTER)/i.test(text)) {
-          console.log(`   New section title detected: "${text}" (${fontSize}pt)`)
           return true
         }
       }
 
       // All-caps title pattern
       if (/^[A-Z][A-Z\s]{10,}$/i.test(text) && text.length < 80 && fontSize > 15) {
-        console.log(`   All-caps section title: "${text}" (${fontSize}pt)`)
         return true
       }
     }
@@ -253,11 +229,6 @@ export class PdfPageComposer {
     // 4. Check for interview continuation patterns
     const hasInterviewContinuation = this.hasInterviewFlowContinuity(lastText, firstText)
 
-    console.log(`       Incomplete ending: ${hasIncompleteEnding}`)
-    console.log(`       Text continuation: ${hasTextContinuation}`)
-    console.log(`       Topic continuity: ${hasTopicContinuity}`)
-    console.log(`       Interview continuation: ${hasInterviewContinuation}`)
-
     return hasIncompleteEnding || hasTextContinuation || hasTopicContinuity || hasInterviewContinuation
   }
 
@@ -302,10 +273,6 @@ export class PdfPageComposer {
     const currentHeaderRatio = this.getHeaderRatio(currentElements)
     const nextHeaderRatio = this.getHeaderRatio(nextElements)
     const headerRatioSimilarity = Math.abs(currentHeaderRatio - nextHeaderRatio) < 0.4
-
-    console.log(`       Font size similarity: ${fontSizeSimilarity} (${currentFonts.avgFontSize.toFixed(1)} vs ${nextFonts.avgFontSize.toFixed(1)})`)
-    console.log(`       Font family similarity: ${fontFamilySimilarity} (${currentFonts.dominantFamily} vs ${nextFonts.dominantFamily})`)
-    console.log(`       Header ratio similarity: ${headerRatioSimilarity} (${currentHeaderRatio.toFixed(2)} vs ${nextHeaderRatio.toFixed(2)})`)
 
     // At least 1 out of 3 similarities should match (more lenient for mixed content)
     const similarities = [fontSizeSimilarity, fontFamilySimilarity, headerRatioSimilarity].filter(Boolean).length

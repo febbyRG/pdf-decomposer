@@ -23,7 +23,6 @@ export class PdfLoader {
     PdfWorkerConfig.configure()
 
     try {
-      console.log('📄 Loading PDF document...')
       
       // Convert to Uint8Array for PDF.js compatibility (same as original implementation)
       let pdfData: Uint8Array
@@ -48,35 +47,29 @@ export class PdfLoader {
       try {
         // Setup Node.js specific factories for server-side rendering
         if (typeof process !== 'undefined' && process.versions?.node) {
-          console.log('🔧 Setting up Node.js factories for server-side rendering...')
           
           // Use dynamic import for optional Node.js canvas factory
           const nodeCanvas = await import('canvas').catch(() => null)
           
           if (nodeCanvas) {
-            console.log('🖼️ Node.js Canvas available, creating NodeCanvasFactory')
             
             // Register fonts FIRST (following official examples)
-            console.log('🔤 Registering system fonts...')
             try {
               nodeCanvas.registerFont('/System/Library/Fonts/ArialHB.ttc', { family: 'Arial' })
-              console.log('✅ Arial registered')
             } catch (e) {
-              console.log('⚠️ Arial failed:', String(e))
+              // Font registration may fail in some environments
             }
             
             try {
               nodeCanvas.registerFont('/System/Library/Fonts/Helvetica.ttc', { family: 'Helvetica' })
-              console.log('✅ Helvetica registered')
             } catch (e) {
-              console.log('⚠️ Helvetica failed:', String(e))
+              // Font registration may fail in some environments
             }
             
             try {
               nodeCanvas.registerFont('/System/Library/Fonts/Times.ttc', { family: 'Times' })
-              console.log('✅ Times registered')
             } catch (e) {
-              console.log('⚠️ Times failed:', String(e))
+              // Font registration may fail in some environments
             }
             
             // Simple NodeCanvasFactory (following PDF.js official examples)
@@ -108,9 +101,8 @@ export class PdfLoader {
             
             // Also store it statically for later access
             PdfLoader.nodeCanvasFactory = loadingParams.canvasFactory
-            console.log('✅ NodeCanvasFactory configured for enhanced server-side rendering')
           } else {
-            console.log('📦 Node.js Canvas not available, PDF.js will use default factories')
+            // Node.js Canvas not available, PDF.js will use default factories
           }
         }
       } catch (factoryError) {
@@ -121,12 +113,11 @@ export class PdfLoader {
       const loadingTask = pdfjsLib.getDocument(loadingParams)
 
       const pdfDoc = await loadingTask.promise
-      console.log(`✅ PDF loaded: ${pdfDoc.numPages} pages`)
       
       return pdfDoc
 
     } catch (error) {
-      console.error('❌ Failed to load PDF:', error)
+      console.warn('❌ Failed to load PDF:', error)
       
       if (error instanceof Error) {
         if (error.message.includes('Invalid PDF')) {
@@ -167,7 +158,5 @@ export class PdfLoader {
     if (bufferSize === 0) {
       throw new InvalidPdfError('PDF buffer is empty')
     }
-
-    console.log(`📊 PDF buffer size: ${bufferSize} bytes`)
   }
 }

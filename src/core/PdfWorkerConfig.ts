@@ -18,13 +18,11 @@ export class PdfWorkerConfig {
         // Strategy 1: Check if external configuration is available
         if ((globalThis as any).window.pdfjsWorkerSrc) {
           workerSrc = (globalThis as any).window.pdfjsWorkerSrc
-          console.log('🔧 Using external worker config:', workerSrc)
         }
 
         // Strategy 2: Check if external pdfjsLib is configured
         if ((globalThis as any).window.pdfjsLib && (globalThis as any).window.pdfjsLib.GlobalWorkerOptions && (globalThis as any).window.pdfjsLib.GlobalWorkerOptions.workerSrc) {
           workerSrc = (globalThis as any).window.pdfjsLib.GlobalWorkerOptions.workerSrc
-          console.log('🔧 Using external pdfjsLib worker config:', workerSrc)
           // Copy worker configuration from external pdfjsLib
           pdfjsLib.GlobalWorkerOptions.workerSrc = (globalThis as any).window.pdfjsLib.GlobalWorkerOptions.workerSrc
         }
@@ -35,19 +33,13 @@ export class PdfWorkerConfig {
         // Strategy 4: Backup configuration verification
         if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
           pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc
-          console.log('🔧 Backup worker configuration applied:', workerSrc)
         }
-
-        console.log('🔧 PDF.js worker configured in pdf-decomposer:', pdfjsLib.GlobalWorkerOptions.workerSrc)
 
         // Verify configuration
         if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
           throw new Error('Critical: Failed to configure PDF.js worker in pdf-decomposer')
         }
 
-        // Additional debug info
-        console.log('🔧 PDF.js version:', pdfjsLib.version || 'unknown')
-        console.log('🔧 Worker configured successfully for legacy build')
       }
 
       try {
@@ -59,9 +51,6 @@ export class PdfWorkerConfig {
     } else {
       // Node.js environment - use local worker
       pdfjsLib.GlobalWorkerOptions.workerSrc = require.resolve('pdfjs-dist/legacy/build/pdf.worker.js')
-      console.log('🔧 PDF.js worker configured for Node.js')
     }
-    
-    console.log('🔧 PDF.js worker configured')
   }
 }

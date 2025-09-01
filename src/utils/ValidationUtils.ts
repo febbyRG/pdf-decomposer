@@ -77,14 +77,14 @@ export class ValidationUtils {
   /**
    * Safely gets numeric value with fallback
    */
-  static safeNumber(value: any, fallback: number = 0): number {
+  static safeNumber(value: any, fallback = 0): number {
     return Number.isFinite(value) ? value : fallback
   }
 
   /**
    * Safely gets string value with fallback
    */
-  static safeString(value: any, fallback: string = ''): string {
+  static safeString(value: any, fallback = ''): string {
     return typeof value === 'string' ? value : fallback
   }
 }

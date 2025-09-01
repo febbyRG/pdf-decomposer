@@ -198,15 +198,10 @@ export class PdfCleanComposer {
 
     const finalOptions = { ...defaultOptions, ...options }
 
-    console.log('🧹 Starting PDF content cleaning...')
-    console.log('📊 Cleaning options:', finalOptions)
-
     // Check for cover page detection if enabled and pdfDocument is provided
     if (finalOptions.coverPageDetection && pdfDocument && pages.length > 0) {
-      console.log('🔍 Checking for cover page...')
       const coverPageResult = await this.detectAndProcessCoverPage(pages[0], pdfDocument, finalOptions)
       if (coverPageResult) {
-        console.log('📸 Cover page detected and processed as screenshot')
         pages[0] = coverPageResult
         // Skip normal processing for cover page, but continue with rest
         const restPages = pages.slice(1)
@@ -214,8 +209,7 @@ export class PdfCleanComposer {
       }
     }
 
-    return pages.map((page, pageIndex) => {
-      console.log(`🔍 Cleaning page ${pageIndex + 1} of ${pages.length}`)
+    return pages.map((page, _) => {
       return this.cleanPage(page, finalOptions)
     })
   }
@@ -226,25 +220,9 @@ export class PdfCleanComposer {
   private static cleanPage(page: PdfPageContent, options: PdfCleanComposerOptions): PdfPageContent {
     // Calculate content area for this page
     const contentArea = this.calculateContentArea(page, options)
-    
-    console.log(`📏 Page ${page.pageIndex + 1} content area:`, {
-      top: Math.round(contentArea.top),
-      bottom: Math.round(contentArea.bottom),
-      left: Math.round(contentArea.left),
-      right: Math.round(contentArea.right),
-      width: Math.round(contentArea.width),
-      height: Math.round(contentArea.height)
-    })
 
     // Filter and clean elements
     const cleaningResult = this.cleanElements(page.elements || [], contentArea, options)
-
-    console.log(`📊 Page ${page.pageIndex + 1} cleaning results:`, {
-      originalElements: page.elements?.length || 0,
-      keptElements: cleaningResult.kept.length,
-      removedElements: cleaningResult.removed.length,
-      cleanedElements: cleaningResult.cleaned.length
-    })
 
     // Return cleaned page
     return {
@@ -433,24 +411,20 @@ export class PdfCleanComposer {
     
     // Check minimum width requirement
     if (bbox.width < (options.minImageWidth || 50)) {
-      console.log(`🚫 Filtering small image: width ${bbox.width} < ${options.minImageWidth || 50}`)
       return null
     }
 
     // Check minimum height requirement
     if (bbox.height < (options.minImageHeight || 50)) {
-      console.log(`🚫 Filtering small image: height ${bbox.height} < ${options.minImageHeight || 50}`)
       return null
     }
 
     // Check minimum area requirement (width × height)
     const area = bbox.width * bbox.height
     if (area < (options.minImageArea || 2500)) {
-      console.log(`🚫 Filtering small image: area ${Math.round(area)} < ${options.minImageArea || 2500} (${Math.round(bbox.width)}×${Math.round(bbox.height)})`)
       return null
     }
 
-    console.log(`✅ Image passed size validation: ${Math.round(bbox.width)}×${Math.round(bbox.height)} (area: ${Math.round(area)})`)
     return element
   }
 
@@ -570,7 +544,6 @@ export class PdfCleanComposer {
   private static removeImageFile(element: any, outputDir: string): void {
     // Early return if not in Node.js environment
     if (!isNodeJS) {
-      console.log('🌐 Browser environment detected - skipping file removal (files are in memory)')
       return
     }
 
@@ -615,7 +588,6 @@ export class PdfCleanComposer {
 
       if (imagePath && fs.existsSync(imagePath)) {
         fs.unlinkSync(imagePath)
-        console.log(`🗑️  Removed filtered image file: ${imagePath}`)
       }
     } catch (error) {
       console.warn('⚠️  Failed to remove image file for element:', error)
@@ -632,25 +604,18 @@ export class PdfCleanComposer {
     options: PdfCleanComposerOptions
   ): Promise<PdfPageContent | null> {
     try {
-      console.log(`🔍 Analyzing page ${page.pageIndex + 1} for cover detection...`)
-      
       const pageArea = page.width * page.height
       const threshold = options.coverPageThreshold || 0.8
       
       // Check if page has large images that might indicate a cover
       const imageElements = (page.elements || []).filter(element => this.isImageElement(element))
-      console.log(`📊 Found ${imageElements.length} image elements on page ${page.pageIndex + 1}`)
       
       for (const imageElement of imageElements) {
         const bbox = this.normalizeBoundingBox(imageElement.boundingBox)
         const imageArea = bbox.width * bbox.height
         const coverageRatio = imageArea / pageArea
         
-        console.log(`🖼️  Image coverage: ${Math.round(coverageRatio * 100)}% (${Math.round(bbox.width)}×${Math.round(bbox.height)} of ${Math.round(page.width)}×${Math.round(page.height)})`)
-        
         if (coverageRatio >= threshold) {
-          console.log(`✅ Cover page detected! Image covers ${Math.round(coverageRatio * 100)}% of page area`)
-          
           // Generate screenshot for cover page
           const screenshot = await this.generatePageScreenshot(page, pdfDocument, options)
           if (screenshot) {
@@ -669,11 +634,6 @@ export class PdfCleanComposer {
         }
       }
       
-      console.log(`ℹ️  Page ${page.pageIndex + 1} is not a cover page (max coverage: ${Math.round(Math.max(...imageElements.map(el => {
-        const bbox = this.normalizeBoundingBox(el.boundingBox)
-        return (bbox.width * bbox.height) / pageArea
-      }), 0) * 100)}%)`)
-      
       return null
     } catch (error) {
       console.warn(`⚠️  Cover page detection failed for page ${page.pageIndex + 1}:`, error)
@@ -690,8 +650,6 @@ export class PdfCleanComposer {
     options: PdfCleanComposerOptions
   ): Promise<any | null> {
     try {
-      console.log(`📸 Generating screenshot for cover page ${page.pageIndex + 1}...`)
-      
       // Get PDF page
       const pdfPage = await pdfDocument.getPage(page.pageIndex + 1)
       
@@ -703,8 +661,6 @@ export class PdfCleanComposer {
         quality: options.coverPageScreenshotQuality || 95,
         scale: 2.0 // High quality screenshot with proper scaling
       })
-      
-      console.log(`✅ Cover page screenshot generated: ${screenshotResult.width}×${screenshotResult.height}`)
       
       // Generate consistent filename pattern like other images
       const screenshotFilename = `cover_screenshot_p${page.pageIndex}_1.png`
@@ -728,7 +684,6 @@ export class PdfCleanComposer {
           const filePath = path.join(options.outputDir, screenshotFilename)
           
           fs.writeFileSync(filePath, buffer)
-          console.log(`💾 Cover screenshot saved: ${screenshotFilename}`)
           
           // Return filename like other image elements
           screenshotData = screenshotFilename
@@ -739,7 +694,6 @@ export class PdfCleanComposer {
       } else {
         // Use base64 data URL when no outputDir specified
         screenshotData = screenshotResult.base64
-        console.log('📄 Using base64 data URL for cover screenshot (no outputDir specified)')
       }
       
       // Create screenshot element with consistent structure

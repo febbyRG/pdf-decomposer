@@ -134,8 +134,6 @@ export class MemoryManager {
       const afterStats = MemoryManager.getMemoryStats()
       const memoryFreed = beforeStats.used - afterStats.used
 
-      console.log(`🧹 Memory cleanup: ${beforeStats.used}MB → ${afterStats.used}MB (freed ${memoryFreed}MB)`)
-
       return memoryFreed > 0
     }
 

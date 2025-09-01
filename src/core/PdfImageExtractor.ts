@@ -392,7 +392,6 @@ export class PdfImageExtractor {
         transform: transform
       }
       
-      console.log(`🎯 Updated image ${objId}: ${baseImage.width}x${baseImage.height} → ${transformWidth}x${transformHeight}`)
       
       return result
 
@@ -426,7 +425,6 @@ export class PdfImageExtractor {
       let safeHeight = height
       let scalingApplied = false
 
-      console.log(`🔧 Analysis: ${width}×${height} = ${pixels.toLocaleString()} pixels`)
 
       // Check if scaling is needed (EXACT from Editor)
       if (pixels > MAX_PIXELS || width > MAX_CANVAS_DIMENSION || height > MAX_CANVAS_DIMENSION) {
@@ -438,27 +436,19 @@ export class PdfImageExtractor {
         safeWidth = Math.floor(width * scale)
         safeHeight = Math.floor(height * scale)
         scalingApplied = true
-        console.log(`🔄 Auto-scaling applied: ${pixels.toLocaleString()} → ${(safeWidth * safeHeight).toLocaleString()} pixels (${(scale * 100).toFixed(1)}%)`)
-      } else {
-        console.log('✅ No scaling needed: Image fits within safe limits')
       }
 
       // Convert to Uint8Array if needed
       let data
       if (pixelData instanceof Uint8Array) {
         data = pixelData
-        console.log('✅ Using Uint8Array data')
       } else if (pixelData instanceof Uint8ClampedArray) {
         data = new Uint8Array(pixelData)
-        console.log('✅ Converting Uint8ClampedArray to Uint8Array')
       } else if (pixelData instanceof ArrayBuffer) {
         data = new Uint8Array(pixelData)
-        console.log('✅ Converting ArrayBuffer to Uint8Array')
       } else if (Array.isArray(pixelData)) {
         data = new Uint8Array(pixelData)
-        console.log('✅ Converting Array to Uint8Array')
       } else {
-        console.log(`❌ Unsupported pixel data type: ${typeof pixelData}, constructor: ${pixelData?.constructor?.name}`)
         return null
       }
 
@@ -466,8 +456,6 @@ export class PdfImageExtractor {
       const expectedRGBA = width * height * 4
       const expectedRGB = width * height * 3
 
-      console.log(`� Format detection for ${imageId}: data.length=${data.length}, expectedRGB=${expectedRGB}, expectedRGBA=${expectedRGBA}`)
-      console.log(`🔍 Diff from RGB: ${Math.abs(data.length - expectedRGB)}, Diff from RGBA: ${Math.abs(data.length - expectedRGBA)}`)
 
       let processedData
       let isRGBA = false
@@ -475,18 +463,15 @@ export class PdfImageExtractor {
       // Detect format and process (EXACT from successful implementation - NO CONVERSION!)
       if (Math.abs(data.length - expectedRGBA) < Math.abs(data.length - expectedRGB)) {
         // RGBA format processing with scaling
-        console.log(`🎨 Processing RGBA format: ${width}×${height} (${imageId})`)
         processedData = await this.processRGBADataNoConversion(data, width, height, safeWidth, safeHeight, scalingApplied)
         isRGBA = true
       } else {
         // RGB format processing with scaling
-        console.log(`🎨 Processing RGB format: ${width}×${height} (${imageId})`)
         processedData = await this.processRGBDataWithScaling(data, width, height, safeWidth, safeHeight, scalingApplied)
         isRGBA = false
       }
 
       if (!processedData) {
-        console.log('❌ Data processing failed')
         return null
       }
 
@@ -495,7 +480,6 @@ export class PdfImageExtractor {
 
       if (isBrowser) {
         // Browser environment: use Canvas API (FlexPDF approach)
-        console.log('🌐 Using Canvas API for browser environment')
         try {
           dataUrl = await this.imageToBlob(processedData, safeWidth, safeHeight, isRGBA)
         } catch (canvasError) {
@@ -504,7 +488,6 @@ export class PdfImageExtractor {
         }
       } else {
         // Node.js environment: use manual PNG creation
-        console.log('🖥️ Using manual PNG creation for Node.js environment')
         dataUrl = this.createSimpleDataUrl(processedData, safeWidth, safeHeight, isRGBA)
       }
 
@@ -539,7 +522,6 @@ export class PdfImageExtractor {
 
     if (scalingApplied) {
       // Scale down RGBA with smart sampling - KEEP 4 CHANNELS
-      console.log('🔄 Scaling RGBA data with sampling (keeping RGBA)')
       const rgbaData = new Uint8Array(safeWidth * safeHeight * 4)
       const scaleX = safeWidth / originalWidth
       const scaleY = safeHeight / originalHeight
@@ -561,7 +543,6 @@ export class PdfImageExtractor {
       return rgbaData
     } else {
       // No scaling needed - keep RGBA format directly
-      console.log('✅ Using RGBA data directly (no conversion)')
       const actualPixels = Math.min(Math.floor(data.length / 4), originalWidth * originalHeight)
       const rgbaData = new Uint8Array(actualPixels * 4)
 
@@ -580,7 +561,6 @@ export class PdfImageExtractor {
   private static async processRGBDataWithScaling(data: Uint8Array, originalWidth: number, originalHeight: number, safeWidth: number, safeHeight: number, scalingApplied: boolean): Promise<Uint8Array> {
     if (scalingApplied) {
       // Scale down RGB with smart sampling
-      console.log('🔄 Scaling RGB data with sampling')
       const rgbData = new Uint8Array(safeWidth * safeHeight * 3)
       const scaleX = safeWidth / originalWidth
       const scaleY = safeHeight / originalHeight
@@ -679,9 +659,6 @@ export class PdfImageExtractor {
       if (!seen.has(fingerprint)) {
         seen.add(fingerprint)
         unique.push(image)
-        console.log(`✅ Unique image: ${image.id} (${image.width}x${image.height})`)
-      } else {
-        console.log(`🚫 Duplicate skipped: ${image.id} (${image.width}x${image.height})`)
       }
     }
 
@@ -696,7 +673,6 @@ export class PdfImageExtractor {
     // For debugging, let's just return a simple data URL that we can verify works
     // We'll create a minimal valid PNG structure manually
 
-    console.log(`🔧 Creating simple data URL: ${width}x${height}, hasAlpha=${hasAlpha}, dataSize=${pixelData.length}`)
 
     // Use the existing PNG creation but with a different approach
     const pngBuffer = this.createMinimalValidPNG(pixelData, width, height, hasAlpha)
@@ -751,7 +727,6 @@ export class PdfImageExtractor {
     // This creates a valid deflate stream without compression libraries
     const uncompressedData = this.createUncompressedDeflateStream(rawData)
 
-    console.log(`🔧 Created uncompressed PNG: ${width}x${height}, raw=${rawData.length}b, deflate=${uncompressedData.length}b`)
 
     // Create IDAT with uncompressed deflate data
     const idat = this.createSimplePNGChunk('IDAT', uncompressedData)

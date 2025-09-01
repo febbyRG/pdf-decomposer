@@ -24,7 +24,6 @@ export async function pdfScreenshot(
   progressCallback?: (state: PdfDecomposerState) => void,
   errorCallback?: (error: PdfDecomposerError) => void
 ): Promise<ScreenshotResult> {
-  console.log('📸 Starting PDF screenshot generation using core logic...')
 
   // Helper function to update progress
   const updateProgress = (progress: number, message: string) => {
@@ -69,14 +68,12 @@ export async function pdfScreenshot(
     const endPage = Math.min(totalPages, options.endPage ?? totalPages)
 
     updateProgress(10, `Generating screenshots for pages ${startPage} to ${endPage}...`)
-    console.log(`📚 Generating screenshots for pages ${startPage} to ${endPage} of ${totalPages}`)
-
+    
     // Check if we need to write files (Node.js only)
     const shouldWriteFiles = options.outputDir && typeof process !== 'undefined' && process.versions && process.versions.node
 
     if (shouldWriteFiles) {
       updateProgress(15, `Preparing output directory: ${options.outputDir}`)
-      console.log(`📁 Output directory: ${options.outputDir}`)
     }
 
     // Default options
@@ -92,30 +89,22 @@ export async function pdfScreenshot(
       const progressPercentage = 15 + Math.round((pageIndex / totalPagesToProcess) * 80) // 15% to 95%
       
       updateProgress(progressPercentage, `Processing page ${pageNum}/${endPage}...`)
-      console.log(`📸 Processing page ${pageNum}/${endPage}...`)
 
       try {
         // Get PDF page
         const pdfPage = await pdfDocument.getPage(pageNum)
-        console.log(`📄 Page ${pageNum} loaded successfully`)
 
         const viewport = pdfPage.rawProxy.getViewport({ scale: 1 })
-        console.log(`📐 Page ${pageNum} viewport:`, {
-          width: viewport.width,
-          height: viewport.height
-        })
 
         // Validate page content (missing feature from original)
         try {
-          const textContent = await pdfPage.getTextContent()
-          console.log(`📝 Page ${pageNum} text items:`, textContent.items.length)
+          await pdfPage.getTextContent()
         } catch (textError) {
           console.warn(`⚠️ Could not get text content for page ${pageNum}:`, textError)
         }
 
         try {
           // Generate page screenshot as base64
-          console.log(`🎨 Starting screenshot generation for page ${pageNum}...`)
 
           const screenshotResult = await PageRenderer.renderPageToBase64(
             pdfPage.rawProxy,
@@ -125,10 +114,6 @@ export async function pdfScreenshot(
               scale: imageWidth / viewport.width
             }
           )
-
-          console.log(`✅ Screenshot generated for page ${pageNum} (${screenshotResult.width}x${screenshotResult.height})`)
-          console.log(`📊 Data URL length: ${screenshotResult.base64.length} chars`)
-          console.log(`🔍 Data URL format: ${screenshotResult.base64.substring(0, 30)}...`)
 
           const pageResult: ScreenshotPageResult = {
             pageNumber: pageNum,
@@ -155,7 +140,6 @@ export async function pdfScreenshot(
                 filename
               )
               pageResult.filePath = filePath
-              console.log(`💾 Screenshot saved to: ${filePath}`)
             } catch (fileError) {
               console.warn(`⚠️ Failed to write file for page ${pageNum}: ${(fileError as Error).message}`)
               // Don't fail the entire operation if file writing fails
@@ -205,7 +189,6 @@ export async function pdfScreenshot(
     const successCount = screenshots.filter(s => !s.error).length
     
     updateProgress(100, `Screenshot generation completed: ${successCount}/${screenshots.length} pages successful`)
-    console.log(`✅ Screenshot generation completed: ${successCount}/${screenshots.length} pages successful`)
 
     return {
       totalPages: screenshotCount,

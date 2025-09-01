@@ -38,8 +38,6 @@ export class PageRenderer {
   ): Promise<{ width: number; height: number; base64: string }> {
     const { scale = 1.0 } = options
 
-    console.log('🎯 PDF Page Screenshot Rendering v1.0')
-
     try {
       if (!pdfPage) {
         throw new Error('Invalid PDF page object')
@@ -47,7 +45,6 @@ export class PageRenderer {
 
       // Get viewport for scaling
       const viewport = pdfPage.getViewport({ scale })
-      console.log(`📐 Viewport: ${viewport.width}x${viewport.height} (scale: ${scale})`)
       
       // Validate viewport
       if (!viewport || viewport.width <= 0 || viewport.height <= 0) {
@@ -56,8 +53,6 @@ export class PageRenderer {
 
       if (this.isBrowser()) {
         // Browser rendering using HTML5 Canvas
-        console.log('🌐 Browser rendering with HTML5 Canvas')
-
         const doc = (globalThis as any).document
         const canvas = doc.createElement('canvas')
         const context = canvas.getContext('2d')
@@ -70,8 +65,6 @@ export class PageRenderer {
         canvas.width = Math.floor(viewport.width)
         canvas.height = Math.floor(viewport.height)
 
-        console.log(`📐 Canvas: ${canvas.width}x${canvas.height}`)
-
         // Clear canvas with white background
         context.fillStyle = 'white'
         context.fillRect(0, 0, canvas.width, canvas.height)
@@ -82,14 +75,11 @@ export class PageRenderer {
           viewport: viewport
         }
 
-        console.log('🔄 Rendering PDF page to canvas...')
         const renderTask = pdfPage.render(renderContext)
         await renderTask.promise
-        console.log('✅ PDF page rendered successfully')
 
         // Convert to base64
         const dataUrl = canvas.toDataURL('image/png', 1.0)
-        console.log(`� Screenshot generated: ${canvas.width}x${canvas.height}`)
 
         return {
           width: canvas.width,
@@ -98,16 +88,12 @@ export class PageRenderer {
         }
       } else {
         // Node.js server-side rendering - ngx-pdfjs style (simplified)
-        console.log('🖥️ Node.js server-side rendering (ngx-pdfjs approach)')
-        
         try {
           // Import Canvas directly (like ngx-pdfjs but for Node.js)
           const canvas = await import('canvas')
           
           const canvasWidth = Math.floor(viewport.width)
           const canvasHeight = Math.floor(viewport.height)
-          
-          console.log(`📐 Creating Node.js Canvas: ${canvasWidth}x${canvasHeight}`)
           
           // Create simple Node.js canvas (no canvasFactory complexity)
           const nodeCanvas = canvas.createCanvas(canvasWidth, canvasHeight)
@@ -123,17 +109,13 @@ export class PageRenderer {
             viewport: viewport
           }
           
-          console.log('🔄 Rendering PDF page to Node.js canvas...')
           const renderTask = pdfPage.render(renderContext)
           
           await renderTask.promise
-          console.log('✅ PDF page rendered successfully')
           
           // Convert to PNG buffer
           const pngBuffer = nodeCanvas.toBuffer('image/png')
           const base64 = `data:image/png;base64,${pngBuffer.toString('base64')}`
-          
-          console.log(`📸 Screenshot generated: ${canvasWidth}x${canvasHeight}, ${pngBuffer.length} bytes`)
           
           return {
             width: canvasWidth,
