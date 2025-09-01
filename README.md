@@ -1,7 +1,9 @@
-# pdf-decomposer
+# [![NPM Version](https://img.shields.io/npm/v/pdf-decomposer.svg)](https://www.npmjs.com/package/pdf-decomposer)
+[![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg)](https://www.typescriptlang.org/)
+[![Dual License](https://img.shields.io/badge/license-Dual%20License-orange.svg)](LICENSE)
+[![Browser Support](https://img.shields.io/badge/browser-Chrome%20%7C%20Firefox%20%7C%20Safari%20%7C%20Edge-brightgreen.svg)](#browser-support)f-decomposer
 
 [![npm version](https://img.shields.io/npm/v/pdf-decomposer.svg)](https://www.npmjs.com/package/pdf-decomposer)
-[![build status](https://github.com/febbyRG/pdf-decomposer/actions/workflows/ci.yml/badge.svg)](https://github.com/febbyRG/pdf-decomposer/actions)
 [![MIT License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 A powerful TypeScript library for comprehensive PDF processing and content extraction. **Optimized for production use with universal browser and Node.js support.**
@@ -497,39 +499,9 @@ The test suite generates output in `scripts/test-output/`:
 - **Canvas** optional for enhanced screenshot quality
 - **TypeScript 4.9+** for development
 
-## 🚨 Migration Guide
 
-### **From Legacy API**
-```typescript
-// OLD: Functional API (deprecated)
-import { decomposePdf } from 'pdf-decomposer'
-const result = await decomposePdf('file.pdf')
 
-// NEW: Class-based API (recommended)
-import { PdfDecomposer } from 'pdf-decomposer'
-const pdf = new PdfDecomposer(buffer)
-await pdf.initialize()
-const result = await pdf.decompose()
-```
-
-### **From BC Editor Implementation**
-```typescript
-// OLD: BC Editor approach
-import { EnhancedPDFConverter } from '@/lib/cloud-storage/EnhancedPDFConverter'
-const result = await EnhancedPDFConverter.convert(file)
-
-// NEW: pdf-decomposer approach
-import { PdfDecomposer } from 'pdf-decomposer'
-const arrayBuffer = await file.arrayBuffer()
-const pdf = new PdfDecomposer(arrayBuffer)
-await pdf.initialize()
-const result = await pdf.decompose({
-  elementComposer: true,
-  extractImages: true
-})
-```
-
-## 🔍 Production Tips
+## 🔍 Production Usage Examples
 
 ### **Memory Optimization**
 ```typescript
@@ -592,34 +564,20 @@ if (!cached) {
 }
 ```
 
-## 📋 What's New in v0.0.2
-
-🚀 **Production-Ready Release**
-
-### **Major Improvements**
-- ✅ **Production Logging** - Removed excessive console.log statements
-- ✅ **Enhanced Class API** - Load once, use many times pattern
-- ✅ **PDF Slicing** - Extract specific page ranges with internal document replacement
-- ✅ **Advanced Content Processing** - Element, page, and clean composers
-- ✅ **Progress Tracking** - Real-time progress callbacks with observable pattern
-- ✅ **Memory Management** - Built-in cleanup and monitoring
-- ✅ **Universal Support** - Optimized for both Node.js and browser environments
-
-### **New Features**
-- **`slice()` method** - Extract page ranges and create new PDF documents
-- **`data()` method** - Generate pwa-admin compatible interactive data structures  
-- **Progress callbacks** - Track operations with `subscribe()` method
-- **Fingerprint caching** - Get PDF and page hashes for caching strategies
-- **Advanced clean composer** - Remove headers, footers, and page numbers
-- **Page composer** - Merge continuous content across multiple pages
-- **Memory optimization** - Adaptive processing for large documents
-
-### **Breaking Changes**
-- Functional API deprecated in favor of class-based API
-- Worker configuration now automatic via `PdfWorkerConfig.configure()`
-- Result interfaces updated with comprehensive metadata
-
 ## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+### **Development Guidelines**
+- Use TypeScript for all new code
+- Add tests for new features
+- Update README for API changes
+- Follow existing code style
+- Test in both Node.js and browser environments
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
@@ -636,7 +594,23 @@ if (!cached) {
 
 ## 📄 License
 
-MIT License - see [LICENSE](LICENSE) file for details.
+**PDF-Decomposer** is dual-licensed:
+
+### 🆓 Non-Commercial Use (Free)
+- ✅ Personal projects
+- ✅ Educational use
+- ✅ Research purposes
+- ✅ Open source projects
+
+### 💼 Commercial Use (Paid License Required)
+- 🏢 Commercial applications
+- 💰 Revenue-generating products
+- 🚀 Enterprise software
+- 📦 Distribution in commercial products
+
+**For commercial licensing**: Contact [febby.rachmat@gmail.com](mailto:febby.rachmat@gmail.com)
+
+See [LICENSE](LICENSE) file for complete terms.
 
 ## 🔗 Links
 
@@ -646,5 +620,3 @@ MIT License - see [LICENSE](LICENSE) file for details.
 - **Documentation**: [API Reference](https://github.com/febbyRG/pdf-decomposer#-api-reference)
 
 ---
-
-**Built with ❤️ for the PDF processing community**
