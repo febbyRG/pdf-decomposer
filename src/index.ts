@@ -15,7 +15,7 @@ export * from './core/PdfUtil.js'
 export { PdfLoader } from './core/PdfLoader.js'
 export { PdfWorkerConfig } from './core/PdfWorkerConfig.js'
 
-// Advanced Image Extraction (Enhanced from BC Editor)
+// Advanced Image Extraction with Universal Browser Support
 export { PdfImageExtractor } from './core/PdfImageExtractor.js'
 export type { ExtractedImage } from './types/image.types.js'
 

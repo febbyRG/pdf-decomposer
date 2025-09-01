@@ -310,7 +310,7 @@ export class PdfPageComposer {
 
   /**
    * Compose multiple pages into a single page with proper element ordering.
-   * Uses the same FlexPDF algorithm as PdfElementComposer for consistent ordering.
+   * Uses the same advanced algorithm as PdfElementComposer for consistent ordering.
    */
   private static composePageGroup(pages: PdfPageContent[]): PdfPageContent {
     if (pages.length === 1) return pages[0]

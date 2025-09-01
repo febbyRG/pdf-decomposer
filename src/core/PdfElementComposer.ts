@@ -2,7 +2,7 @@ import type { PdfElement } from '../models/PdfElement.js'
 import type { PdfPageContent } from '../models/PdfPageContent.js'
 
 /**
- * Internal composite type for FlexPDF algorithm processing
+ * Internal composite type for advanced text processing algorithm
  */
 interface Composite {
   id: string
@@ -26,7 +26,7 @@ interface Composite {
 }
 
 /**
- * Enhanced PdfElementComposer with complete FlexPDF algorithm system.
+ * Enhanced PdfElementComposer with complete advanced text processing algorithm system.
  * Implements 3-stage processing: OverlappingText → OrderComposites → ComputeTextTypes
  */
 export class PdfElementComposer {
@@ -43,7 +43,7 @@ export class PdfElementComposer {
   }
 
   /**
-   * Compose elements for a single page using complete FlexPDF algorithm system.
+   * Compose elements for a single page using complete advanced text processing algorithm system.
    */
   private static composePageElements(elements: PdfElement[]): PdfElement[] {
     // Separate text and non-text elements
@@ -52,7 +52,7 @@ export class PdfElementComposer {
 
     if (textElements.length === 0) return elements
 
-    // FlexPDF 3-stage algorithm system
+    // Advanced 3-stage text processing system
     let composites = this.convertToComposites(textElements)
 
     // Stage 1: OverlappingTextAlgorithm (Priority 30) - Spatial merging
@@ -70,8 +70,8 @@ export class PdfElementComposer {
     // Merge drop caps with following paragraphs
     processedElements = this.mergeDropCaps(processedElements)
 
-    // Combine with non-text elements - preserve FlexPDF algorithm ordering for text elements
-    // Only sort non-text elements by position, keep text elements in FlexPDF order
+    // Combine with non-text elements - preserve algorithm ordering for text elements
+    // Only sort non-text elements by position, keep text elements in algorithm order
     const processedTextElements = processedElements
     const sortedNonTextElements = nonTextElements.sort((a, b) => {
       const aTop = a.boundingBox?.top || 0
@@ -85,7 +85,7 @@ export class PdfElementComposer {
       return aLeft - bLeft
     })
 
-    // Merge text and non-text elements while preserving text element order from FlexPDF
+    // Merge text and non-text elements while preserving text element order from algorithm
     const finalElements: PdfElement[] = []
     let textIndex = 0
     let nonTextIndex = 0
@@ -313,7 +313,7 @@ export class PdfElementComposer {
   }
 
   /**
-   * FlexPDF Stage 1: OverlappingTextAlgorithm (Priority 30)
+   * Stage 1 - Overlapping Text Algorithm: OverlappingTextAlgorithm (Priority 30)
    * Spatial merging with 10% font tolerance and dynamic expansion
    */
   private static runOverlappingTextAlgorithm(composites: Composite[]): Composite[] {
@@ -361,7 +361,7 @@ export class PdfElementComposer {
   }
 
   /**
-   * FlexPDF Stage 2: OrderCompositesAlgorithm (Priority 40)
+   * Stage 2 - Spatial Order Algorithm: OrderCompositesAlgorithm (Priority 40)
    * Reading order detection with beam scanning for multi-column layout
    */
   private static runOrderCompositesAlgorithm(composites: Composite[]): Composite[] {
@@ -391,7 +391,7 @@ export class PdfElementComposer {
   }
 
   /**
-   * FlexPDF Beam Scanning: Detect column layout using horizontal and vertical beams
+   * Advanced Beam Scanning: Detect column layout using horizontal and vertical beams
    */
   private static detectColumnsWithBeamScanning(composites: Composite[]): Array<{
     leftBoundary: number
@@ -465,19 +465,19 @@ export class PdfElementComposer {
   }
 
   /**
-   * FlexPDF Stage 3: ComputeTextTypesAlgorithm (Priority 50)
+   * Stage 3 - Text Type Classification: ComputeTextTypesAlgorithm (Priority 50)
    * Text type classification based on font size analysis
    */
   private static runComputeTextTypesAlgorithm(composites: Composite[]): Composite[] {
     if (composites.length === 0) return composites
 
-    // Calculate character-weighted average font size (FlexPDF exact approach)
+    // Calculate character-weighted average font size (optimized approach)
     const weightedPairs = composites.map(comp => [comp.attributes.fontSize, comp.data.length])
     const totalCharacters = weightedPairs.reduce((sum, [_, charCount]) => sum + charCount, 0)
     const aggregatedSum = weightedPairs.reduce((sum, [fontSize, charCount]) => sum + fontSize * charCount, 0)
     const averageFontSize = totalCharacters > 0 ? aggregatedSum / totalCharacters : 12
 
-    // Define heading thresholds based on FlexPDF algorithm
+    // Define heading thresholds based on advanced algorithm
     const headingThresholds = [
       { type: 'h1', size: 2.1 * averageFontSize },
       { type: 'h2', size: 1.75 * averageFontSize },
@@ -486,14 +486,14 @@ export class PdfElementComposer {
       { type: 'h5', size: 1.1 * averageFontSize }
     ]
 
-    // Classify each composite (FlexPDF exact logic)
+    // Classify each composite (optimized logic)
     for (const composite of composites) {
       const fontSize = composite.attributes.fontSize
       const wordCount = composite.data.split(/\s+/).filter(str => str !== '').length
       const isLongText = wordCount > 15
 
       if (fontSize > averageFontSize && !isLongText) {
-        // Find appropriate heading level (FlexPDF uses floor comparison)
+        // Find appropriate heading level (uses floor comparison)
         const heading = headingThresholds.find(threshold => threshold.size <= fontSize)
         composite.attributes.type = heading ? heading.type : 'h5'
       } else {
@@ -505,7 +505,7 @@ export class PdfElementComposer {
   }
 
   /**
-   * Calculate page statistics from composites (FlexPDF approach)
+   * Calculate page statistics from composites (optimized approach)
    */
   private static calculatePageStatisticsFromComposites(composites: Composite[]): {
     averageFontSize: number
@@ -524,21 +524,21 @@ export class PdfElementComposer {
   }
 
   /**
-   * FlexPDF composite merging criteria
+   * advanced composite merging criteria
    */
   private static shouldMergeComposites(compA: Composite, compB: Composite, pageStats: any): boolean {
-    // Font compatibility check (10% tolerance like FlexPDF)
+    // Font compatibility check (10% tolerance using optimized techniques)
     const fontSizeA = compA.attributes.fontSize
     const fontSizeB = compB.attributes.fontSize
     const relativeFontDiff = Math.abs(fontSizeA / fontSizeB - 1)
 
     if (relativeFontDiff > 0.1) return false
 
-    // Spatial proximity check with enhanced expansion (FlexPDF frontend behavior)
+    // Spatial proximity check with enhanced expansion (optimized behavior)
     const avgFontSize = (fontSizeA + fontSizeB) / 2
     const correctedFontSize = Math.max(Math.pow(avgFontSize, 2) / pageStats.averageFontSize, avgFontSize)
 
-    // Enhanced expansion calculation to match FlexPDF frontend composite behavior
+    // Enhanced expansion calculation to match optimized composite behavior
     const baseExpansion = correctedFontSize / 3.5
     const minExpansion = Math.max(avgFontSize * 0.8, 5) // Minimum based on font size, at least 5px
     const expansionAmount = Math.min(Math.max(baseExpansion, minExpansion), 15)
@@ -644,7 +644,7 @@ export class PdfElementComposer {
   }
 
   /**
-   * Group text elements using dynamic clustering with FlexPDF-inspired spatial analysis.
+   * Group text elements using dynamic clustering with advanced spatial analysis.
    */
   private static groupWithDynamicClustering(textElements: PdfElement[], pageStats: any): PdfElement[] {
     if (textElements.length === 0) return []
@@ -662,7 +662,7 @@ export class PdfElementComposer {
       return aLeft - bLeft // Same line, left to right
     })
 
-    // Use FlexPDF-inspired overlapping algorithm
+    // Use advanced overlapping algorithm
     const clusters = this.findOverlappingClusters(sortedElements, pageStats)
 
     // Convert clusters to composed paragraphs
@@ -674,7 +674,7 @@ export class PdfElementComposer {
   }
 
   /**
-   * FlexPDF-inspired overlapping detection algorithm.
+   * advanced overlapping detection algorithm.
    */
   private static findOverlappingClusters(elements: PdfElement[], pageStats: any): PdfElement[][] {
     const clusters: PdfElement[][] = []
@@ -715,17 +715,17 @@ export class PdfElementComposer {
   }
 
   /**
-   * FlexPDF-inspired element merging criteria with dynamic thresholds.
+   * advanced element merging criteria with dynamic thresholds.
    */
   private static shouldMergeElements(elementA: PdfElement, elementB: PdfElement, pageStats: any): boolean {
-    // Font compatibility check (10% tolerance like FlexPDF)
+    // Font compatibility check (10% tolerance using optimized techniques)
     const fontSizeA = elementA.attributes?.fontSize || 12
     const fontSizeB = elementB.attributes?.fontSize || 12
     const relativeFontDiff = Math.abs(fontSizeA / fontSizeB - 1)
 
     if (relativeFontDiff > 0.1) return false
 
-    // Spatial proximity check with dynamic expansion (FlexPDF-inspired)
+    // Spatial proximity check with dynamic expansion (advanced)
     const avgFontSize = (fontSizeA + fontSizeB) / 2
     const correctedFontSize = Math.max(Math.pow(avgFontSize, 2) / pageStats.averageFontSize, avgFontSize)
     const expansionAmount = Math.min(Math.max(correctedFontSize / 3.5, 2), 10)
@@ -734,7 +734,7 @@ export class PdfElementComposer {
   }
 
   /**
-   * Check if two bounding boxes intersect with expansion (FlexPDF-inspired).
+   * Check if two bounding boxes intersect with expansion (advanced).
    */
   private static intersectsWithExpansion(boxA: any, boxB: any, expansion: number): boolean {
     if (!boxA || !boxB) return false

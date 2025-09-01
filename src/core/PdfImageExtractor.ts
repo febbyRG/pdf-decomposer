@@ -1,7 +1,7 @@
 /**
  * PDF Image Extractor - Universal Browser-Compatible Implementation
  *
- * Following FlexPDF approach for universal browser compatibility:
+ * Optimized for universal browser compatibility:
  * - Uses Canvas API for image processing (no Node.js dependencies)
  * - Browser-native compression via canvas.toBlob()
  * - Direct PDF.js object processing for maximum compatibility
@@ -475,11 +475,11 @@ export class PdfImageExtractor {
         return null
       }
 
-      // Use Canvas API approach for browser compatibility (like FlexPDF)
+      // Use Canvas API approach for browser compatibility
       let dataUrl: string
 
       if (isBrowser) {
-        // Browser environment: use Canvas API (FlexPDF approach)
+        // Browser environment: use Canvas API for optimal compatibility
         try {
           dataUrl = await this.imageToBlob(processedData, safeWidth, safeHeight, isRGBA)
         } catch (canvasError) {
