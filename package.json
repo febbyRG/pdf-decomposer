@@ -1,6 +1,6 @@
 {
   "name": "pdf-decomposer",
-  "version": "0.0.2",
+  "version": "1.0.0",
   "description": "A powerful PDF text and image extraction library with universal browser and Node.js support",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
