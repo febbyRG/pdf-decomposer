@@ -1,10 +1,9 @@
-# [![NPM Version](https://img.shields.io/npm/v/pdf-decomposer.svg)](https://www.npmjs.com/package/pdf-decomposer)
+# PDF-Decomposer
+
+[![NPM Version](https://img.shields.io/npm/v/@febbyrg/pdf-decomposer.svg)](https://www.npmjs.com/package/@febbyrg/pdf-decomposer)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg)](https://www.typescriptlang.org/)
 [![Dual License](https://img.shields.io/badge/license-Dual%20License-orange.svg)](LICENSE)
-[![Browser Support](https://img.shields.io/badge/browser-Chrome%20%7C%20Firefox%20%7C%20Safari%20%7C%20Edge-brightgreen.svg)](#browser-support)f-decomposer
-
-[![npm version](https://img.shields.io/npm/v/pdf-decomposer.svg)](https://www.npmjs.com/package/pdf-decomposer)
-[![MIT License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Browser Support](https://img.shields.io/badge/browser-Chrome%20%7C%20Firefox%20%7C%20Safari%20%7C%20Edge-brightgreen.svg)](#browser-support)
 
 A powerful TypeScript library for comprehensive PDF processing and content extraction. **Optimized for production use with universal browser and Node.js support.**
 
@@ -78,7 +77,7 @@ A powerful TypeScript library for comprehensive PDF processing and content extra
 ## 📦 Installation
 
 ```bash
-npm install pdf-decomposer
+npm install @febbyrg/pdf-decomposer
 
 # For Node.js with canvas support (optional)
 npm install canvas
@@ -92,7 +91,7 @@ npm install pdfjs-dist
 ### **Enhanced Class-Based API (Recommended)**
 
 ```typescript
-import { PdfDecomposer } from 'pdf-decomposer'
+import { PdfDecomposer } from '@febbyrg/pdf-decomposer'
 
 // Load PDF once, use many times
 const pdf = new PdfDecomposer(buffer) // Buffer, ArrayBuffer, or Uint8Array
@@ -128,7 +127,7 @@ console.log(`Fingerprint: ${pdf.fingerprint}`)
 ### **Factory Method (One-liner)**
 
 ```typescript
-import { PdfDecomposer } from 'pdf-decomposer'
+import { PdfDecomposer } from '@febbyrg/pdf-decomposer'
 
 // Create and initialize in one step
 const pdf = await PdfDecomposer.create(buffer)
@@ -156,7 +155,7 @@ const result = await pdf.decompose({
 ### **Browser Environment (Angular, React, Vue)**
 
 ```typescript
-import { PdfDecomposer } from 'pdf-decomposer'
+import { PdfDecomposer } from '@febbyrg/pdf-decomposer'
 
 // In browser - use File API
 async function processPdfFile(file: File) {
@@ -171,7 +170,7 @@ async function processPdfFile(file: File) {
 }
 
 // Configure PDF.js worker (once per app)
-import { PdfWorkerConfig } from 'pdf-decomposer'
+import { PdfWorkerConfig } from '@febbyrg/pdf-decomposer'
 PdfWorkerConfig.configure() // Auto-configures worker URL
 ```
 
@@ -614,9 +613,10 @@ See [LICENSE](LICENSE) file for complete terms.
 
 ## 🔗 Links
 
-- **NPM Package**: [pdf-decomposer](https://www.npmjs.com/package/pdf-decomposer)
+- **NPM Package**: [@febbyrg/pdf-decomposer](https://www.npmjs.com/package/@febbyrg/pdf-decomposer)
 - **GitHub Repository**: [febbyRG/pdf-decomposer](https://github.com/febbyRG/pdf-decomposer)
 - **Issues**: [GitHub Issues](https://github.com/febbyRG/pdf-decomposer/issues)
 - **Documentation**: [API Reference](https://github.com/febbyRG/pdf-decomposer#-api-reference)
+- **Releases**: [GitHub Releases](https://github.com/febbyRG/pdf-decomposer/releases)
 
 ---
