@@ -13,7 +13,7 @@ import { PdfDecomposer } from '../dist/index'
 class ScreenshotTest {
   private baseOutputDir: string
   private pdfPath: string
-  private pdfFile = 'heather.pdf'
+  private pdfFile = 'demo.pdf'
 
   constructor(customPdfPath?: string) {
     const outputDir = join(__dirname, 'test-output')
@@ -68,8 +68,6 @@ class ScreenshotTest {
       console.log(`🔄 Running: ${testName}...`)
 
       const options = {
-        startPage: 23,
-        endPage: 23,
         outputDir: this.baseOutputDir,
         imageWidth: 1024,
         imageQuality: 90
