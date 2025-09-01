@@ -1,0 +1,24 @@
+# NPM Configuration Template for pdf-decomposer
+# Copy this file to .npmrc and fill in your tokens
+
+# NPM Authentication
+//registry.npmjs.org/:_authToken=YOUR_NPM_TOKEN_HERE
+
+# GitHub Packages Authentication
+//npm.pkg.github.com/:_authToken=YOUR_GITHUB_TOKEN_HERE
+
+# Scoped package configuration
+# For NPM publishing (default):
+@febbyrg:registry=https://registry.npmjs.org/
+
+# For GitHub Packages publishing, comment above and uncomment below:
+# @febbyrg:registry=https://npm.pkg.github.com/
+
+# Package access
+access=public
+
+# Instructions:
+# 1. Copy this file to .npmrc
+# 2. Replace YOUR_NPM_TOKEN_HERE with your NPM token from https://www.npmjs.com/settings/tokens
+# 3. Replace YOUR_GITHUB_TOKEN_HERE with your GitHub token from https://github.com/settings/tokens
+# 4. Ensure GitHub token has 'write:packages' and 'read:packages' scopes

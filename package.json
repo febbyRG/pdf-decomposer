@@ -37,8 +37,10 @@
     "release": "npm version patch && npm publish",
     "release:minor": "npm version minor && npm publish",
     "release:major": "npm version major && npm publish",
-    "publish:npm": "npm publish --registry=https://registry.npmjs.org/",
-    "publish:github": "npm publish --registry=https://npm.pkg.github.com/",
+    "setup:publishing": "./scripts/setup-publishing.sh",
+    "setup:verify": "./scripts/setup-publishing.sh",
+    "publish:npm": "npm config set @febbyrg:registry https://registry.npmjs.org/ && npm publish --access=public",
+    "publish:github": "npm config set @febbyrg:registry https://npm.pkg.github.com/ && npm publish --access=public",
     "publish:both": "npm run publish:npm && npm run publish:github"
   },
   "repository": {

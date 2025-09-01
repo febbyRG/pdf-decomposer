@@ -591,7 +591,35 @@ if (!cached) {
 - Follow existing code style
 - Test in both Node.js and browser environments
 
-## 📄 License
+## � Development & Publishing
+
+### Setup for Publishing
+```bash
+# Initial setup (run once)
+npm run setup:publishing
+
+# Verify configuration
+npm run setup:verify
+```
+
+### Publishing Commands
+```bash
+# Publish to NPM only
+npm run publish:npm
+
+# Publish to GitHub Packages only  
+npm run publish:github
+
+# Publish to both registries
+npm run publish:both
+
+# Version bump + publish
+npm version patch && npm run publish:both
+```
+
+---
+
+## �📄 License
 
 **PDF-Decomposer** is dual-licensed:
 
