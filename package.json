@@ -1,7 +1,7 @@
 {
   "name": "pdf-decomposer",
   "version": "1.0.0",
-  "description": "A powerful PDF text and image extraction library with universal browser and Node.js support",
+  "description": "A powerful PDF text and image extraction library with universal browser and Node.js support (Dual Licensed: Free for non-commercial, Paid for commercial use)",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
@@ -21,11 +21,20 @@
     "build": "tsc",
     "build:watch": "tsc --watch",
     "prepare": "npm run build",
-    "prepublishOnly": "npm run build && npm test",
+    "prepublishOnly": "npm run build && npm test && npm run lint",
+    "preversion": "npm run lint && npm test",
+    "version": "npm run build && git add -A dist",
+    "postversion": "git push && git push --tags",
     "test": "npx ts-node scripts/test.ts",
     "test:screenshot": "npx ts-node scripts/test-screenshot.ts",
     "test:data": "npx ts-node scripts/test-pdf-data.ts",
-    "lint": "eslint . --ext .ts"
+    "test:all": "npm run test && npm run test:screenshot && npm run test:data",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "clean": "rm -rf dist",
+    "release": "npm version patch && npm publish",
+    "release:minor": "npm version minor && npm publish",
+    "release:major": "npm version major && npm publish"
   },
   "repository": {
     "type": "git",
@@ -40,10 +49,19 @@
     "angular",
     "react",
     "vue",
-    "image-extraction"
+    "image-extraction",
+    "pdf-to-json",
+    "pdf-text-extraction",
+    "pdf-processing",
+    "nodejs",
+    "universal",
+    "pdf-decomposer",
+    "content-extraction",
+    "screenshot-generation",
+    "pdf-slicing"
   ],
   "author": "Febby Rachmat G<febby.rachmat@gmail.com>",
-  "license": "MIT",
+  "license": "SEE LICENSE IN LICENSE",
   "bugs": {
     "url": "https://github.com/febbyRG/pdf-decomposer/issues"
   },
