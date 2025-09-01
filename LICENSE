@@ -1,16 +1,36 @@
-MIT License
+PDF-DECOMPOSER DUAL LICENSE
 
-Copyright (c) 2025 YOUR NAME
+Copyright (c) 2025 Febby Rachmat G
+
+This software is dual-licensed under the following terms:
+
+## NON-COMMERCIAL LICENSE (Free)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+of this software and associated documentation files (the "Software"), to use
+the Software for NON-COMMERCIAL purposes only, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+1. The Software may be used for personal, educational, or research purposes only
+2. The Software may NOT be used in any commercial application, product, or service
+3. The above copyright notice and this permission notice shall be included in all
+   copies or substantial portions of the Software
+4. Any modifications or derivative works must also be non-commercial and include this license
+
+## COMMERCIAL LICENSE (Paid)
+
+For commercial use, including but not limited to:
+- Integration into commercial applications
+- Use in revenue-generating products or services
+- Distribution as part of commercial software
+- Use by commercial entities or organizations
+
+A separate commercial license must be obtained by contacting:
+Email: febby.rachmat@gmail.com
+Subject: PDF-Decomposer Commercial License Request
+
+Commercial license fees vary based on usage scope and organization size.
+
+## WARRANTY DISCLAIMER
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -19,3 +39,8 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+## ENFORCEMENT
+
+Use of this software for commercial purposes without a valid commercial license
+constitutes copyright infringement and may result in legal action.
