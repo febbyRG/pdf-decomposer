@@ -1,3 +1,15 @@
+/**
+ * PDF-Decomposer - Universal PDF Processing Library
+ * 
+ * LICENSING NOTICE:
+ * This software is dual-licensed:
+ * - Non-commercial use: FREE
+ * - Commercial use: PAID LICENSE REQUIRED
+ * 
+ * Contact: febby.rachmat@gmail.com for commercial licensing
+ * See LICENSE file for complete terms.
+ */
+
 // Enhanced Class-based API (Load once, use many times)
 export { PdfDecomposer } from './api/PdfDecomposer.js'
 
