@@ -3,8 +3,28 @@
 /**
  * PDF-Decomposer Comprehensive Test Suite
  *
- * Tests all major functionality including:
- * - Text extraction
+ * Tests all major functionality      // Custom cleanComposer options for 90% width & 90% height content area
+      const decomposeResult = await this.decomposer.decompose({
+        outputDir,
+        extractImages: true,
+        elementComposer: true,
+        pageComposer: true,
+        cleanComposer: true,
+        cleanComposerOptions: {
+          topMarginPercent: 0.05,      // 5% top margin (instead of default 10%)
+          bottomMarginPercent: 0.05,   // 5% bottom margin (instead of default 10%)
+          sideMarginPercent: 0.05,     // 5% side margin (keeps default 5%)
+          minTextHeight: 8,            // Keep default text filtering
+          minTextWidth: 10,            // Keep default text filtering
+          minTextLength: 3,            // Keep default text filtering
+          minImageWidth: 50,           // Keep default image filtering
+          minImageHeight: 50,          // Keep default image filtering
+          minImageArea: 2500,          // Keep default image filtering
+          removeControlCharacters: true,
+          removeIsolatedCharacters: true
+        },
+        minify: true
+      })xt extraction
  * - Image extraction (embedded)
  * - Memory efficiency
  * - Error handling
@@ -118,7 +138,12 @@ class ComprehensiveTest {
         elementComposer: true,
         pageComposer: true,
         cleanComposer: true,
-        minify: true
+        cleanComposerOptions: {
+          topMarginPercent: 0.05,      // 5% top margin (instead of default 10%)
+          bottomMarginPercent: 0.05,   // 5% bottom margin (instead of default 10%)
+          sideMarginPercent: 0.05,     // 5% side margin (keeps default 5%)
+        },
+        // minify: true
       })
 
       const result = decomposeResult.pages

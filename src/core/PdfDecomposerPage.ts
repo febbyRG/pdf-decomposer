@@ -186,11 +186,14 @@ export class PdfDecomposerPage {
     }
   }
 
-  // Real text extraction using PDF.js getTextContent
+  // Real text extraction using PDF.js getTextContent with color-aware enhancement
   private async extractTextElements(pdfPage: any, pageIndex: number): Promise<any[]> {
     const textContent = await pdfPage.getTextContent()
     const viewport = pdfPage.getViewport({ scale: 1 })
     const pageHeight = viewport.height
+
+    // Extract color-aware text elements using PdfTextEvaluator
+    const colorAwareElements = await pdfPage.extractText()
 
     return textContent.items.map((item: any, _: number) => {
       const bbox = this.getTextBoundingBox(item, pageHeight)
@@ -198,10 +201,14 @@ export class PdfDecomposerPage {
       // Resolve readable font name from PDF internal ID
       const resolvedFontFamily = this.resolveFontFamily(item.fontName)
 
+      // Find matching color-aware element based on text content and position
+      const matchingColorElement = this.findMatchingColorElement(item, bbox, colorAwareElements)
+      const textColor = matchingColorElement?.textColor
+
       const attributes = {
         fontFamily: resolvedFontFamily, // Use resolved font name instead of internal ID
         fontSize: item.transform ? item.transform[0] : undefined,
-        textColor: undefined // PDF.js does not provide text color directly
+        textColor: textColor // Now includes actual color information when available
       }
 
       // Generate formatted HTML version based on font attributes
@@ -220,6 +227,30 @@ export class PdfDecomposerPage {
         attributes
       }
     }) // No filter for debugging
+  }
+
+  // Helper method to find matching color-aware element for a text item
+  private findMatchingColorElement(item: any, bbox: PdfDecomposerBoundingBox, colorAwareElements: any[]): any {
+    // First try to match by exact text content
+    const exactTextMatch = colorAwareElements.find(element => 
+      element.text === item.str && element.textColor
+    )
+    if (exactTextMatch) {
+      return exactTextMatch
+    }
+
+    // Fall back to positional matching with tolerance
+    const positionTolerance = 5 // pixels
+    const positionMatch = colorAwareElements.find(element => {
+      if (!element.boundingBox || !element.textColor) return false
+      
+      const leftDiff = Math.abs(element.boundingBox.left - bbox.left)
+      const topDiff = Math.abs(element.boundingBox.top - bbox.top)
+      
+      return leftDiff <= positionTolerance && topDiff <= positionTolerance
+    })
+    
+    return positionMatch || null
   }
 
   // Helper to get bounding box from PDF.js text item
