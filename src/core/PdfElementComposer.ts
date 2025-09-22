@@ -597,6 +597,9 @@ export class PdfElementComposer {
     // Merge text content
     const mergedData = cluster.map(c => c.data).join(' ')
     const mergedFormatted = cluster.map(c => c.formattedData || c.data).join(' ')
+    
+    // Clean up the formatted data
+    const cleanedFormatted = this.cleanupFormattedHtml(mergedFormatted)
 
     // Calculate average font size
     const avgFontSize = cluster.reduce((sum, c) => sum + c.attributes.fontSize, 0) / cluster.length
@@ -608,7 +611,7 @@ export class PdfElementComposer {
     return {
       id: `merged_${cluster[0].id}`,
       data: mergedData,
-      formattedData: mergedFormatted,
+      formattedData: cleanedFormatted,
       boundingBox: mergedBox,
       attributes: {
         fontSize: Math.round(avgFontSize * 10) / 10,
@@ -787,6 +790,8 @@ export class PdfElementComposer {
    * Create a composed paragraph element from multiple text elements.
    */
   private static createComposedParagraph(elements: PdfElement[]): PdfElement {
+    console.log('📦 createComposedParagraph called with', elements.length, 'elements')
+    
     // Calculate paragraph bounding box
     const bounds = this.calculateParagraphBounds(elements)
 
@@ -795,6 +800,8 @@ export class PdfElementComposer {
 
     // Combine formatted HTML content preserving individual formatting
     const formattedHtml = this.combineFormattedText(elements)
+
+    console.log('🎯 Paragraph created with text:', paragraphText.substring(0, 50))
 
     // Calculate average font size
     const avgFontSize = elements.reduce((sum, el) => sum + (el.attributes?.fontSize || 12), 0) / elements.length
@@ -883,12 +890,31 @@ export class PdfElementComposer {
       result += (needsSpace ? ' ' : '') + current
     }
 
+    // Clean up empty and redundant HTML elements
+    result = this.cleanupFormattedHtml(result)
+
     // Wrap the combined content in a paragraph tag if it doesn't already have block-level tags
     if (!this.hasBlockLevelTags(result)) {
       result = `<p>${result}</p>`
     }
 
     return result
+  }
+
+  /**
+   * Clean up formatted HTML by removing empty spans and consolidating redundant elements
+   */
+  private static cleanupFormattedHtml(html: string): string {
+    if (!html || html.trim().length === 0) return ''
+
+    let cleaned = html
+    
+    // Simple, direct approach - remove empty span headers
+    cleaned = cleaned.replace(/<span[^>]*><h[1-6]> <\/h[1-6]><\/span>/g, '')
+    cleaned = cleaned.replace(/<span[^>]*><h[1-6]>\s+<\/h[1-6]><\/span>/g, '')
+    cleaned = cleaned.replace(/\s{2,}/g, ' ').trim()
+    
+    return cleaned
   }
 
   /**

@@ -141,7 +141,7 @@ class ComprehensiveTest {
         cleanComposerOptions: {
           topMarginPercent: 0.05,      // 5% top margin (instead of default 10%)
           bottomMarginPercent: 0.05,   // 5% bottom margin (instead of default 10%)
-          sideMarginPercent: 0.05,     // 5% side margin (keeps default 5%)
+          sideMarginPercent: 0.15,     // 5% side margin (keeps default 5%)
         },
         // minify: true
       })
