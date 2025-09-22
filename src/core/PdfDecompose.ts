@@ -18,6 +18,27 @@ import { MemoryManager } from '../utils/MemoryManager.js'
 import { MemoryPackageDir } from '../utils/MemoryPackageDir.js'
 
 /**
+ * Apply format options to control data field output
+ */
+function applyFormatOptions(pages: PdfPageContent[], minifyOptions?: { format?: 'plain' | 'html' }): PdfPageContent[] {
+  if (!minifyOptions?.format || minifyOptions.format === 'plain') {
+    return pages // No change needed for plain format (default)
+  }
+
+  if (minifyOptions.format === 'html') {
+    return pages.map(page => ({
+      ...page,
+      elements: page.elements.map(element => ({
+        ...element,
+        data: element.formattedData || element.data // Use formattedData if available, fallback to data
+      }))
+    }))
+  }
+
+  return pages
+}
+
+/**
  * Minify pages data for smaller output (missing feature from original)
  */
 function minifyPagesData(pages: PdfPageContent[]): any[] {
@@ -284,6 +305,11 @@ export async function pdfDecompose(
     }
 
     updateProgress(95, 'Finalizing your PDF')
+    
+    // Apply format options to control data field output
+    if (options.minifyOptions?.format) {
+      pkg.pages = applyFormatOptions(pkg.pages, options.minifyOptions)
+    }
     
     // Apply minify option if requested (missing feature)
     if (options.minify) {

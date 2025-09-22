@@ -143,7 +143,10 @@ class ComprehensiveTest {
           bottomMarginPercent: 0.05,   // 5% bottom margin (instead of default 10%)
           sideMarginPercent: 0.15,     // 5% side margin (keeps default 5%)
         },
-        // minify: true
+        minify: true,
+        minifyOptions: {
+          format: 'html' // Use 'html' format for formattedData field
+        },
       })
 
       const result = decomposeResult.pages

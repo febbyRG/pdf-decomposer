@@ -81,6 +81,9 @@ export interface PdfDecomposerOptions {
   minify?: boolean // When true, use compact bounding box format [x, y, width, height]
   cleanComposer?: boolean // When true, clean content to include only main content area
   cleanComposerOptions?: PdfCleanComposerOptions // Options for content cleaning
+  minifyOptions?: {
+    format?: 'plain' | 'html' // Controls data field output format: plain (default) = data field, html = formattedData field
+  }
 }
 
 /**
