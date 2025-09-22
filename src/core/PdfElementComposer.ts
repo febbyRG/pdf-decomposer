@@ -598,8 +598,17 @@ export class PdfElementComposer {
     const mergedData = cluster.map(c => c.data).join(' ')
     const mergedFormatted = cluster.map(c => c.formattedData || c.data).join(' ')
     
-    // Clean up the formatted data
-    const cleanedFormatted = this.cleanupFormattedHtml(mergedFormatted)
+    // Check if this is a header element based on font size (since types are assigned later)
+    // Calculate average font size for this cluster
+    const clusterAvgFontSize = cluster.reduce((sum, c) => sum + c.attributes.fontSize, 0) / cluster.length
+    
+    // Estimate if this could be a header based on font size
+    // We'll use a similar threshold as in computeTextTypes (roughly 1.1x+ average font size)
+    const isHeaderElement = clusterAvgFontSize >= 21 // This should catch h2 headers with font size 21.12px
+    
+    // Optimize and clean up the formatted data
+    const optimizedFormatted = this.optimizeFormattedHtml(mergedFormatted, isHeaderElement)
+    const cleanedFormatted = this.cleanupFormattedHtml(optimizedFormatted)
 
     // Calculate average font size
     const avgFontSize = cluster.reduce((sum, c) => sum + c.attributes.fontSize, 0) / cluster.length
@@ -790,8 +799,6 @@ export class PdfElementComposer {
    * Create a composed paragraph element from multiple text elements.
    */
   private static createComposedParagraph(elements: PdfElement[]): PdfElement {
-    console.log('📦 createComposedParagraph called with', elements.length, 'elements')
-    
     // Calculate paragraph bounding box
     const bounds = this.calculateParagraphBounds(elements)
 
@@ -800,8 +807,6 @@ export class PdfElementComposer {
 
     // Combine formatted HTML content preserving individual formatting
     const formattedHtml = this.combineFormattedText(elements)
-
-    console.log('🎯 Paragraph created with text:', paragraphText.substring(0, 50))
 
     // Calculate average font size
     const avgFontSize = elements.reduce((sum, el) => sum + (el.attributes?.fontSize || 12), 0) / elements.length
@@ -899,6 +904,174 @@ export class PdfElementComposer {
     }
 
     return result
+  }
+
+  /**
+   * Optimize formatted HTML by merging spans with similar or compatible styling
+   */
+  private static optimizeFormattedHtml(html: string, isHeaderElement = false): string {
+    if (!html || html.trim().length === 0) return ''
+
+    // Parse spans and extract their content and styling
+    const spanRegex = /<span([^>]*)>(.*?)<\/span>/g
+    const spans: { attributes: string; content: string; styles: Record<string, string> }[] = []
+    let match
+
+    while ((match = spanRegex.exec(html)) !== null) {
+      const attributes = match[1]
+      const content = match[2]
+      
+      // Parse style attributes
+      const styles: Record<string, string> = {}
+      const styleMatch = attributes.match(/style="([^"]*)"/)
+      if (styleMatch) {
+        const styleString = styleMatch[1]
+        styleString.split(';').forEach(rule => {
+          const [property, value] = rule.split(':').map(s => s.trim())
+          if (property && value) {
+            styles[property] = value
+          }
+        })
+      }
+
+      spans.push({ attributes, content, styles })
+    }
+
+    // If no spans found, return original
+    if (spans.length === 0) return html
+
+    // Check if all spans can be merged (header elements have special rules)
+    if (this.canMergeAllSpans(spans, isHeaderElement)) {
+      // Merge all spans into one with the most complete styling
+      const mergedStyles = this.getMergedStyles(spans, isHeaderElement)
+      
+      let mergedContent: string
+      if (isHeaderElement) {
+        // For headers, extract the text content from inside header tags and merge into single header
+        const headerTexts: string[] = []
+        let headerTag = 'h2' // default
+        
+        spans.forEach(span => {
+          // Extract header tag and text content
+          const headerMatch = span.content.match(/<(h[1-6])>(.*?)<\/h[1-6]>/g)
+          if (headerMatch) {
+            headerMatch.forEach(match => {
+              const tagMatch = match.match(/<(h[1-6])>(.*?)<\/h[1-6]>/)
+              if (tagMatch) {
+                headerTag = tagMatch[1] // Get the header level (h1, h2, etc)
+                const text = tagMatch[2].trim()
+                if (text && text !== '') {
+                  headerTexts.push(text)
+                }
+              }
+            })
+          }
+        })
+        
+        // Merge all header texts into one header tag
+        mergedContent = `<${headerTag}>${headerTexts.join(' ')}</${headerTag}>`
+      } else {
+        // For non-headers, use original logic
+        mergedContent = spans.map(s => s.content).join(' ')
+      }
+      
+      const styleString = Object.entries(mergedStyles)
+        .map(([prop, value]) => `${prop}: ${value}`)
+        .join('; ')
+      
+      return `<span style="${styleString}">${mergedContent}</span>`
+    }
+
+    // Otherwise, return original html (could add more sophisticated merging later)
+    return html
+  }
+
+  /**
+   * Check if all spans can be merged based on their styling compatibility
+   */
+  private static canMergeAllSpans(spans: { styles: Record<string, string> }[], isHeaderElement = false): boolean {
+    if (spans.length <= 1) return true
+
+    // For header elements, be more permissive about merging
+    // Headers should be semantically consistent even if some spans lack certain styles
+    if (isHeaderElement) {
+      // Check if all spans have the same basic formatting (font-size, font-family)
+      // Allow merging even if color is missing from some spans
+      const firstSpan = spans[0]
+      const baseSize = firstSpan.styles['font-size']
+      const baseFamily = firstSpan.styles['font-family']
+      
+      return spans.every(span => {
+        const spanSize = span.styles['font-size']
+        const spanFamily = span.styles['font-family']
+        
+        // Same size and family are required for headers
+        return spanSize === baseSize && spanFamily === baseFamily
+      })
+    }
+
+    // For non-header elements, use the original strict compatibility logic
+    // Get the base styles from the span that has the most complete styling
+    const mostCompleteSpan = spans.reduce((prev, current) => {
+      return Object.keys(current.styles).length > Object.keys(prev.styles).length ? current : prev
+    })
+
+    // Check if all spans are compatible with the most complete styling
+    return spans.every(span => {
+      // A span is compatible if:
+      // 1. It has the same values for properties that exist in both
+      // 2. It doesn't contradict any properties in the most complete span
+      return Object.entries(span.styles).every(([prop, value]) => {
+        const baseValue = mostCompleteSpan.styles[prop]
+        return !baseValue || baseValue === value
+      })
+    })
+  }
+
+  /**
+   * Merge styles from multiple spans, prioritizing the most complete styling
+   */
+  private static getMergedStyles(spans: { styles: Record<string, string> }[], isHeaderElement = false): Record<string, string> {
+    const merged: Record<string, string> = {}
+
+    if (isHeaderElement) {
+      // For headers, prioritize the span with color information for semantic consistency
+      const spanWithColor = spans.find(span => span.styles.color)
+      const mostCompleteSpan = spanWithColor || spans.reduce((prev, current) => {
+        return Object.keys(current.styles).length > Object.keys(prev.styles).length ? current : prev
+      })
+
+      // Start with the prioritized span's styles
+      Object.assign(merged, mostCompleteSpan.styles)
+
+      // Add any additional properties from other spans that don't conflict
+      spans.forEach(span => {
+        Object.entries(span.styles).forEach(([prop, value]) => {
+          if (!merged[prop]) {
+            merged[prop] = value
+          }
+        })
+      })
+    } else {
+      // For non-header elements, use original logic
+      // Start with the most complete span's styles
+      const mostCompleteSpan = spans.reduce((prev, current) => {
+        return Object.keys(current.styles).length > Object.keys(prev.styles).length ? current : prev
+      })
+
+      Object.assign(merged, mostCompleteSpan.styles)
+
+      // Add any additional properties from other spans that don't conflict
+      spans.forEach(span => {
+        Object.entries(span.styles).forEach(([prop, value]) => {
+          if (!merged[prop]) {
+            merged[prop] = value
+          }
+        })
+      })
+    }
+
+    return merged
   }
 
   /**

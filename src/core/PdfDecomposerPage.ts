@@ -339,8 +339,14 @@ export class PdfDecomposerPage {
   private isBoldFont(fontName: string): boolean {
     if (!fontName) return false
     const lowerName = fontName.toLowerCase()
+    
+    // Handle "Black" fonts specially - they are font families, not bold variants
+    // e.g., "Arial Black", "Helvetica Black" are separate typefaces, not bold Arial/Helvetica
+    if (lowerName.includes('black')) {
+      return false // "Black" fonts are separate typefaces, not bold text
+    }
+    
     return lowerName.includes('bold') ||
-      lowerName.includes('black') ||
       lowerName.includes('heavy') ||
       lowerName.includes('extrabold')
   }
