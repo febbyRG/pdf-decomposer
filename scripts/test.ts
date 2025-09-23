@@ -50,7 +50,7 @@ class ComprehensiveTest {
   private results: TestResult[] = []
   private baseOutputDir: string
   private pdfPath: string
-  private pdfFile = 'demo.pdf'
+  private pdfFile = 'case.pdf'
   private decomposer!: PdfDecomposer
 
   constructor(customPdfPath?: string) {
@@ -145,7 +145,8 @@ class ComprehensiveTest {
         },
         minify: true,
         minifyOptions: {
-          format: 'html' // Use 'html' format for formattedData field
+          format: 'plain',
+          elementAttributes: true // Include element attributes in minified result
         },
       })
 

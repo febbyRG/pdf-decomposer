@@ -20,7 +20,7 @@ import { MemoryPackageDir } from '../utils/MemoryPackageDir.js'
 /**
  * Apply format options to control data field output
  */
-function applyFormatOptions(pages: PdfPageContent[], minifyOptions?: { format?: 'plain' | 'html' }): PdfPageContent[] {
+function applyFormatOptions(pages: PdfPageContent[], minifyOptions?: { format?: 'plain' | 'html', elementAttributes?: boolean }): PdfPageContent[] {
   if (!minifyOptions?.format || minifyOptions.format === 'plain') {
     return pages // No change needed for plain format (default)
   }
@@ -41,7 +41,7 @@ function applyFormatOptions(pages: PdfPageContent[], minifyOptions?: { format?: 
 /**
  * Minify pages data for smaller output (missing feature from original)
  */
-function minifyPagesData(pages: PdfPageContent[]): any[] {
+function minifyPagesData(pages: PdfPageContent[], includeElementAttributes = false): any[] {
   return pages.map(page => {
     const minifiedPage: any = {
       pageIndex: page.pageIndex,
@@ -71,6 +71,24 @@ function minifyPagesData(pages: PdfPageContent[]): any[] {
           // Map specific types like 'h1', 'h2', etc from attributes
           if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(element.attributes.type)) {
             minifiedElement.type = element.attributes.type
+          }
+        }
+
+        // Include element attributes if requested (slim version)
+        if (includeElementAttributes && element.attributes) {
+          const slimAttributes: any = {}
+          
+          // Only include fontFamily and textColor for minified output
+          if (element.attributes.fontFamily) {
+            slimAttributes.fontFamily = element.attributes.fontFamily
+          }
+          if (element.attributes.textColor) {
+            slimAttributes.textColor = element.attributes.textColor
+          }
+          
+          // Only add attributes object if we have any attributes
+          if (Object.keys(slimAttributes).length > 0) {
+            minifiedElement.attributes = slimAttributes
           }
         }
 
@@ -313,7 +331,7 @@ export async function pdfDecompose(
     
     // Apply minify option if requested (missing feature)
     if (options.minify) {
-      pkg.pages = minifyPagesData(pkg.pages)
+      pkg.pages = minifyPagesData(pkg.pages, options.minifyOptions?.elementAttributes || false)
     }
 
     updateProgress(100, 'Completed')

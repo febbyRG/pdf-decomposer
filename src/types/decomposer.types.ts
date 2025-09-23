@@ -83,6 +83,7 @@ export interface PdfDecomposerOptions {
   cleanComposerOptions?: PdfCleanComposerOptions // Options for content cleaning
   minifyOptions?: {
     format?: 'plain' | 'html' // Controls data field output format: plain (default) = data field, html = formattedData field
+    elementAttributes?: boolean // When true, include slim element attributes (fontFamily, textColor) in minified result
   }
 }
 

@@ -5,6 +5,46 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.3] - 2025-09-23
+
+### ✨ Added
+- **ElementAttributes in MinifyOptions** - New option for element styling information
+  - Added `elementAttributes: boolean` option to `minifyOptions`
+  - When enabled, includes slim element attributes in minified output
+  - Returns essential styling information: `fontFamily` and `textColor`
+  - Optimized for smaller JSON output while maintaining styling data
+  - Perfect for applications that need basic styling information
+
+#### Example Usage
+```typescript
+const result = await decomposer.decompose({
+  minify: true,
+  minifyOptions: {
+    format: 'html',
+    elementAttributes: true // Include slim attributes
+  }
+})
+```
+
+#### Output Format
+```json
+{
+  "type": "h1",
+  "data": "<span>Title Text</span>",
+  "boundingBox": [40, 138, 319, 79],
+  "attributes": {
+    "fontFamily": "Arial",
+    "textColor": "#f15a29"
+  }
+}
+```
+
+### 🛠️ Technical Details
+- Updated `minifyPagesData()` function to conditionally include attributes
+- Added smart filtering to only include attributes when values exist
+- Maintains backward compatibility - feature is opt-in via `elementAttributes` flag
+- Reduced JSON output size by excluding verbose attributes like `fontSize`, `type`, `composed`
+
 ## [1.0.2] - 2025-09-22
 
 ### 🚀 Major HTML Output Improvements & New Features

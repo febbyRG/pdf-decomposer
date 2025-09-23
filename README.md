@@ -47,11 +47,12 @@ A powerful TypeScript library for comprehensive PDF processing and content extra
 
 ### 🎯 **Advanced Content Processing**
 
-> **🆕 NEW in v1.0.2**: Revolutionary Header Element Optimization & MinifyOptions
-> - **Header HTML Optimization**: 4 separate spans → 1 clean span with unified semantic tags
-> - **Font Detection Fix**: Arial Black no longer incorrectly marked as bold
-> - **MinifyOptions**: New `format: 'html'` option outputs HTML in `data` field instead of plain text
-> - **20-30% cleaner HTML** output with better AI/ML processing compatibility
+> **🆕 NEW in v1.0.3**: Element Attributes in MinifyOptions + Enhanced Features
+> - **Element Attributes**: New `elementAttributes: true` option includes styling data (fontFamily, textColor)
+> - **Slim Output**: Optimized attributes reduce JSON size while maintaining essential styling information
+> - **Header HTML Optimization**: 4 separate spans → 1 clean span with unified semantic tags  
+> - **MinifyOptions**: Enhanced format control with `format: 'html'` for HTML output in data field
+> - **Perfect for UI/Styling**: Get font and color information for better content rendering
 
 #### **Element Composer**
 - Groups scattered text elements into coherent paragraphs
@@ -116,7 +117,22 @@ const pages = await pdf.decompose({
   extractImages: true       // Extract embedded images
 })
 
-// 🆕 NEW: Use HTML format in data field (v1.0.2+)
+// 🆕 NEW: Enhanced MinifyOptions with Element Attributes (v1.0.3+)
+const styledPages = await pdf.decompose({
+  elementComposer: true,
+  minify: true,
+  minifyOptions: {
+    format: 'html',         // data field contains formatted HTML
+    elementAttributes: true // Include styling information
+  }
+})
+// Result: {
+//   type: "h1", 
+//   data: "<span style='...'><h2>Header Text</h2></span>",
+//   attributes: { fontFamily: "Arial", textColor: "#f15a29" }
+// }
+
+// 🔄 Previous: HTML format only (v1.0.2+)
 const htmlPages = await pdf.decompose({
   elementComposer: true,
   minifyOptions: {
@@ -340,6 +356,7 @@ interface PdfDecomposerOptions {
   cleanComposerOptions?: PdfCleanComposerOptions
   minifyOptions?: {
     format?: 'plain' | 'html'      // Data field format: 'plain' (default) or 'html'
+    elementAttributes?: boolean    // Include slim element attributes (fontFamily, textColor)
   }
 }
 ```

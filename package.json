@@ -1,6 +1,6 @@
 {
   "name": "@febbyrg/pdf-decomposer",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "A powerful PDF text and image extraction library with universal browser and Node.js support (Dual Licensed: Free for non-commercial, Paid for commercial use)",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
