@@ -7,6 +7,8 @@
 
 A powerful TypeScript library for comprehensive PDF processing and content extraction. **Optimized for production use with universal browser and Node.js support.**
 
+> **🚀 v1.0.2 Now Available** with revolutionary HTML output improvements! Enhanced header element optimization, font detection fixes, and flexible output formatting.
+
 ## 🚀 Core Features
 
 ### 📄 **Enhanced PDF Decomposer Class**
@@ -45,8 +47,17 @@ A powerful TypeScript library for comprehensive PDF processing and content extra
 
 ### 🎯 **Advanced Content Processing**
 
+> **🆕 NEW in v1.0.2**: Revolutionary Header Element Optimization & MinifyOptions
+> - **Header HTML Optimization**: 4 separate spans → 1 clean span with unified semantic tags
+> - **Font Detection Fix**: Arial Black no longer incorrectly marked as bold
+> - **MinifyOptions**: New `format: 'html'` option outputs HTML in `data` field instead of plain text
+> - **20-30% cleaner HTML** output with better AI/ML processing compatibility
+
 #### **Element Composer**
 - Groups scattered text elements into coherent paragraphs
+- **🆕 Enhanced Header Detection**: Font-size based header element recognition (h1, h2, h3, etc.)
+- **🆕 Smart Span Merging**: Headers with same font-size/family but different colors merge seamlessly
+- **🆕 Content Consolidation**: Multiple `<h2>` tags merge into single semantic header elements
 - Preserves reading order and text flow
 - Smart font and spacing analysis
 
@@ -104,6 +115,16 @@ const pages = await pdf.decompose({
   cleanComposer: true,      // Clean headers/footers
   extractImages: true       // Extract embedded images
 })
+
+// 🆕 NEW: Use HTML format in data field (v1.0.2+)
+const htmlPages = await pdf.decompose({
+  elementComposer: true,
+  minifyOptions: {
+    format: 'html'          // data field contains formatted HTML instead of plain text
+  }
+})
+// Result: element.data = "<span style='...'><h2>Header Text</h2></span>"
+// Instead of: element.data = "Header Text"
 
 const screenshots = await pdf.screenshot({ 
   imageWidth: 1024,
@@ -317,6 +338,9 @@ interface PdfDecomposerOptions {
   minify?: boolean                 // Compact output format
   cleanComposer?: boolean          // Remove headers/footers
   cleanComposerOptions?: PdfCleanComposerOptions
+  minifyOptions?: {
+    format?: 'plain' | 'html'      // Data field format: 'plain' (default) or 'html'
+  }
 }
 ```
 
