@@ -4,7 +4,11 @@ dist/
 *.log
 *.tsbuildinfo
 .env
+
+# NPM configs - ignore active .npmrc but keep templates
 .npmrc
+.npmrc.npmjs
+.npmrc.github
 
 # Test
 coverage/

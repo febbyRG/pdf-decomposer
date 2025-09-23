@@ -40,8 +40,8 @@
     "release:major": "npm version major && npm publish",
     "setup:publishing": "./scripts/setup-publishing.sh",
     "setup:verify": "./scripts/setup-publishing.sh",
-    "publish:npm": "npm config set @febbyrg:registry https://registry.npmjs.org/ && npm publish --access=public",
-    "publish:github": "npm config set @febbyrg:registry https://npm.pkg.github.com/ && npm publish --access=public",
+    "publish:npm": "cp .npmrc.npmjs .npmrc && npm publish --access=public && git checkout .npmrc",
+    "publish:github": "cp .npmrc.github .npmrc && npm publish --access=public && git checkout .npmrc",
     "publish:both": "npm run publish:npm && npm run publish:github"
   },
   "repository": {
