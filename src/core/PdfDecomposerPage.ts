@@ -10,7 +10,8 @@ export class PdfDecomposerPage {
     private pageIndex: number,
     private skipParser: boolean = false,
     private extractImages: boolean = false,
-    private outputDir?: string  // Add outputDir parameter
+    private outputDir?: string,  // Add outputDir parameter
+    private extractLinks: boolean = false  // Add extractLinks parameter
   ) { }
 
   async decompose(): Promise<any> {
@@ -25,11 +26,13 @@ export class PdfDecomposerPage {
     // Use provided outputDir, fallback to pkg dir, or undefined for base64 mode
     const outputDir = this.outputDir
 
-    // Extract text and embedded images
+    // Extract text, embedded images, and links
     const elements: any[] = [
       ...await this.extractTextElements(pdfPage, pageIndex),
       // Extract embedded images if enabled
-      ...(this.extractImages ? await this.extractImageElements(pdfPage, pageIndex, outputDir) : [])
+      ...(this.extractImages ? await this.extractImageElements(pdfPage, pageIndex, outputDir) : []),
+      // Extract links if enabled
+      ...(this.extractLinks ? await this.extractLinkElements(pdfPage, pageIndex) : [])
     ]
 
     // Return page data
@@ -186,6 +189,115 @@ export class PdfDecomposerPage {
     }
   }
 
+  // Extract links and annotations from PDF content
+  private async extractLinkElements(pdfPage: any, pageIndex: number): Promise<any[]> {
+    if (this.skipParser) { return [] }
+
+    const linkElements: any[] = []
+    const pageHeight = pdfPage.getViewport({ scale: 1 }).height
+
+    try {
+      // 1. Extract PDF annotations (interactive links)
+      const annotations = await pdfPage.getAnnotations()
+      
+      for (const annotation of annotations) {
+        if (annotation.subtype === 'Link' && (annotation.url || annotation.dest)) {
+          const boundingBox = this.convertRectToBoundingBox(annotation.rect, pageHeight)
+          
+          linkElements.push({
+            id: uuidv4(),
+            pageIndex,
+            type: 'link',
+            boundingBox,
+            data: annotation.url || JSON.stringify(annotation.dest),
+            attributes: {
+              linkType: annotation.url ? 'url' : 'internal',
+              annotationId: annotation.id,
+              dest: annotation.dest,
+              text: annotation.contents || undefined
+            }
+          })
+        }
+      }
+
+      // 2. Extract URL patterns from text content
+      const textContent = await pdfPage.getTextContent()
+      
+      // URL regex patterns to detect various types of URLs
+      const urlPattern = /(?:https?:\/\/[^\s<>"'()[\]{}]+|[a-zA-Z0-9.-]+\.(?:com|org|edu|net|gov|co|io|ly)(?:\/[^\s<>"'()[\]{}]*)?)/gi
+      const emailPattern = /[\w._%+-]+@[\w.-]+\.[A-Z]{2,}/gi
+      
+      for (const item of textContent.items) {
+        const text = item.str || ''
+        
+        // Check for URLs
+        const urlMatches = text.match(urlPattern)
+        if (urlMatches) {
+          const boundingBox = this.getTextBoundingBox(item, pageHeight)
+          
+          for (const url of urlMatches) {
+            linkElements.push({
+              id: uuidv4(),
+              pageIndex,
+              type: 'link',
+              boundingBox,
+              data: url.startsWith('http') ? url : `http://${url}`,
+              attributes: {
+                linkType: 'url',
+                text: text,
+                extraction: 'text-pattern'
+              }
+            })
+          }
+        }
+        
+        // Check for email addresses
+        const emailMatches = text.match(emailPattern)
+        if (emailMatches) {
+          const boundingBox = this.getTextBoundingBox(item, pageHeight)
+          
+          for (const email of emailMatches) {
+            linkElements.push({
+              id: uuidv4(),
+              pageIndex,
+              type: 'link',
+              boundingBox,
+              data: `mailto:${email}`,
+              attributes: {
+                linkType: 'email',
+                text: text,
+                extraction: 'text-pattern'
+              }
+            })
+          }
+        }
+      }
+
+    } catch (error) {
+      console.warn(`Failed to extract links from page ${pageIndex + 1}:`, error)
+    }
+
+    return linkElements
+  }
+
+  // Convert PDF rect to bounding box
+  private convertRectToBoundingBox(rect: number[], pageHeight: number): PdfDecomposerBoundingBox {
+    const [x1, y1, x2, y2] = rect
+    const left = Math.min(x1, x2)
+    const right = Math.max(x1, x2)
+    const bottom = pageHeight - Math.max(y1, y2) // Convert PDF coordinates to screen coordinates
+    const top = pageHeight - Math.min(y1, y2)
+    
+    return {
+      top,
+      left,
+      bottom,
+      right,
+      width: right - left,
+      height: bottom - top
+    }
+  }
+
   // Real text extraction using PDF.js getTextContent with color-aware enhancement
   private async extractTextElements(pdfPage: any, pageIndex: number): Promise<any[]> {
     const textContent = await pdfPage.getTextContent()
@@ -195,7 +307,17 @@ export class PdfDecomposerPage {
     // Extract color-aware text elements using PdfTextEvaluator
     const colorAwareElements = await pdfPage.extractText()
 
+    // URL and email patterns to identify text that should be treated as links
+    const urlPattern = /(?:https?:\/\/[^\s<>"'()[\]{}]+|[a-zA-Z0-9.-]+\.(?:com|org|edu|net|gov|co|io|ly)(?:\/[^\s<>"'()[\]{}]*)?)/gi
+    const emailPattern = /[\w._%+-]+@[\w.-]+\.[A-Z]{2,}/gi
+
     return textContent.items.map((item: any, _: number) => {
+      const text = item.str || ''
+      
+      // Skip text elements that contain URLs or emails - they'll be handled as link elements
+      if (text.match(urlPattern) || text.match(emailPattern)) {
+        return null
+      }
       const bbox = this.getTextBoundingBox(item, pageHeight)
 
       // Resolve readable font name from PDF internal ID
@@ -226,7 +348,7 @@ export class PdfDecomposerPage {
         formattedData: formattedData, // HTML formatted text
         attributes
       }
-    }) // No filter for debugging
+    }).filter((item: any) => item !== null) // Filter out null items (URLs/emails handled as links)
   }
 
   // Helper method to find matching color-aware element for a text item

@@ -78,12 +78,27 @@ function minifyPagesData(pages: PdfPageContent[], includeElementAttributes = fal
         if (includeElementAttributes && element.attributes) {
           const slimAttributes: any = {}
           
-          // Only include fontFamily and textColor for minified output
-          if (element.attributes.fontFamily) {
-            slimAttributes.fontFamily = element.attributes.fontFamily
+          // For text elements: include fontFamily and textColor
+          if (element.type === 'text') {
+            if (element.attributes.fontFamily) {
+              slimAttributes.fontFamily = element.attributes.fontFamily
+            }
+            if (element.attributes.textColor) {
+              slimAttributes.textColor = element.attributes.textColor
+            }
           }
-          if (element.attributes.textColor) {
-            slimAttributes.textColor = element.attributes.textColor
+          
+          // For link elements: include link-specific attributes
+          if (element.type === 'link') {
+            if (element.attributes.linkType) {
+              slimAttributes.linkType = element.attributes.linkType
+            }
+            if (element.attributes.text) {
+              slimAttributes.text = element.attributes.text
+            }
+            if (element.attributes.extraction) {
+              slimAttributes.extraction = element.attributes.extraction
+            }
           }
           
           // Only add attributes object if we have any attributes
@@ -241,7 +256,8 @@ export async function pdfDecompose(
             actualPageNumber, 
             false, // skipDecompose
             finalOptions.extractImages ?? false,
-            finalOptions.outputDir  // Pass outputDir to page
+            finalOptions.outputDir,  // Pass outputDir to page
+            finalOptions.extractLinks ?? false  // Pass extractLinks to page
           )
           pkg.pages[pageIndex] = await page.decompose()
 

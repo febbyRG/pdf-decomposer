@@ -78,6 +78,7 @@ export interface PdfDecomposerOptions {
   elementComposer?: boolean
   pageComposer?: boolean
   extractImages?: boolean
+  extractLinks?: boolean // When true, extract links and annotations from PDF content
   minify?: boolean // When true, use compact bounding box format [x, y, width, height]
   cleanComposer?: boolean // When true, clean content to include only main content area
   cleanComposerOptions?: PdfCleanComposerOptions // Options for content cleaning
@@ -242,7 +243,7 @@ export interface PdfDecomposerScreenshot {
 export interface PdfDecomposerElement {
   id: string
   pageIndex: number
-  type: 'text' | 'image' | 'annotation'
+  type: 'text' | 'image' | 'link' | 'annotation'
   boundingBox: PdfDecomposerBoundingBox
   data: any
   attributes?: Record<string, any>
@@ -268,6 +269,15 @@ export interface PdfDecomposerImageElement extends PdfDecomposerElement {
 }
 
 /**
+ * Link element interface
+ */
+export interface PdfDecomposerLinkElement extends PdfDecomposerElement {
+  type: 'link'
+  data: string // URL or destination
+  attributes: PdfDecomposerLinkAttributes
+}
+
+/**
  * Text attributes interface
  */
 export interface PdfDecomposerTextAttributes {
@@ -290,6 +300,16 @@ export interface PdfDecomposerImageAttributes {
   scaled?: boolean
   scaleFactor?: number
   extraction?: string
+}
+
+/**
+ * Link attributes interface
+ */
+export interface PdfDecomposerLinkAttributes {
+  linkType: 'url' | 'internal' | 'email' | 'annotation' // Type of link detected
+  text?: string // Associated text content (for text-based links)
+  annotationId?: string // PDF annotation ID (for annotation-based links)
+  dest?: any // Internal destination data (for internal PDF links)
 }
 
 /**

@@ -7,7 +7,7 @@
 
 A powerful TypeScript library for comprehensive PDF processing and content extraction. **Optimized for production use with universal browser and Node.js support.**
 
-> **🚀 v1.0.2 Now Available** with revolutionary HTML output improvements! Enhanced header element optimization, font detection fixes, and flexible output formatting.
+> **🚀 v1.0.4 Now Available** with powerful Link Extraction capabilities! Extract interactive PDF annotations, detect URL patterns in text content, and get rich link metadata with accurate positioning.
 
 ## 🚀 Core Features
 
@@ -26,6 +26,8 @@ A powerful TypeScript library for comprehensive PDF processing and content extra
 - Content area cleaning with `cleanComposer`
 - Page-level composition with `pageComposer` 
 - Image extraction from embedded PDF objects
+- **🆕 Link extraction** from PDF annotations and text patterns
+- **Smart URL detection** with comprehensive email and domain pattern matching
 
 #### 2. **Screenshot Generation** (`screenshot()`)
 - High-quality page rendering to PNG/JPEG
@@ -80,6 +82,16 @@ A powerful TypeScript library for comprehensive PDF processing and content extra
 - Auto-scaling for memory safety
 - Duplicate detection and removal
 
+#### **🆕 Link Extraction** (`extractLinks: true`) - NEW in v1.0.4
+- **PDF Annotations**: Extract interactive link annotations with URLs and destinations
+- **Text Pattern Matching**: Detect URLs in text content (e.g., "GIA.edu/jewelryservices")
+- **Email Detection**: Find email addresses in document text with automatic mailto: prefix
+- **Smart URL Recognition**: Enhanced regex patterns for domain+path detection
+- **Link Types**: Support for external URLs, internal PDF destinations, and email links
+- **No Duplicates**: Intelligent handling prevents text/link element duplication
+- **Position Data**: Accurate bounding box coordinates for each link
+- **Link Attributes**: Rich metadata including link type, context text, and extraction method
+
 ### ⚡ **Performance & Memory**
 - **Memory Manager** - Adaptive cleanup and monitoring
 - **Progress Callbacks** - Real-time operation tracking  
@@ -114,7 +126,8 @@ const pages = await pdf.decompose({
   elementComposer: true,    // Group text into paragraphs
   pageComposer: true,       // Merge continuous content across pages
   cleanComposer: true,      // Clean headers/footers
-  extractImages: true       // Extract embedded images
+  extractImages: true,      // Extract embedded images
+  extractLinks: true        // Extract links and annotations from PDF
 })
 
 // 🆕 NEW: Enhanced MinifyOptions with Element Attributes (v1.0.3+)
@@ -154,6 +167,12 @@ const pdfData = await pdf.data({      // pwa-admin compatible format
 
 const sliced = await pdf.slice({      // Extract first 5 pages
   numberPages: 5
+})
+
+// 🆕 NEW: Link extraction
+const pagesWithLinks = await pdf.decompose({
+  elementComposer: true,
+  extractLinks: true      // Extract links from PDF content
 })
 
 // Access PDF properties
@@ -273,6 +292,49 @@ const pages = await pdf.decompose({
 })
 ```
 
+#### **🆕 Link Extraction**
+```typescript
+const pdf = new PdfDecomposer(buffer)
+await pdf.initialize()
+
+// Extract links from PDF content
+const pagesWithLinks = await pdf.decompose({
+  extractLinks: true,    // Enable link extraction
+  elementComposer: true
+})
+
+// Process found links
+pagesWithLinks.pages.forEach((page, pageIndex) => {
+  const linkElements = page.elements.filter(el => el.type === 'link')
+  
+  linkElements.forEach(link => {
+    console.log(`Page ${pageIndex + 1}: Found ${link.attributes.linkType}`)
+    console.log(`  URL: ${link.data}`)
+    console.log(`  Position: [${link.boundingBox.left}, ${link.boundingBox.top}]`)
+    
+    if (link.attributes.text) {
+      console.log(`  Context: "${link.attributes.text}"`)
+    }
+  })
+})
+
+// Link element structure:
+// {
+//   id: "uuid-string",
+//   pageIndex: 0,
+//   type: "link",
+//   boundingBox: { top, left, bottom, right, width, height },
+//   data: "http://example.com/path",
+//   attributes: {
+//     linkType: "url" | "email" | "internal" | "annotation",
+//     text: "context text",
+//     extraction: "text-pattern" | "annotation",
+//     annotationId?: "pdf-annotation-id",
+//     dest?: "internal-destination-data"
+//   }
+// }
+```
+
 #### **Page Range Processing**
 ```typescript
 const pdf = new PdfDecomposer(buffer)
@@ -351,6 +413,7 @@ interface PdfDecomposerOptions {
   elementComposer?: boolean         // Group text into paragraphs
   pageComposer?: boolean           // Merge continuous content across pages
   extractImages?: boolean          // Extract embedded images
+  extractLinks?: boolean           // Extract links and annotations from PDF
   minify?: boolean                 // Compact output format
   cleanComposer?: boolean          // Remove headers/footers
   cleanComposerOptions?: PdfCleanComposerOptions
@@ -379,6 +442,7 @@ interface DataOptions {
   endPage?: number                 // Last page (1-indexed)
   outputDir?: string               // Output directory
   extractImages?: boolean          // Extract embedded images
+  extractLinks?: boolean           // Extract links and annotations
   elementComposer?: boolean        // Group elements into paragraphs
   cleanComposer?: boolean          // Clean content area
   imageWidth?: number              // Screenshot width (default: 1024)

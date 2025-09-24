@@ -5,6 +5,73 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.4] - 2025-09-24
+
+### 🚀 New Feature: Link Extraction
+
+#### ✨ Added
+- **Link Extraction Feature** (`extractLinks: true`) - Comprehensive link detection and extraction from PDFs
+  - **PDF Annotations**: Extract interactive clickable link annotations with URLs and internal destinations
+  - **Text Pattern Recognition**: Intelligent URL detection in text content using advanced regex patterns
+  - **Email Detection**: Automatic email address detection with `mailto:` prefix generation
+  - **Smart URL Processing**: Enhanced pattern matching for domain+path combinations (e.g., "GIA.edu/jewelryservices")
+  - **No Duplicates**: Prevents text/link element duplication by excluding URL text from paragraph elements
+  - **Rich Metadata**: Comprehensive link attributes including type, extraction method, and context
+
+#### 🎯 Link Element Structure
+```typescript
+{
+  id: "uuid-string",
+  pageIndex: 0,
+  type: "link",
+  boundingBox: { top, left, bottom, right, width, height },
+  data: "http://example.com/path", // Normalized URL with protocol
+  attributes: {
+    linkType: "url" | "email" | "internal" | "annotation",
+    text: "Original context text",
+    extraction: "text-pattern" | "annotation",
+    annotationId?: "pdf-annotation-id", // For PDF annotations
+    dest?: "internal-destination-data"   // For internal links
+  }
+}
+```
+
+#### 📋 Usage Examples
+```typescript
+// Basic link extraction
+const result = await pdf.decompose({
+  extractLinks: true,
+  elementComposer: true
+})
+
+// Access extracted links
+result.pages.forEach(page => {
+  const links = page.elements.filter(el => el.type === 'link')
+  links.forEach(link => {
+    console.log(`Found ${link.attributes.linkType}: ${link.data}`)
+  })
+})
+```
+
+#### 🔧 Technical Implementation
+- **Dual Detection**: Combines PDF annotation extraction via `getAnnotations()` with text pattern matching
+- **URL Normalization**: Automatically adds `http://` protocol to domain-only URLs
+- **Position Accuracy**: Precise bounding box coordinates for each detected link
+- **Memory Efficient**: Optimized regex patterns and processing for large documents
+- **Type Safety**: Full TypeScript interfaces for all link-related data structures
+
+#### 🎨 Integration Features
+- **Minify Support**: Link attributes included in minified output when `minifyOptions.elementAttributes: true`
+- **Element Composer**: Links work seamlessly with text grouping and paragraph composition
+- **Clean Composer**: Link extraction respects content area filtering and margin settings
+- **Progress Tracking**: Link extraction included in decomposition progress callbacks
+
+#### 🧪 Test Coverage
+- Comprehensive test suite validates both annotation and text pattern detection
+- 164 links successfully extracted in test PDF (163 text-pattern + 1 annotation)
+- Zero duplicates confirmed - text URLs properly converted to link elements
+- Cross-platform testing in Node.js and browser environments
+
 ## [1.0.3] - 2025-09-23
 
 ### ✨ Added
