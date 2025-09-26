@@ -205,26 +205,64 @@ export class PdfCleanComposer {
         pages[0] = coverPageResult
         // Skip normal processing for cover page, but continue with rest
         const restPages = pages.slice(1)
-        return [coverPageResult, ...restPages.map((page, _index) => this.cleanPage(page, finalOptions))]
+        const processedRestPages = await Promise.all(
+          restPages.map((page, _index) => this.cleanPage(page, finalOptions, pdfDocument))
+        )
+        return [coverPageResult, ...processedRestPages]
       }
     }
 
-    return pages.map((page, _) => {
-      return this.cleanPage(page, finalOptions)
-    })
+    // Process all pages with async cleanPage method
+    const processedPages = await Promise.all(
+      pages.map((page, _) => this.cleanPage(page, finalOptions, pdfDocument))
+    )
+    return processedPages
   }
 
   /**
    * Clean a single PDF page
    */
-  private static cleanPage(page: PdfPageContent, options: PdfCleanComposerOptions): PdfPageContent {
+  private static async cleanPage(
+    page: PdfPageContent, 
+    options: PdfCleanComposerOptions,
+    pdfDocument?: PdfDocument
+  ): Promise<PdfPageContent> {
     // Calculate content area for this page
     const contentArea = this.calculateContentArea(page, options)
 
     // Filter and clean elements
     const cleaningResult = this.cleanElements(page.elements || [], contentArea, options)
 
-    // Return cleaned page
+    // Check if page should be converted to screenshot (large image detection for any page)
+    if (pdfDocument && cleaningResult.kept.length > 0) {
+      const shouldScreenshot = await this.shouldConvertToScreenshot(page, cleaningResult.kept, options)
+      
+      if (shouldScreenshot.convert) {
+        const screenshot = await this.generatePageScreenshot(page, pdfDocument, options)
+        if (screenshot) {
+          return {
+            ...page,
+            elements: [screenshot],
+            metadata: {
+              ...page.metadata,
+              convertedToScreenshot: true,
+              conversionReason: shouldScreenshot.reason,
+              originalElementCount: page.elements?.length || 0,
+              processedAsScreenshot: true,
+              cleaning: {
+                contentArea,
+                originalElementCount: page.elements?.length || 0,
+                cleanedElementCount: 1, // Screenshot counts as 1 element
+                removedElementCount: (page.elements?.length || 0) - 1,
+                cleanedTextCount: cleaningResult.cleaned.length
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Return normally cleaned page
     return {
       ...page,
       elements: cleaningResult.kept,
@@ -329,7 +367,20 @@ export class PdfCleanComposer {
 
     const bbox = this.normalizeBoundingBox(element.boundingBox)
     
-    // Element center point
+    // For large elements (images that might be full-page or covers), be more lenient
+    const elementArea = bbox.width * bbox.height
+    const contentAreaSize = contentArea.width * contentArea.height
+    const largeElementThreshold = 0.3 // 30% of content area
+    const isLargeElement = elementArea > (contentAreaSize * largeElementThreshold)
+    
+    if (isLargeElement) {
+      // For large elements, check if ANY part overlaps with content area (not just center)
+      const overlapHorizontal = bbox.left < contentArea.right && (bbox.left + bbox.width) > contentArea.left
+      const overlapVertical = bbox.top < contentArea.bottom && (bbox.top + bbox.height) > contentArea.top
+      return overlapHorizontal && overlapVertical
+    }
+    
+    // For smaller elements, use center point detection (original logic)
     const centerX = bbox.left + (bbox.width / 2)
     const centerY = bbox.top + (bbox.height / 2)
 
@@ -597,6 +648,7 @@ export class PdfCleanComposer {
   /**
    * Detect if the page is a cover page and process it as screenshot
    * Cover page is detected by having a large image that covers most of the page area
+   * OR multiple images that collectively cover most of the page (for tiled cover pages)
    */
   private static async detectAndProcessCoverPage(
     page: PdfPageContent, 
@@ -610,6 +662,11 @@ export class PdfCleanComposer {
       // Check if page has large images that might indicate a cover
       const imageElements = (page.elements || []).filter(element => this.isImageElement(element))
       
+      if (imageElements.length === 0) {
+        return null
+      }
+      
+      // Method 1: Check individual large images (original logic)
       for (const imageElement of imageElements) {
         const bbox = this.normalizeBoundingBox(imageElement.boundingBox)
         const imageArea = bbox.width * bbox.height
@@ -627,8 +684,51 @@ export class PdfCleanComposer {
                 coverPage: true,
                 coverageRatio,
                 originalElementCount: page.elements?.length || 0,
-                processedAsScreenshot: true
+                processedAsScreenshot: true,
+                detectionMethod: 'single-large-image'
               }
+            }
+          }
+        }
+      }
+      
+      // Method 2: Check aggregate coverage for tiled images (NEW LOGIC)
+      const totalImageArea = imageElements.reduce((total, element) => {
+        const bbox = this.normalizeBoundingBox(element.boundingBox)
+        return total + (bbox.width * bbox.height)
+      }, 0)
+      
+      const aggregateCoverageRatio = totalImageArea / pageArea
+      
+      // Also check if images are distributed across the page (not just clustered in one corner)
+      const imageDistribution = this.calculateImageDistribution(imageElements, page.width, page.height)
+      
+      // Cover page criteria for tiled images:
+      // 1. Total image coverage >= threshold
+      // 2. Images are well distributed (not clustered in small area)
+      // 3. Minimum number of images (to avoid false positives)
+      const minImageCount = 3
+      const minDistributionScore = 0.4 // Images should cover at least 40% of page width/height ranges
+      
+      if (aggregateCoverageRatio >= threshold && 
+          imageElements.length >= minImageCount && 
+          imageDistribution.distributionScore >= minDistributionScore) {
+        
+        // Generate screenshot for tiled cover page
+        const screenshot = await this.generatePageScreenshot(page, pdfDocument, options)
+        if (screenshot) {
+          return {
+            ...page,
+            elements: [screenshot],
+            metadata: {
+              ...page.metadata,
+              coverPage: true,
+              coverageRatio: aggregateCoverageRatio,
+              imageCount: imageElements.length,
+              distributionScore: imageDistribution.distributionScore,
+              originalElementCount: page.elements?.length || 0,
+              processedAsScreenshot: true,
+              detectionMethod: 'tiled-images'
             }
           }
         }
@@ -638,6 +738,134 @@ export class PdfCleanComposer {
     } catch (error) {
       console.warn(`⚠️  Cover page detection failed for page ${page.pageIndex + 1}:`, error)
       return null
+    }
+  }
+
+  /**
+   * Determine if a page should be converted to screenshot based on its content
+   */
+  private static async shouldConvertToScreenshot(
+    page: PdfPageContent, 
+    cleanedElements: any[], 
+    options: PdfCleanComposerOptions
+  ): Promise<{ convert: boolean, reason: string }> {
+    if (cleanedElements.length === 0) {
+      return { convert: false, reason: 'no-elements' }
+    }
+    
+    const pageArea = page.width * page.height
+    const threshold = options.coverPageThreshold || 0.8
+    
+    // Check if page has image elements
+    const imageElements = cleanedElements.filter(element => this.isImageElement(element))
+    
+    if (imageElements.length === 0) {
+      return { convert: false, reason: 'no-images' }
+    }
+    
+    // Check for significant text content that should be preserved
+    const textElements = cleanedElements.filter(element => this.isTextElement(element))
+    const totalTextLength = textElements.reduce((total, element) => {
+      return total + (element.data?.length || 0)
+    }, 0)
+    
+    // Don't convert to screenshot if there's substantial text content
+    const significantTextThreshold = 200 // 200 characters minimum
+    if (totalTextLength >= significantTextThreshold) {
+      return { 
+        convert: false, 
+        reason: `significant-text-content (${totalTextLength} characters)` 
+      }
+    }
+    
+    // Method 1: Single large image covering most of the page
+    for (const imageElement of imageElements) {
+      const bbox = this.normalizeBoundingBox(imageElement.boundingBox)
+      const imageArea = bbox.width * bbox.height
+      const coverageRatio = imageArea / pageArea
+      
+      if (coverageRatio >= threshold) {
+        return { 
+          convert: true, 
+          reason: `single-large-image (${(coverageRatio * 100).toFixed(1)}% coverage)` 
+        }
+      }
+    }
+    
+    // Method 2: Multiple images with high aggregate coverage (for tiled pages)
+    // Early return if insufficient image count for tiled detection
+    const minImageCount = 3
+    if (imageElements.length < minImageCount) {
+      return { convert: false, reason: 'insufficient-image-count' }
+    }
+    
+    const totalImageArea = imageElements.reduce((total, element) => {
+      const bbox = this.normalizeBoundingBox(element.boundingBox)
+      return total + (bbox.width * bbox.height)
+    }, 0)
+    
+    const aggregateCoverageRatio = totalImageArea / pageArea
+    
+    // Early return if coverage is insufficient
+    if (aggregateCoverageRatio < threshold) {
+      return { convert: false, reason: 'insufficient-aggregate-coverage' }
+    }
+    
+    // Check distribution for tiled images
+    const imageDistribution = this.calculateImageDistribution(imageElements, page.width, page.height)
+    const minDistributionScore = 0.4
+    
+    if (imageDistribution.distributionScore >= minDistributionScore) {
+      
+      return { 
+        convert: true, 
+        reason: `tiled-images (${imageElements.length} images, ${(aggregateCoverageRatio * 100).toFixed(1)}% coverage)` 
+      }
+    }
+    
+    return { convert: false, reason: 'insufficient-coverage' }
+  }
+
+  /**
+   * Calculate how well images are distributed across the page
+   * Returns distribution score (0-1) indicating coverage of page dimensions
+   */
+  private static calculateImageDistribution(
+    imageElements: any[], 
+    pageWidth: number, 
+    pageHeight: number
+  ): { distributionScore: number, widthCoverage: number, heightCoverage: number } {
+    if (imageElements.length === 0) {
+      return { distributionScore: 0, widthCoverage: 0, heightCoverage: 0 }
+    }
+    
+    // Find the bounding box that encompasses all images
+    let minX = pageWidth
+    let maxX = 0
+    let minY = pageHeight  
+    let maxY = 0
+    
+    for (const element of imageElements) {
+      const bbox = this.normalizeBoundingBox(element.boundingBox)
+      
+      minX = Math.min(minX, bbox.left)
+      maxX = Math.max(maxX, bbox.left + bbox.width)
+      minY = Math.min(minY, bbox.top)
+      maxY = Math.max(maxY, bbox.top + bbox.height)
+    }
+    
+    // Calculate coverage of page dimensions
+    const widthCoverage = Math.max(0, (maxX - minX)) / pageWidth
+    const heightCoverage = Math.max(0, (maxY - minY)) / pageHeight
+    
+    // Distribution score is the minimum of width and height coverage
+    // This ensures images are distributed in BOTH dimensions
+    const distributionScore = Math.min(widthCoverage, heightCoverage)
+    
+    return {
+      distributionScore,
+      widthCoverage,
+      heightCoverage
     }
   }
 
@@ -662,8 +890,10 @@ export class PdfCleanComposer {
         scale: 2.0 // High quality screenshot with proper scaling
       })
       
-      // Generate consistent filename pattern like other images
-      const screenshotFilename = `cover_screenshot_p${page.pageIndex}_1.png`
+      // Generate filename pattern - use "cover" for page 0, "page" for others
+      const screenshotFilename = page.pageIndex === 0 
+        ? `cover_screenshot_p${page.pageIndex}_1.png`
+        : `page_screenshot_p${page.pageIndex}_1.png`
       
       // Handle output data like other image elements
       let screenshotData: string
@@ -699,19 +929,21 @@ export class PdfCleanComposer {
       // Create screenshot element with consistent structure
       const screenshotElement = {
         type: 'image',
-        id: `cover_screenshot_p${page.pageIndex}_1`,
+        id: page.pageIndex === 0 
+          ? `cover_screenshot_p${page.pageIndex}_1`
+          : `page_screenshot_p${page.pageIndex}_1`,
         data: screenshotData,
         boundingBox: [0, 0, page.width, page.height],
         width: screenshotResult.width,
         height: screenshotResult.height,
         attributes: {
-          type: 'cover-screenshot',
-          extraction: 'cover-page-detection',
+          type: page.pageIndex === 0 ? 'cover-screenshot' : 'page-screenshot',
+          extraction: page.pageIndex === 0 ? 'cover-page-detection' : 'large-image-detection',
           originalPageWidth: page.width,
           originalPageHeight: page.height,
           scale: 2.0,
           quality: options.coverPageScreenshotQuality || 95,
-          isCoverPage: true
+          isCoverPage: page.pageIndex === 0
         }
       }
       
