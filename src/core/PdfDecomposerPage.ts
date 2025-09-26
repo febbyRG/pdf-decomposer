@@ -321,16 +321,21 @@ export class PdfDecomposerPage {
       const bbox = this.getTextBoundingBox(item, pageHeight)
 
       // Resolve readable font name from PDF internal ID
-      const resolvedFontFamily = this.resolveFontFamily(item.fontName)
+      const resolvedFontInfo = this.resolveFontFamily(item.fontName)
 
       // Find matching color-aware element based on text content and position
       const matchingColorElement = this.findMatchingColorElement(item, bbox, colorAwareElements)
       const textColor = matchingColorElement?.textColor
 
-      const attributes = {
-        fontFamily: resolvedFontFamily, // Use resolved font name instead of internal ID
+      const attributes: any = {
+        fontFamily: resolvedFontInfo.fontFamily, // Use resolved font name
         fontSize: item.transform ? item.transform[0] : undefined,
         textColor: textColor // Now includes actual color information when available
+      }
+
+      // Only include originalFont if mapping failed (for custom remapping)
+      if (!resolvedFontInfo.isMapping) {
+        attributes.originalFont = item.fontName
       }
 
       // Generate formatted HTML version based on font attributes
@@ -417,15 +422,12 @@ export class PdfDecomposerPage {
     const fontSize = attributes.fontSize || 0
     const fontFamily = attributes.fontFamily || ''
 
-    // Resolve readable font name from PDF internal ID
-    const resolvedFontFamily = this.resolveFontFamily(fontFamily)
-
-    // Detect bold text based on font name patterns
+    // Detect bold text based on font name patterns (use original fontFamily for detection)
     if (this.isBoldFont(fontFamily)) {
       html = `<strong>${html}</strong>`
     }
 
-    // Detect italic text based on font name patterns
+    // Detect italic text based on font name patterns (use original fontFamily for detection)
     if (this.isItalicFont(fontFamily)) {
       html = `<em>${html}</em>`
     }
@@ -441,8 +443,8 @@ export class PdfDecomposerPage {
     if (fontSize && fontSize !== 12) {
       styles.push(`font-size: ${fontSize}px`)
     }
-    if (resolvedFontFamily && resolvedFontFamily !== 'inherit') {
-      styles.push(`font-family: ${resolvedFontFamily}`)
+    if (fontFamily && fontFamily !== 'inherit') {
+      styles.push(`font-family: ${fontFamily}`)
     }
     if (attributes.textColor) {
       styles.push(`color: ${attributes.textColor}`)
@@ -487,8 +489,8 @@ export class PdfDecomposerPage {
   /**
    * Resolve PDF internal font ID to readable font family name
    */
-  private resolveFontFamily(pdfFontId: string): string {
-    if (!pdfFontId) return 'inherit'
+  private resolveFontFamily(pdfFontId: string): { fontFamily: string; isMapping: boolean } {
+    if (!pdfFontId) return { fontFamily: 'inherit', isMapping: false }
 
     // Map common PDF internal font IDs to readable names
     const fontMapping: { [key: string]: string } = {
@@ -528,59 +530,150 @@ export class PdfDecomposerPage {
       'Courier-Bold': 'Courier New',
       'Courier-Oblique': 'Courier New',
       'Courier-BoldOblique': 'Courier New',
+
+      // System Public Fonts - MagLoft font library
+      'AbrilFatface': 'Abril Fatface',
+      'Abril-Fatface': 'Abril Fatface',
+      'ArchivoNarrow': 'Archivo Narrow',
+      'Archivo-Narrow': 'Archivo Narrow',
+      'Arial-Narrow': 'Arial Narrow',
+      'ArialNarrow': 'Arial Narrow',
+      'Arimo': 'Arimo',
+      'Arvo': 'Arvo',
+      'BigJohn': 'Big John',
+      'Big-John': 'Big John',
+      'Bitter': 'Bitter',
+      'CaviarDreams': 'Caviar Dreams',
+      'Caviar-Dreams': 'Caviar Dreams',
+      'Coluna': 'Coluna',
+      'ColunaRounded': 'Coluna Rounded',
+      'Coluna-Rounded': 'Coluna Rounded',
+      'CourierNew': 'Courier New',
+      'Courier-New': 'Courier New',
+      'Dosis': 'Dosis',
+      'DroidSans': 'Droid Sans',
+      'Droid-Sans': 'Droid Sans',
+      'DroidSerif': 'Droid Serif',
+      'Droid-Serif': 'Droid Serif',
+      'FranklinGothic': 'Franklin Gothic',
+      'Franklin-Gothic': 'Franklin Gothic',
+      'FrederickatheGreat': 'Fredericka the Great',
+      'Fredericka-the-Great': 'Fredericka the Great',
+      'Georgia': 'Georgia',
+      'Gotham': 'Gotham',
+      'GravitasOne': 'Gravitas One',
+      'Gravitas-One': 'Gravitas One',
+      'Helvetica-Condensed': 'Helvetica Condensed',
+      'HelveticaCondensed': 'Helvetica Condensed',
+      'Helvetica-Neue': 'Helvetica Neue',
+      'HelveticaNeue': 'Helvetica Neue',
+      'Lato': 'Lato',
+      'Literata': 'Literata',
+      'Lobster': 'Lobster',
+      'Lora': 'Lora',
+      'MarketDeco': 'Market Deco',
+      'Market-Deco': 'Market Deco',
+      'Merriweather': 'Merriweather',
+      'MissionScript': 'Mission Script',
+      'Mission-Script': 'Mission Script',
+      'Montserrat': 'Montserrat',
+      'MovaviGrotesqueBlack': 'Movavi Grotesque Black',
+      'Movavi-Grotesque-Black': 'Movavi Grotesque Black',
+      'MrBlaketon': 'Mr Blaketon',
+      'Mr-Blaketon': 'Mr Blaketon',
+      'NotoSans': 'Noto Sans',
+      'Noto-Sans': 'Noto Sans',
+      'OpenSans': 'Open Sans',
+      'Open-Sans': 'Open Sans',
+      'OpenSansCondensed': 'Open Sans Condensed',
+      'Open-Sans-Condensed': 'Open Sans Condensed',
+      'Oswald': 'Oswald',
+      'Oxygen': 'Oxygen',
+      'PlayfairDisplay': 'Playfair Display',
+      'Playfair-Display': 'Playfair Display',
+      'PtSans': 'Pt Sans',
+      'Pt-Sans': 'Pt Sans',
+      'PT-Sans': 'Pt Sans',
+      'PtSansNarrow': 'Pt Sans Narrow',
+      'Pt-Sans-Narrow': 'Pt Sans Narrow',
+      'PT-Sans-Narrow': 'Pt Sans Narrow',
+      'PtSerif': 'Pt Serif',
+      'Pt-Serif': 'Pt Serif',
+      'PT-Serif': 'Pt Serif',
+      'Raleway': 'Raleway',
+      'Roboto': 'Roboto',
+      'RobotoCondensed': 'Roboto Condensed',
+      'Roboto-Condensed': 'Roboto Condensed',
+      'RobotoSlab': 'Roboto Slab',
+      'Roboto-Slab': 'Roboto Slab',
+      'Rothman': 'Rothman',
+      'ShadowsintoLight': 'Shadows into Light',
+      'Shadows-into-Light': 'Shadows into Light',
+      'SlimJoe': 'Slim Joe',
+      'Slim-Joe': 'Slim Joe',
+      'SourceSansPro': 'Source Sans Pro',
+      'Source-Sans-Pro': 'Source Sans Pro',
+      'TimesNewRoman': 'Times New Roman',
+      'Times-New-Roman': 'Times New Roman',
+      'TitilliumWeb': 'Titillium Web',
+      'Titillium-Web': 'Titillium Web',
+      'Ubuntu': 'Ubuntu',
+      'Verdana': 'Verdana',
+      'YanoneKaffeesatz': 'Yanone Kaffeesatz',
+      'Yanone-Kaffeesatz': 'Yanone Kaffeesatz'
     }
 
     // Direct mapping if available
     if (fontMapping[pdfFontId]) {
-      return fontMapping[pdfFontId]
+      return { fontFamily: fontMapping[pdfFontId], isMapping: true }
     }
 
     // Smart fallback based on patterns
     const lowerFontId = pdfFontId.toLowerCase()
 
     if (lowerFontId.includes('arial')) {
-      return 'Arial'
+      return { fontFamily: 'Arial', isMapping: true }
     }
     if (lowerFontId.includes('helvetica')) {
-      return 'Helvetica'
+      return { fontFamily: 'Helvetica', isMapping: true }
     }
     if (lowerFontId.includes('times')) {
-      return 'Times New Roman'
+      return { fontFamily: 'Times New Roman', isMapping: true }
     }
     if (lowerFontId.includes('georgia')) {
-      return 'Georgia'
+      return { fontFamily: 'Georgia', isMapping: true }
     }
     if (lowerFontId.includes('courier')) {
-      return 'Courier New'
+      return { fontFamily: 'Courier New', isMapping: true }
     }
     if (lowerFontId.includes('verdana')) {
-      return 'Verdana'
+      return { fontFamily: 'Verdana', isMapping: true }
     }
     if (lowerFontId.includes('comic')) {
-      return 'Comic Sans MS'
+      return { fontFamily: 'Comic Sans MS', isMapping: true }
     }
     if (lowerFontId.includes('impact')) {
-      return 'Impact'
+      return { fontFamily: 'Impact', isMapping: true }
     }
     if (lowerFontId.includes('trebuchet')) {
-      return 'Trebuchet MS'
+      return { fontFamily: 'Trebuchet MS', isMapping: true }
     }
 
     // Generic fallbacks based on characteristics
     if (lowerFontId.includes('mono') || lowerFontId.includes('code')) {
-      return 'Courier New'
+      return { fontFamily: 'Courier New', isMapping: true }
     }
     if (lowerFontId.includes('serif') || lowerFontId.includes('roman')) {
-      return 'Times New Roman'
+      return { fontFamily: 'Times New Roman', isMapping: true }
     }
     if (lowerFontId.includes('sans') || lowerFontId.includes('gothic')) {
-      return 'Arial'
+      return { fontFamily: 'Arial', isMapping: true }
     }
     if (lowerFontId.includes('script') || lowerFontId.includes('cursive')) {
-      return 'Comic Sans MS'
+      return { fontFamily: 'Comic Sans MS', isMapping: true }
     }
 
-    // Default fallback for unrecognized fonts
-    return 'Open Sans'
+    // Default fallback for unrecognized fonts - mark as not mapped
+    return { fontFamily: 'Open Sans', isMapping: false }
   }
 }

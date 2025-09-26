@@ -78,11 +78,14 @@ function minifyPagesData(pages: PdfPageContent[], includeElementAttributes = fal
         if (includeElementAttributes && element.attributes) {
           const slimAttributes: any = {}
           
-          // For text-related elements: include fontFamily and textColor
+          // For text-related elements: include fontFamily, originalFont, and textColor
           const textTypes = ['text', 'paragraph', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'header']
           if (textTypes.includes(element.type) || textTypes.includes(minifiedElement.type)) {
             if (element.attributes.fontFamily) {
               slimAttributes.fontFamily = element.attributes.fontFamily
+            }
+            if (element.attributes.originalFont) {
+              slimAttributes.originalFont = element.attributes.originalFont
             }
             if (element.attributes.textColor) {
               slimAttributes.textColor = element.attributes.textColor
