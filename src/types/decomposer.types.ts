@@ -6,6 +6,83 @@
 import type { PdfDocument } from '../core/PdfDocument.js'
 
 // =============================================================================
+// PDF.js INTERFACES (for type safety)
+// =============================================================================
+
+/**
+ * PDF.js page object interface
+ */
+export interface PdfJsPage {
+  getViewport(params: { scale: number }): PdfJsViewport
+  getTextContent(): Promise<PdfJsTextContent>
+  extractText(): Promise<PdfJsColorAwareElement[]>
+  getAnnotations(): Promise<PdfJsAnnotation[]>
+  extractImages(): Promise<PdfJsImageItem[]>
+}
+
+/**
+ * PDF.js viewport interface
+ */
+export interface PdfJsViewport {
+  width: number
+  height: number
+  convertToViewportRectangle(rect: number[]): number[]
+}
+
+/**
+ * PDF.js text content interface
+ */
+export interface PdfJsTextContent {
+  items: PdfJsTextItem[]
+}
+
+/**
+ * PDF.js text item interface
+ */
+export interface PdfJsTextItem {
+  str: string
+  fontName: string
+  transform: number[]
+  width: number
+  height?: number
+}
+
+/**
+ * PDF.js color-aware element from PdfTextEvaluator
+ */
+export interface PdfJsColorAwareElement {
+  text?: string
+  textColor?: string
+  fontFamily?: string
+  fontWeight?: string
+  fontStyle?: string
+  fontSize?: number
+  boundingBox?: PdfDecomposerBoundingBox
+}
+
+/**
+ * PDF.js annotation interface
+ */
+export interface PdfJsAnnotation {
+  subtype: string
+  url?: string
+  dest?: any
+  rect: number[]
+  id: string
+  contents?: string
+}
+
+/**
+ * PDF.js image item interface
+ */
+export interface PdfJsImageItem {
+  boundingBox: PdfDecomposerBoundingBox
+  data: Buffer | Uint8Array
+  objectId: string
+  contentType: string
+}
+
+// =============================================================================
 // CORE INTERFACES
 // =============================================================================
 
@@ -322,6 +399,85 @@ export interface PdfDecomposerBoundingBox {
   right: number
   width: number
   height: number
+}
+
+// =============================================================================
+// EXTRACTION RESULT INTERFACES (for improved type safety)
+// =============================================================================
+
+/**
+ * Enhanced text element with complete type safety
+ */
+export interface PdfDecomposerExtractedTextElement {
+  id: string
+  pageIndex: number
+  type: 'text'
+  boundingBox: PdfDecomposerBoundingBox
+  data: string
+  formattedData: string
+  attributes: PdfDecomposerTextAttributes & {
+    originalFont?: string // Only present when font mapping fallback was used
+  }
+}
+
+/**
+ * Enhanced image element with complete metadata
+ */
+export interface PdfDecomposerExtractedImageElement {
+  id: string
+  pageIndex: number
+  type: 'image'
+  boundingBox: PdfDecomposerBoundingBox
+  data: string
+  attributes: {
+    type: 'embedded' | 'legacy'
+    width: number
+    height: number
+    format?: string
+    originalId?: string
+    scaled?: boolean
+    scaleFactor?: number
+    extraction?: 'universal'
+  }
+}
+
+/**
+ * Enhanced link element with comprehensive link data
+ */
+export interface PdfDecomposerExtractedLinkElement {
+  id: string
+  pageIndex: number
+  type: 'link'
+  boundingBox: PdfDecomposerBoundingBox
+  data: string
+  attributes: {
+    linkType: 'url' | 'email' | 'internal'
+    annotationId?: string
+    dest?: any
+    text?: string
+    extraction?: 'text-pattern'
+  }
+}
+
+/**
+ * Union type for all extracted elements with enhanced type safety
+ */
+export type PdfDecomposerExtractedElement = 
+  | PdfDecomposerExtractedTextElement 
+  | PdfDecomposerExtractedImageElement 
+  | PdfDecomposerExtractedLinkElement
+
+/**
+ * Color-aware element from PdfTextEvaluator with proper typing
+ */
+export interface PdfDecomposerColorAwareElement {
+  text?: string
+  textColor?: string
+  fontFamily?: string
+  fontWeight?: string
+  fontStyle?: string
+  fontSize?: number
+  boundingBox?: PdfDecomposerBoundingBox
 }
 
 // =============================================================================

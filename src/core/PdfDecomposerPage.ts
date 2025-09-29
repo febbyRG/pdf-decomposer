@@ -2,7 +2,16 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { v4 as uuidv4 } from 'uuid'
 import { PdfImageExtractor } from './PdfImageExtractor.js'
-import type { PdfDecomposerPageData, PdfDecomposerBoundingBox, PdfDecomposerTextAttributes } from '../types/decomposer.types.js'
+import type { 
+  PdfDecomposerPageData, 
+  PdfDecomposerBoundingBox, 
+  PdfDecomposerTextAttributes,
+  PdfDecomposerExtractedElement,
+  PdfDecomposerExtractedTextElement,
+  PdfDecomposerExtractedImageElement,
+  PdfDecomposerExtractedLinkElement,
+  PdfDecomposerColorAwareElement
+} from '../types/decomposer.types.js'
 
 export class PdfDecomposerPage {
   constructor(
@@ -15,41 +24,70 @@ export class PdfDecomposerPage {
   ) { }
 
   async decompose(): Promise<any> {
-    const pdfPage = await this.decomposer.pdfDoc.getPage(this.pageIndex)
-    const viewport = pdfPage.getViewport({ scale: 1 })
-    const width = viewport.width
-    const height = viewport.height
-    const pageNumber = this.pageIndex  // this.pageIndex is actually the pageNumber (1-based)
-    const pageIndex = this.pageIndex - 1  // convert to 0-based pageIndex
-    const title = `Page ${pageNumber}`
+    try {
+      const pdfPage = await this.decomposer.pdfDoc.getPage(this.pageIndex)
+      const viewport = pdfPage.getViewport({ scale: 1 })
+      const width = viewport.width
+      const height = viewport.height
+      const pageNumber = this.pageIndex  // this.pageIndex is actually the pageNumber (1-based)
+      const pageIndex = this.pageIndex - 1  // convert to 0-based pageIndex
+      const title = `Page ${pageNumber}`
 
-    // Use provided outputDir, fallback to pkg dir, or undefined for base64 mode
-    const outputDir = this.outputDir
+      // Use provided outputDir, fallback to pkg dir, or undefined for base64 mode
+      const outputDir = this.outputDir
 
-    // Extract text, embedded images, and links
-    const elements: any[] = [
-      ...await this.extractTextElements(pdfPage, pageIndex),
-      // Extract embedded images if enabled
-      ...(this.extractImages ? await this.extractImageElements(pdfPage, pageIndex, outputDir) : []),
-      // Extract links if enabled
-      ...(this.extractLinks ? await this.extractLinkElements(pdfPage, pageIndex) : [])
-    ]
+      // Extract text, embedded images, and links
+      const elements: PdfDecomposerExtractedElement[] = []
+      
+      try {
+        elements.push(...await this.extractTextElements(pdfPage, pageIndex))
+      } catch (textError) {
+        console.error(`Error extracting text elements from page ${pageNumber}:`, textError)
+      }
+      
+      if (this.extractImages) {
+        try {
+          elements.push(...await this.extractImageElements(pdfPage, pageIndex, outputDir))
+        } catch (imageError) {
+          console.error(`Error extracting image elements from page ${pageNumber}:`, imageError)
+        }
+      }
+      
+      if (this.extractLinks) {
+        try {
+          elements.push(...await this.extractLinkElements(pdfPage, pageIndex))
+        } catch (linkError) {
+          console.error(`Error extracting link elements from page ${pageNumber}:`, linkError)
+        }
+      }
 
-    // Return page data
-    const result = {
-      pageIndex,
-      pageNumber,
-      width,
-      height,
-      title,
-      elements
+      // Return page data
+      const result = {
+        pageIndex,
+        pageNumber,
+        width,
+        height,
+        title,
+        elements
+      }
+
+      return result
+    } catch (error) {
+      console.error(`Critical error processing page ${this.pageIndex}:`, error)
+      // Return minimal page structure with empty elements on critical error
+      return {
+        pageIndex: this.pageIndex - 1,
+        pageNumber: this.pageIndex,
+        width: 0,
+        height: 0,
+        title: `Page ${this.pageIndex}`,
+        elements: []
+      }
     }
-
-    return result
   }
 
   // Use universal image extraction (works in both Node.js and Browser)
-  private async extractImageElements(pdfPage: any, pageIndex: number, outputDir?: string): Promise<any[]> {
+  private async extractImageElements(pdfPage: any, pageIndex: number, outputDir?: string): Promise<PdfDecomposerExtractedImageElement[]> {
     if (this.skipParser) { return [] }
 
     try {
@@ -57,7 +95,7 @@ export class PdfDecomposerPage {
       const universalImages = await extractor.extractImagesFromPage(pdfPage)
 
       // Save extracted images to files (Node.js) or keep as data URLs (Browser)
-      const imageElements: any[] = []
+      const imageElements: PdfDecomposerExtractedImageElement[] = []
       for (const img of universalImages) {
         try {
           let dataReference = img.data // Default to data URL
@@ -190,10 +228,10 @@ export class PdfDecomposerPage {
   }
 
   // Extract links and annotations from PDF content
-  private async extractLinkElements(pdfPage: any, pageIndex: number): Promise<any[]> {
+  private async extractLinkElements(pdfPage: any, pageIndex: number): Promise<PdfDecomposerExtractedLinkElement[]> {
     if (this.skipParser) { return [] }
 
-    const linkElements: any[] = []
+    const linkElements: PdfDecomposerExtractedLinkElement[] = []
     const pageHeight = pdfPage.getViewport({ scale: 1 }).height
 
     try {
@@ -301,15 +339,22 @@ export class PdfDecomposerPage {
   }
 
   // Real text extraction using PDF.js getTextContent with color-aware enhancement
-  private async extractTextElements(pdfPage: any, pageIndex: number): Promise<any[]> {
-    const textContent = await pdfPage.getTextContent()
-    const viewport = pdfPage.getViewport({ scale: 1 })
-    const pageHeight = viewport.height
+  private async extractTextElements(pdfPage: any, pageIndex: number): Promise<PdfDecomposerExtractedTextElement[]> {
+    try {
+      const textContent = await pdfPage.getTextContent()
+      const viewport = pdfPage.getViewport({ scale: 1 })
+      const pageHeight = viewport.height
 
-    // Extract color-aware text elements using PdfTextEvaluator
-    // This provides real font names extracted via getCommonObject(font.objectId).name
-    // instead of relying on PDF internal IDs from getTextContent()
-    const colorAwareElements = await pdfPage.extractText()
+      // Extract color-aware text elements using PdfTextEvaluator
+      // This provides real font names extracted via getCommonObject(font.objectId).name
+      // instead of relying on PDF internal IDs from getTextContent()
+      let colorAwareElements: PdfDecomposerColorAwareElement[] = []
+      try {
+        colorAwareElements = await pdfPage.extractText()
+      } catch (fontExtractionError) {
+        console.warn(`Font extraction failed for page ${pageIndex}:`, fontExtractionError)
+        // Continue with empty array - will fallback to PDF internal ID resolution
+      }
 
     // URL and email patterns to identify text that should be treated as links
     const urlPattern = /(?:https?:\/\/[^\s<>"'()[\]{}]+|[a-zA-Z0-9.-]+\.(?:com|org|edu|net|gov|co|io|ly)(?:\/[^\s<>"'()[\]{}]*)?)/gi
@@ -375,10 +420,14 @@ export class PdfDecomposerPage {
         attributes
       }
     }).filter((item: any) => item !== null) // Filter out null items (URLs/emails handled as links)
+    } catch (error) {
+      console.error(`Error extracting text elements from page ${pageIndex}:`, error)
+      return [] // Return empty array on error
+    }
   }
 
   // Helper method to find matching color-aware element for a text item
-  private findMatchingColorElement(item: any, bbox: PdfDecomposerBoundingBox, colorAwareElements: any[]): any {
+  private findMatchingColorElement(item: any, bbox: PdfDecomposerBoundingBox, colorAwareElements: PdfDecomposerColorAwareElement[]): PdfDecomposerColorAwareElement | null {
     const itemText = item.str?.trim() || ''
     
     // Skip empty or very short text fragments (likely spacing)
@@ -460,35 +509,36 @@ export class PdfDecomposerPage {
    * Generate formatted HTML text based on font attributes
    */
   private generateFormattedText(text: string, attributes: PdfDecomposerTextAttributes): string {
-    if (!text) return text
+    try {
+      if (!text) return text
 
-    let html = text
+      let html = text
 
-    // Escape HTML special characters first
-    html = html
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;')
+      // Escape HTML special characters first
+      html = html
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
 
-    // Apply formatting based on font attributes
-    const fontSize = attributes.fontSize || 0
-    const fontFamily = attributes.fontFamily || ''
+      // Apply formatting based on font attributes
+      const fontSize = attributes.fontSize || 0
+      const fontFamily = attributes.fontFamily || ''
 
-    // Detect bold text based on font name patterns (use original fontFamily for detection)
-    if (this.isBoldFont(fontFamily)) {
-      html = `<strong>${html}</strong>`
-    }
+      // Detect bold text based on font name patterns (use original fontFamily for detection)
+      if (this.isBoldFont(fontFamily)) {
+        html = `<strong>${html}</strong>`
+      }
 
-    // Detect italic text based on font name patterns (use original fontFamily for detection)
-    if (this.isItalicFont(fontFamily)) {
-      html = `<em>${html}</em>`
-    }
+      // Detect italic text based on font name patterns (use original fontFamily for detection)
+      if (this.isItalicFont(fontFamily)) {
+        html = `<em>${html}</em>`
+      }
 
-    // Detect headings based on font size (assuming larger fonts are headings)
-    if (fontSize > 16) {
-      const level = fontSize > 24 ? 1 : fontSize > 20 ? 2 : fontSize > 18 ? 3 : 4
+      // Detect headings based on font size (assuming larger fonts are headings)
+      if (fontSize > 16) {
+        const level = fontSize > 24 ? 1 : fontSize > 20 ? 2 : fontSize > 18 ? 3 : 4
       html = `<h${level}>${html}</h${level}>`
     }
 
@@ -504,11 +554,15 @@ export class PdfDecomposerPage {
       styles.push(`color: ${attributes.textColor}`)
     }
 
-    if (styles.length > 0) {
-      html = `<span style="${styles.join('; ')}">${html}</span>`
-    }
+      if (styles.length > 0) {
+        html = `<span style="${styles.join('; ')}">${html}</span>`
+      }
 
-    return html
+      return html
+    } catch (error) {
+      console.warn('Error generating formatted text:', error)
+      return text // Return original text on error
+    }
   }
 
   /**
@@ -544,7 +598,8 @@ export class PdfDecomposerPage {
    * Resolve PDF internal font ID to readable font family name
    */
   private resolveFontFamily(pdfFontId: string): { fontFamily: string; isMapping: boolean } {
-    if (!pdfFontId) return { fontFamily: 'inherit', isMapping: false }
+    try {
+      if (!pdfFontId) return { fontFamily: 'inherit', isMapping: false }
 
     // Map known PDF font names to readable names (no random g_d0_f assumptions)
     const fontMapping: { [key: string]: string } = {
@@ -722,37 +777,46 @@ export class PdfDecomposerPage {
       return { fontFamily: 'Comic Sans MS', isMapping: true }
     }
 
-    // Default fallback for unrecognized fonts - mark as not mapped
-    return { fontFamily: 'Open Sans', isMapping: false }
+      // Default fallback for unrecognized fonts - mark as not mapped
+      return { fontFamily: 'Open Sans', isMapping: false }
+    } catch (error) {
+      console.warn('Error resolving font family:', error)
+      return { fontFamily: 'Open Sans', isMapping: false }
+    }
   }
 
   /**
    * Map extracted font name to clean, readable font family name
    */
   private mapExtractedFontName(extractedFont: string): string {
-    if (!extractedFont) return 'Open Sans'
+    try {
+      if (!extractedFont) return 'Open Sans'
 
-    // Remove common prefixes and normalize
-    const cleanName = extractedFont
-      .replace(/^[A-Z]{6}\+/, '') // Remove subset prefix like "ABCDEF+"
-      .replace(/MT$/, '') // Remove "MT" suffix
-      .replace(/-/g, ' ') // Replace hyphens with spaces
-      .trim()
+      // Remove common prefixes and normalize
+      const cleanName = extractedFont
+        .replace(/^[A-Z]{6}\+/, '') // Remove subset prefix like "ABCDEF+"
+        .replace(/MT$/, '') // Remove "MT" suffix
+        .replace(/-/g, ' ') // Replace hyphens with spaces
+        .trim()
 
-    // Map to standard font names
-    const lowerName = cleanName.toLowerCase()
-    
-    if (lowerName.includes('times')) return 'Times New Roman'
-    if (lowerName.includes('arial')) return 'Arial'
-    if (lowerName.includes('helvetica')) return 'Helvetica'
-    if (lowerName.includes('georgia')) return 'Georgia'
-    if (lowerName.includes('verdana')) return 'Verdana'
-    if (lowerName.includes('courier')) return 'Courier New'
-    if (lowerName.includes('calibri')) return 'Calibri'
-    if (lowerName.includes('tahoma')) return 'Tahoma'
-    if (lowerName.includes('segoe')) return 'Segoe UI'
-    
-    // Return cleaned name if no specific mapping found
-    return cleanName || 'Open Sans'
+      // Map to standard font names
+      const lowerName = cleanName.toLowerCase()
+      
+      if (lowerName.includes('times')) return 'Times New Roman'
+      if (lowerName.includes('arial')) return 'Arial'
+      if (lowerName.includes('helvetica')) return 'Helvetica'
+      if (lowerName.includes('georgia')) return 'Georgia'
+      if (lowerName.includes('verdana')) return 'Verdana'
+      if (lowerName.includes('courier')) return 'Courier New'
+      if (lowerName.includes('calibri')) return 'Calibri'
+      if (lowerName.includes('tahoma')) return 'Tahoma'
+      if (lowerName.includes('segoe')) return 'Segoe UI'
+      
+      // Return cleaned name if no specific mapping found
+      return cleanName || 'Open Sans'
+    } catch (error) {
+      console.warn('Error mapping extracted font name:', error)
+      return 'Open Sans'
+    }
   }
 }
