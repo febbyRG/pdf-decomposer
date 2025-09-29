@@ -280,6 +280,8 @@ export class PdfDecomposerPage {
     return linkElements
   }
 
+
+
   // Convert PDF rect to bounding box
   private convertRectToBoundingBox(rect: number[], pageHeight: number): PdfDecomposerBoundingBox {
     const [x1, y1, x2, y2] = rect
@@ -305,6 +307,8 @@ export class PdfDecomposerPage {
     const pageHeight = viewport.height
 
     // Extract color-aware text elements using PdfTextEvaluator
+    // This provides real font names extracted via getCommonObject(font.objectId).name
+    // instead of relying on PDF internal IDs from getTextContent()
     const colorAwareElements = await pdfPage.extractText()
 
     // URL and email patterns to identify text that should be treated as links
@@ -320,21 +324,38 @@ export class PdfDecomposerPage {
       }
       const bbox = this.getTextBoundingBox(item, pageHeight)
 
-      // Resolve readable font name from PDF internal ID
-      const resolvedFontInfo = this.resolveFontFamily(item.fontName)
-
       // Find matching color-aware element based on text content and position
       const matchingColorElement = this.findMatchingColorElement(item, bbox, colorAwareElements)
-      const textColor = matchingColorElement?.textColor
 
-      const attributes: any = {
-        fontFamily: resolvedFontInfo.fontFamily, // Use resolved font name
-        fontSize: item.transform ? item.transform[0] : undefined,
-        textColor: textColor // Now includes actual color information when available
+      // Use font information from PdfTextEvaluator (real font names) if available,
+      // otherwise fall back to PDF internal ID resolution
+      let fontFamily: string
+      let fontWeight: string | undefined
+      let fontStyle: string | undefined
+      let fallbackToMapping = false
+
+      if (matchingColorElement?.fontFamily) {
+        // Use real font name from PdfTextEvaluator (extracted via font.name)
+        fontFamily = matchingColorElement.fontFamily
+        fontWeight = matchingColorElement.fontWeight
+        fontStyle = matchingColorElement.fontStyle
+      } else {
+        // Fallback to PDF internal ID resolution
+        const resolvedFontInfo = this.resolveFontFamily(item.fontName)
+        fontFamily = resolvedFontInfo.fontFamily
+        fallbackToMapping = !resolvedFontInfo.isMapping
       }
 
-      // Only include originalFont if mapping failed (for custom remapping)
-      if (!resolvedFontInfo.isMapping) {
+      const attributes: any = {
+        fontFamily: fontFamily, // Use real font name when available
+        fontWeight: fontWeight,
+        fontStyle: fontStyle,
+        fontSize: item.transform ? item.transform[0] : undefined,
+        textColor: matchingColorElement?.textColor // Now includes actual color information when available
+      }
+
+      // Only include originalFont if we had to fall back to PDF internal ID mapping
+      if (fallbackToMapping) {
         attributes.originalFont = item.fontName
       }
 
@@ -358,23 +379,56 @@ export class PdfDecomposerPage {
 
   // Helper method to find matching color-aware element for a text item
   private findMatchingColorElement(item: any, bbox: PdfDecomposerBoundingBox, colorAwareElements: any[]): any {
+    const itemText = item.str?.trim() || ''
+    
+    // Skip empty or very short text fragments (likely spacing)
+    if (itemText.length < 2) {
+      return null
+    }
+
     // First try to match by exact text content
     const exactTextMatch = colorAwareElements.find(element => 
-      element.text === item.str && element.textColor
+      element.text === itemText && (element.textColor || element.fontFamily)
     )
     if (exactTextMatch) {
       return exactTextMatch
     }
 
-    // Fall back to positional matching with tolerance
-    const positionTolerance = 5 // pixels
+    // Try partial text matching - check if item text is contained in any element
+    const partialTextMatch = colorAwareElements.find(element => {
+      return element.text && element.text.includes(itemText) && 
+             (element.textColor || element.fontFamily)
+    })
+    if (partialTextMatch) {
+      return partialTextMatch
+    }
+
+    // Try reverse - check if any element text is contained in item text
+    const reversePartialMatch = colorAwareElements.find(element => {
+      return element.text && itemText.includes(element.text) && 
+             (element.textColor || element.fontFamily)
+    })
+    if (reversePartialMatch) {
+      return reversePartialMatch
+    }
+
+    // Fall back to positional matching with larger tolerance to handle text fragmentation
+    const positionTolerance = 15 // Increased tolerance for fragmented text
     const positionMatch = colorAwareElements.find(element => {
-      if (!element.boundingBox || !element.textColor) return false
+      if (!element.boundingBox) return false
       
       const leftDiff = Math.abs(element.boundingBox.left - bbox.left)
       const topDiff = Math.abs(element.boundingBox.top - bbox.top)
       
-      return leftDiff <= positionTolerance && topDiff <= positionTolerance
+      // Also check if bounding boxes overlap
+      const overlap = !(bbox.right < element.boundingBox.left || 
+                       element.boundingBox.right < bbox.left || 
+                       bbox.bottom < element.boundingBox.top || 
+                       element.boundingBox.bottom < bbox.top)
+      
+      const closePosition = leftDiff <= positionTolerance && topDiff <= positionTolerance
+      
+      return (closePosition || overlap) && (element.textColor || element.fontFamily)
     })
     
     return positionMatch || null
@@ -492,20 +546,8 @@ export class PdfDecomposerPage {
   private resolveFontFamily(pdfFontId: string): { fontFamily: string; isMapping: boolean } {
     if (!pdfFontId) return { fontFamily: 'inherit', isMapping: false }
 
-    // Map common PDF internal font IDs to readable names
+    // Map known PDF font names to readable names (no random g_d0_f assumptions)
     const fontMapping: { [key: string]: string } = {
-      // Common PDF.js internal font patterns
-      'g_d0_f1': 'Arial',
-      'g_d0_f2': 'Georgia',
-      'g_d0_f3': 'Times New Roman',
-      'g_d0_f4': 'Helvetica',
-      'g_d0_f5': 'Verdana',
-      'g_d0_f6': 'Courier New',
-      'g_d0_f7': 'Comic Sans MS',
-      'g_d0_f8': 'Impact',
-      'g_d0_f9': 'Trebuchet MS',
-      'g_d0_f10': 'Arial Black',
-
       // Times family variations
       'TimesRoman': 'Times',
       'Times-Roman': 'Times',
@@ -628,6 +670,13 @@ export class PdfDecomposerPage {
       return { fontFamily: fontMapping[pdfFontId], isMapping: true }
     }
 
+    // Handle PDF.js internal font IDs - fallback to generic fonts instead of random mapping
+    if (pdfFontId.startsWith('g_d0_f')) {
+      // PDF.js internal font IDs are dynamic, don't make assumptions about content
+      // Fallback to a neutral, widely available font
+      return { fontFamily: 'Open Sans', isMapping: false }
+    }
+
     // Smart fallback based on patterns
     const lowerFontId = pdfFontId.toLowerCase()
 
@@ -675,5 +724,35 @@ export class PdfDecomposerPage {
 
     // Default fallback for unrecognized fonts - mark as not mapped
     return { fontFamily: 'Open Sans', isMapping: false }
+  }
+
+  /**
+   * Map extracted font name to clean, readable font family name
+   */
+  private mapExtractedFontName(extractedFont: string): string {
+    if (!extractedFont) return 'Open Sans'
+
+    // Remove common prefixes and normalize
+    const cleanName = extractedFont
+      .replace(/^[A-Z]{6}\+/, '') // Remove subset prefix like "ABCDEF+"
+      .replace(/MT$/, '') // Remove "MT" suffix
+      .replace(/-/g, ' ') // Replace hyphens with spaces
+      .trim()
+
+    // Map to standard font names
+    const lowerName = cleanName.toLowerCase()
+    
+    if (lowerName.includes('times')) return 'Times New Roman'
+    if (lowerName.includes('arial')) return 'Arial'
+    if (lowerName.includes('helvetica')) return 'Helvetica'
+    if (lowerName.includes('georgia')) return 'Georgia'
+    if (lowerName.includes('verdana')) return 'Verdana'
+    if (lowerName.includes('courier')) return 'Courier New'
+    if (lowerName.includes('calibri')) return 'Calibri'
+    if (lowerName.includes('tahoma')) return 'Tahoma'
+    if (lowerName.includes('segoe')) return 'Segoe UI'
+    
+    // Return cleaned name if no specific mapping found
+    return cleanName || 'Open Sans'
   }
 }
