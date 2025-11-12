@@ -689,14 +689,7 @@ if (!cached) {
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-### **Development Guidelines**
-- Use TypeScript for all new code
-- Add tests for new features
-- Update README for API changes
-- Follow existing code style
-- Test in both Node.js and browser environments
-
-## � Development & Publishing
+## Development & Publishing
 
 ### Setup for Publishing
 ```bash
@@ -724,7 +717,7 @@ npm version patch && npm run publish:both
 
 ---
 
-## �📄 License
+## 📄 License
 
 **PDF-Decomposer** is dual-licensed:
 
