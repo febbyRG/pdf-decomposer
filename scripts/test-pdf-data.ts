@@ -17,7 +17,7 @@ async function testPdfDataGeneration() {
   console.log('='.repeat(50))
 
   const testDir = join(__dirname, 'test-output', 'pdf-data-test')
-  const pdfPath = join(__dirname, 'test-input', 'demo.pdf')
+  const pdfPath = join(__dirname, 'test-input', 'kandy.pdf')
   
   // Clean up previous test results
   if (existsSync(testDir)) {
@@ -44,16 +44,30 @@ async function testPdfDataGeneration() {
     const decomposer = new PdfDecomposer(pdfBuffer)
     await decomposer.initialize()
     
-    console.log(`📄 PDF loaded: ${decomposer.numPages} pages`)
+    const totalPages = decomposer.numPages
+    console.log(`📄 PDF loaded: ${totalPages} pages`)
+    
+    // Limit pages for local testing to prevent OOM
+    // node-canvas has memory issues with large PDFs in Node.js 16
+    const maxPagesForTest = 15 // Limit to first 15 pages for local testing
+    const endPage = Math.min(totalPages, maxPagesForTest)
+    console.log(`⚠️ Testing first ${endPage} pages only (limited for memory safety in local env)`)
     
     // Test: Generate pdfData using new dedicated data() method
     console.log('\n🔄 Generating pdfData using new data() method...')
     
+    // Ensure data output directory exists (required when outputDir is specified)
+    const dataOutputDir = join(testDir, 'data')
+    mkdirSync(dataOutputDir, { recursive: true })
+    
     const dataResult = await decomposer.data({
-      extractImages: true,
+      extractImages: false,  // Disable image extraction for local testing (causes OOM)
       elementComposer: true,
-      cleanComposer: true,
-      outputDir: join(testDir, 'data')
+      cleanComposer: false,  // Disable cleanComposer to avoid screenshot generation (causes OOM)
+      skipScreenshots: true, // Skip page screenshots for local testing (causes OOM with node-canvas)
+      outputDir: dataOutputDir,
+      startPage: 1,
+      endPage: endPage
     })
     
     const pdfDataResult = dataResult.data

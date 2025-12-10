@@ -254,6 +254,14 @@ export async function pdfDecompose(
 
       try {
         // Monitor memory before page processing
+        // Use adaptive memory limits based on total page count for better GCF support
+        const isLargeDocument = total > 50
+        const memoryConfig = {
+          maxMemoryMB: isLargeDocument ? 2048 : 512,  // 2GB for large docs, 512MB for small
+          gcThresholdMB: isLargeDocument ? 1024 : 256, // Cleanup at 1GB for large docs
+          aggressiveCleanup: isLargeDocument
+        }
+        
         await MemoryManager.withMemoryMonitoring(async () => {
           const page = new PdfDecomposerPage(
             mockDecomposer,
@@ -268,15 +276,13 @@ export async function pdfDecompose(
           if (pageIndex === 0 && pkg.pages[0]) {
             pkg.thumbnail = pkg.pages[0].thumbnail
           }
-        }, {
-          maxMemoryMB: 300,
-          gcThresholdMB: 150,
-          aggressiveCleanup: true
-        })
+        }, memoryConfig)
 
         
-        // Periodic memory cleanup every 5 pages to prevent accumulation
-        if ((pageIndex + 1) % 5 === 0 && pageIndex + 1 < total) {
+        // More aggressive memory cleanup for large documents
+        // Every 3 pages for large docs, every 5 pages for small docs
+        const cleanupInterval = isLargeDocument ? 3 : 5
+        if ((pageIndex + 1) % cleanupInterval === 0 && pageIndex + 1 < total) {
           await MemoryManager.cleanupMemory()
         }
 

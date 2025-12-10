@@ -13,7 +13,7 @@ import { PdfDecomposer } from '../dist/index'
 class ScreenshotTest {
   private baseOutputDir: string
   private pdfPath: string
-  private pdfFile = 'demo.pdf'
+  private pdfFile = 'kandy.pdf'
 
   constructor(customPdfPath?: string) {
     const outputDir = join(__dirname, 'test-output')
@@ -67,17 +67,27 @@ class ScreenshotTest {
     try {
       console.log(`🔄 Running: ${testName}...`)
 
-      const options = {
-        outputDir: this.baseOutputDir,
-        imageWidth: 1024,
-        imageQuality: 90
-      }
-
       const pdfBuffer = this.readPdfBuffer()
       
       // Create decomposer instance  
       const decomposer = new PdfDecomposer(pdfBuffer)
       await decomposer.initialize()
+      
+      // Limit pages for local testing to prevent OOM
+      // node-canvas has memory issues with large PDFs
+      const totalPages = decomposer.numPages
+      const maxPagesForTest = 20 // Limit to first 20 pages for local testing
+      const endPage = Math.min(totalPages, maxPagesForTest)
+      
+      console.log(`📄 Total pages: ${totalPages}, Testing first ${endPage} pages (limited for memory safety)`)
+
+      const options = {
+        outputDir: this.baseOutputDir,
+        imageWidth: 800, // Reduced from 1024 for memory safety
+        imageQuality: 80, // Reduced from 90 for smaller output
+        startPage: 1,
+        endPage: endPage
+      }
       
       // Generate screenshots
       const result = await decomposer.screenshot(options)

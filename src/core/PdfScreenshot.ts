@@ -5,12 +5,14 @@
 
 import { PdfDocument } from './PdfDocument.js'
 import { PageRenderer } from '../utils/PageRenderer.js'
+import { MemoryManager } from '../utils/MemoryManager.js'
 import { InvalidPdfError, PdfProcessingError } from '../types/pdf.types.js'
 import type { ScreenshotOptions, ScreenshotPageResult, ScreenshotResult } from '../types/screenshot.types.js'
 import type { PdfDecomposerState, PdfDecomposerError } from '../types/decomposer.types.js'
 
 /**
  * Generate screenshots for PDF pages using pre-loaded PdfDocument
+ * Optimized for memory efficiency on large documents
  * 
  * @param pdfDocument Pre-loaded PdfDocument instance
  * @param options Optional configuration for screenshot generation
@@ -76,12 +78,16 @@ export async function pdfScreenshot(
       updateProgress(15, `Preparing output directory: ${options.outputDir}`)
     }
 
-    // Default options
-    const imageWidth = options.imageWidth ?? 1200
-    const imageQuality = options.imageQuality ?? 90
+    // Default options - reduced for memory efficiency
+    const imageWidth = options.imageWidth ?? 1024  // Reduced from 1200
+    const imageQuality = options.imageQuality ?? 85 // Reduced from 90
 
     const screenshots: ScreenshotPageResult[] = []
     const totalPagesToProcess = endPage - startPage + 1
+    
+    // Determine if this is a large document requiring aggressive memory management
+    const isLargeDocument = totalPagesToProcess > 20
+    const cleanupInterval = isLargeDocument ? 3 : 10 // Cleanup every 3 pages for large docs
 
     // Generate screenshots for each page
     for (let pageNum = startPage; pageNum <= endPage; pageNum++) {
@@ -96,22 +102,28 @@ export async function pdfScreenshot(
 
         const viewport = pdfPage.rawProxy.getViewport({ scale: 1 })
 
-        // Validate page content (missing feature from original)
-        try {
-          await pdfPage.getTextContent()
-        } catch (textError) {
-          console.warn(`⚠️ Could not get text content for page ${pageNum}:`, textError)
+        // Skip text content validation for large documents to save memory
+        if (!isLargeDocument) {
+          try {
+            await pdfPage.getTextContent()
+          } catch (textError) {
+            console.warn(`⚠️ Could not get text content for page ${pageNum}:`, textError)
+          }
         }
 
         try {
           // Generate page screenshot as base64
+          // Use lower scale for large documents to reduce memory
+          const effectiveScale = isLargeDocument 
+            ? Math.min(imageWidth / viewport.width, 1.0) // Cap at 1.0 for large docs
+            : imageWidth / viewport.width
 
           const screenshotResult = await PageRenderer.renderPageToBase64(
             pdfPage.rawProxy,
             pdfDocument.rawProxy,
             {
               quality: imageQuality,
-              scale: imageWidth / viewport.width
+              scale: effectiveScale
             }
           )
 
@@ -140,6 +152,11 @@ export async function pdfScreenshot(
                 filename
               )
               pageResult.filePath = filePath
+              
+              // Clear base64 data after writing to file to save memory
+              if (isLargeDocument) {
+                pageResult.screenshot = '' // Clear to free memory
+              }
             } catch (fileError) {
               console.warn(`⚠️ Failed to write file for page ${pageNum}: ${(fileError as Error).message}`)
               // Don't fail the entire operation if file writing fails
@@ -147,6 +164,11 @@ export async function pdfScreenshot(
           }
 
           screenshots.push(pageResult)
+          
+          // Memory cleanup for large documents
+          if (isLargeDocument && (pageIndex + 1) % cleanupInterval === 0) {
+            await MemoryManager.cleanupMemory()
+          }
 
         } catch (renderError) {
           const errorMessage = `Failed to render page ${pageNum}: ${(renderError as Error).message}`

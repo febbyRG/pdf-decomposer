@@ -73,6 +73,11 @@ export interface DataOptions {
   // Screenshot options for page image generation
   imageWidth?: number
   imageQuality?: number
+  /**
+   * Skip page screenshot generation (useful for text-only extraction or memory-constrained environments)
+   * When true, page images will use placeholder filenames instead of actual screenshots
+   */
+  skipScreenshots?: boolean
 }
 
 /**

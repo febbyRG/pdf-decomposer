@@ -352,24 +352,33 @@ export async function pdfData(
     
     const pages = decomposeResult.pages
     
-    updateProgress(80, 'Generating page screenshots...')
+    // Screenshot generation - can be skipped for memory-constrained environments
+    let screenshotResult: any = null
     
-    // Generate page screenshots for each page
-    const { pdfScreenshot } = await import('./PdfScreenshot.js')
-    const screenshotResult = await pdfScreenshot(
-      pdfDocument,
-      {
-        outputDir: options.outputDir,
-        imageWidth: options.imageWidth,
-        imageQuality: options.imageQuality
-      },
-      (state) => {
-        // Forward screenshot progress (80-90%)
-        const adjustedProgress = 80 + (state.progress * 0.1)
-        updateProgress(adjustedProgress, `Generating screenshots: ${state.message}`)
-      },
-      errorCallback
-    )
+    if (!options.skipScreenshots) {
+      updateProgress(80, 'Generating page screenshots...')
+      
+      // Generate page screenshots for each page
+      const { pdfScreenshot } = await import('./PdfScreenshot.js')
+      screenshotResult = await pdfScreenshot(
+        pdfDocument,
+        {
+          outputDir: options.outputDir,
+          imageWidth: options.imageWidth,
+          imageQuality: options.imageQuality,
+          startPage: options.startPage,
+          endPage: options.endPage
+        },
+        (state) => {
+          // Forward screenshot progress (80-90%)
+          const adjustedProgress = 80 + (state.progress * 0.1)
+          updateProgress(adjustedProgress, `Generating screenshots: ${state.message}`)
+        },
+        errorCallback
+      )
+    } else {
+      updateProgress(80, 'Skipping page screenshots (skipScreenshots=true)...')
+    }
     
     updateProgress(90, 'Generating pdfData structure...')
     
@@ -384,7 +393,7 @@ export async function pdfData(
     
     // Map pages to screenshots and generate pdfData
     const pdfDataResult = pages.map((page, index) => {
-      const screenshot = screenshotResult.screenshots[index]
+      const screenshot = screenshotResult?.screenshots?.[index]
       let imageValue: string
       
       if (options.outputDir && screenshot?.filePath) {
@@ -395,7 +404,7 @@ export async function pdfData(
         // If no output directory, use base64 from screenshot
         imageValue = screenshot.screenshot
       } else {
-        // Fallback to page image if available
+        // Fallback to page image or placeholder filename
         imageValue = page.image || `pg-${String(page.pageNumber).padStart(3, '0')}.png`
       }
       

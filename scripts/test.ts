@@ -50,7 +50,7 @@ class ComprehensiveTest {
   private results: TestResult[] = []
   private baseOutputDir: string
   private pdfPath: string
-  private pdfFile = 'demo.pdf'
+  private pdfFile = 'kandy.pdf'
   private decomposer!: PdfDecomposer
 
   constructor(customPdfPath?: string) {

@@ -3,104 +3,106 @@
 [![NPM Version](https://img.shields.io/npm/v/@febbyrg/pdf-decomposer.svg)](https://www.npmjs.com/package/@febbyrg/pdf-decomposer)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg)](https://www.typescriptlang.org/)
 [![Dual License](https://img.shields.io/badge/license-Dual%20License-orange.svg)](LICENSE)
-[![Browser Support](https://img.shields.io/badge/browser-Chrome%20%7C%20Firefox%20%7C%20Safari%20%7C%20Edge-brightgreen.svg)](#browser-support)
 
-A powerful TypeScript library for comprehensive PDF processing and content extraction. **Optimized for production use with universal browser and Node.js support.**
+A powerful TypeScript library for comprehensive PDF processing and content extraction. Optimized for production use with universal browser and Node.js support.
 
-> **🚀 v1.0.4 Now Available** with powerful Link Extraction capabilities! Extract interactive PDF annotations, detect URL patterns in text content, and get rich link metadata with accurate positioning.
+## Core Features
 
-## 🚀 Core Features
+### PDF Decomposer Class
 
-### 📄 **Enhanced PDF Decomposer Class**
 - **Load Once, Use Many Times** - Initialize PDF once, perform multiple operations
-- **Progress Tracking** - Observable pattern with real-time progress callbacks  
+- **Progress Tracking** - Observable pattern with real-time progress callbacks
 - **Error Handling** - Comprehensive error reporting with page-level context
 - **Memory Efficient** - Built-in memory management and cleanup
 - **Universal Support** - Works in Node.js 16+ and all modern browsers
 
-### 🔧 **Main Operations**
+### Main Operations
 
-#### 1. **Content Decomposition** (`decompose()`)
-- Extract structured text with positioning and formatting
-- Smart element composition with `elementComposer`
-- Content area cleaning with `cleanComposer`
-- Page-level composition with `pageComposer` 
+#### 1. Content Decomposition (\`decompose()\`)
+
+Extract structured text with positioning and formatting:
+
+- Smart element composition with \`elementComposer\`
+- Content area cleaning with \`cleanComposer\`
+- Page-level composition with \`pageComposer\`
 - Image extraction from embedded PDF objects
-- **🆕 Link extraction** from PDF annotations and text patterns
-- **Smart URL detection** with comprehensive email and domain pattern matching
+- Link extraction from PDF annotations and text patterns
+- Smart URL detection with comprehensive email and domain pattern matching
 
-#### 2. **Screenshot Generation** (`screenshot()`)
+#### 2. Screenshot Generation (\`screenshot()\`)
+
 - High-quality page rendering to PNG/JPEG
 - Configurable resolution and quality
 - Batch processing with progress tracking
 - File output or base64 data URLs
 
-#### 3. **PDF Data Generation** (`data()`)
+#### 3. PDF Data Generation (\`data()\`)
+
 - pwa-admin compatible data structure
 - Interactive area mapping with normalized coordinates
 - Widget ID generation following epub conventions
 - Article relationship management
 
-#### 4. **PDF Slicing** (`slice()`)
+#### 4. PDF Slicing (\`slice()\`)
+
 - Extract specific page ranges
-- Generate new PDF documents  
+- Generate new PDF documents
 - Replace internal document structure
 - Preserve all metadata and formatting
 
-### 🎯 **Advanced Content Processing**
+### Advanced Content Processing
 
-> **🆕 NEW in v1.0.3**: Element Attributes in MinifyOptions + Enhanced Features
-> - **Element Attributes**: New `elementAttributes: true` option includes styling data (fontFamily, textColor)
-> - **Slim Output**: Optimized attributes reduce JSON size while maintaining essential styling information
-> - **Header HTML Optimization**: 4 separate spans → 1 clean span with unified semantic tags  
-> - **MinifyOptions**: Enhanced format control with `format: 'html'` for HTML output in data field
-> - **Perfect for UI/Styling**: Get font and color information for better content rendering
+#### Element Composer
 
-#### **Element Composer**
 - Groups scattered text elements into coherent paragraphs
-- **🆕 Enhanced Header Detection**: Font-size based header element recognition (h1, h2, h3, etc.)
-- **🆕 Smart Span Merging**: Headers with same font-size/family but different colors merge seamlessly
-- **🆕 Content Consolidation**: Multiple `<h2>` tags merge into single semantic header elements
+- Font-size based header element recognition (h1, h2, h3, etc.)
+- Smart span merging for headers with same font-size/family but different colors
+- Content consolidation for multiple heading tags
 - Preserves reading order and text flow
 - Smart font and spacing analysis
 
-#### **Page Composer** 
+#### Page Composer
+
 - Merges continuous content across pages
 - Detects article boundaries and section breaks
 - Interview and feature content recognition
 - Typography consistency analysis
 
-#### **Clean Composer**
+#### Clean Composer
+
 - Filters out headers, footers, and page numbers
 - Content area detection with configurable margins
 - Image size validation and filtering
 - Control character removal
 
-#### **Image Extraction**
+#### Image Extraction
+
 - Universal browser-compatible processing
 - Multiple format support (RGB, RGBA, Grayscale)
 - Auto-scaling for memory safety
 - Duplicate detection and removal
 
-#### **🆕 Link Extraction** (`extractLinks: true`) - NEW in v1.0.4
-- **PDF Annotations**: Extract interactive link annotations with URLs and destinations
-- **Text Pattern Matching**: Detect URLs in text content (e.g., "GIA.edu/jewelryservices")
-- **Email Detection**: Find email addresses in document text with automatic mailto: prefix
-- **Smart URL Recognition**: Enhanced regex patterns for domain+path detection
-- **Link Types**: Support for external URLs, internal PDF destinations, and email links
-- **No Duplicates**: Intelligent handling prevents text/link element duplication
-- **Position Data**: Accurate bounding box coordinates for each link
-- **Link Attributes**: Rich metadata including link type, context text, and extraction method
+#### Link Extraction (\`extractLinks: true\`)
 
-### ⚡ **Performance & Memory**
-- **Memory Manager** - Adaptive cleanup and monitoring
-- **Progress Callbacks** - Real-time operation tracking  
-- **Background Processing** - Non-blocking operations
-- **Batch Processing** - Efficient multi-page handling
+- PDF Annotations: Extract interactive link annotations with URLs and destinations
+- Text Pattern Matching: Detect URLs in text content (e.g., "GIA.edu/jewelryservices")
+- Email Detection: Find email addresses in document text with automatic mailto: prefix
+- Smart URL Recognition: Enhanced regex patterns for domain+path detection
+- Link Types: Support for external URLs, internal PDF destinations, and email links
+- No Duplicates: Intelligent handling prevents text/link element duplication
+- Position Data: Accurate bounding box coordinates for each link
+- Link Attributes: Rich metadata including link type, context text, and extraction method
 
-## 📦 Installation
+### Performance and Memory
 
-```bash
+- Memory Manager - Adaptive cleanup and monitoring
+- Progress Callbacks - Real-time operation tracking
+- Background Processing - Non-blocking operations
+- Batch Processing - Efficient multi-page handling
+
+## Installation
+
+\`\`\`bash
 npm install @febbyrg/pdf-decomposer
 
 # For Node.js with canvas support (optional)
@@ -108,13 +110,13 @@ npm install canvas
 
 # For browser usage
 npm install pdfjs-dist
-```
+\`\`\`
 
-## 🚀 Quick Start
+## Quick Start
 
-### **Enhanced Class-Based API (Recommended)**
+### Class-Based API (Recommended)
 
-```typescript
+\`\`\`typescript
 import { PdfDecomposer } from '@febbyrg/pdf-decomposer'
 
 // Load PDF once, use many times
@@ -122,82 +124,63 @@ const pdf = new PdfDecomposer(buffer) // Buffer, ArrayBuffer, or Uint8Array
 await pdf.initialize()
 
 // Multiple operations on same PDF
-const pages = await pdf.decompose({ 
-  elementComposer: true,    // Group text into paragraphs
-  pageComposer: true,       // Merge continuous content across pages
-  cleanComposer: true,      // Clean headers/footers
-  extractImages: true,      // Extract embedded images
-  extractLinks: true        // Extract links and annotations from PDF
+const pages = await pdf.decompose({
+  elementComposer: true, // Group text into paragraphs
+  pageComposer: true, // Merge continuous content across pages
+  cleanComposer: true, // Clean headers/footers
+  extractImages: true, // Extract embedded images
+  extractLinks: true // Extract links and annotations from PDF
 })
 
-// 🆕 NEW: Enhanced MinifyOptions with Element Attributes (v1.0.3+)
+// Enhanced MinifyOptions with Element Attributes
 const styledPages = await pdf.decompose({
   elementComposer: true,
   minify: true,
   minifyOptions: {
-    format: 'html',         // data field contains formatted HTML
+    format: 'html', // data field contains formatted HTML
     elementAttributes: true // Include styling information
   }
 })
-// Result: {
-//   type: "h1", 
-//   data: "<span style='...'><h2>Header Text</h2></span>",
-//   attributes: { fontFamily: "Arial", textColor: "#f15a29" }
-// }
 
-// 🔄 Previous: HTML format only (v1.0.2+)
-const htmlPages = await pdf.decompose({
-  elementComposer: true,
-  minifyOptions: {
-    format: 'html'          // data field contains formatted HTML instead of plain text
-  }
-})
-// Result: element.data = "<span style='...'><h2>Header Text</h2></span>"
-// Instead of: element.data = "Header Text"
-
-const screenshots = await pdf.screenshot({ 
+const screenshots = await pdf.screenshot({
   imageWidth: 1024,
-  imageQuality: 90 
+  imageQuality: 90
 })
 
-const pdfData = await pdf.data({      // pwa-admin compatible format
+const pdfData = await pdf.data({
+  // pwa-admin compatible format
   imageWidth: 1024,
   elementComposer: true
 })
 
-const sliced = await pdf.slice({      // Extract first 5 pages
+const sliced = await pdf.slice({
+  // Extract first 5 pages
   numberPages: 5
 })
 
-// 🆕 NEW: Link extraction
-const pagesWithLinks = await pdf.decompose({
-  elementComposer: true,
-  extractLinks: true      // Extract links from PDF content
-})
-
 // Access PDF properties
-console.log(`Pages: ${pdf.numPages}`)
-console.log(`Fingerprint: ${pdf.fingerprint}`)
-```
+console.log(\`Pages: \${pdf.numPages}\`)
+console.log(\`Fingerprint: \${pdf.fingerprint}\`)
+\`\`\`
 
-### **Factory Method (One-liner)**
+### Factory Method (One-liner)
 
-```typescript
+\`\`\`typescript
 import { PdfDecomposer } from '@febbyrg/pdf-decomposer'
 
 // Create and initialize in one step
 const pdf = await PdfDecomposer.create(buffer)
 const pages = await pdf.decompose({ elementComposer: true })
-```
+\`\`\`
 
-### **Progress Tracking**
+### Progress Tracking
 
-```typescript
+\`\`\`typescript
 const pdf = new PdfDecomposer(buffer)
 
 // Subscribe to progress updates
 pdf.subscribe((state) => {
-  console.log(`${state.progress}% - ${state.message}`)
+  console.log(\`\${state.progress}% - \${state.message}\`)
 })
 
 await pdf.initialize()
@@ -206,11 +189,11 @@ const result = await pdf.decompose({
   endPage: 10,
   elementComposer: true
 })
-```
+\`\`\`
 
-### **Browser Environment (Angular, React, Vue)**
+### Browser Environment (Angular, React, Vue)
 
-```typescript
+\`\`\`typescript
 import { PdfDecomposer } from '@febbyrg/pdf-decomposer'
 
 // In browser - use File API
@@ -218,7 +201,7 @@ async function processPdfFile(file: File) {
   const arrayBuffer = await file.arrayBuffer()
   const pdf = new PdfDecomposer(arrayBuffer)
   await pdf.initialize()
-  
+
   return await pdf.decompose({
     elementComposer: true,
     extractImages: true
@@ -228,12 +211,13 @@ async function processPdfFile(file: File) {
 // Configure PDF.js worker (once per app)
 import { PdfWorkerConfig } from '@febbyrg/pdf-decomposer'
 PdfWorkerConfig.configure() // Auto-configures worker URL
-```
+\`\`\`
 
-### **Advanced Usage Examples**
+### Advanced Usage Examples
 
-#### **Content Processing Pipeline**
-```typescript
+#### Content Processing Pipeline
+
+\`\`\`typescript
 const pdf = new PdfDecomposer(buffer)
 await pdf.initialize()
 
@@ -241,15 +225,15 @@ await pdf.initialize()
 const pages = await pdf.decompose({
   startPage: 1,
   endPage: 10,
-  elementComposer: true,    // Group scattered text into paragraphs
-  pageComposer: true,       // Merge continuous content across pages
-  cleanComposer: true,      // Remove headers/footers/page numbers
-  extractImages: true,      // Extract embedded images
-  minify: true,            // Compact output format
+  elementComposer: true,
+  pageComposer: true,
+  cleanComposer: true,
+  extractImages: true,
+  minify: true,
   cleanComposerOptions: {
-    topMarginPercent: 0.15,      // Exclude top 15% (headers)
-    bottomMarginPercent: 0.10,   // Exclude bottom 10% (footers)
-    minTextHeight: 8,            // Filter small text
+    topMarginPercent: 0.15,
+    bottomMarginPercent: 0.1,
+    minTextHeight: 8,
     removeControlCharacters: true
   }
 })
@@ -269,117 +253,85 @@ const screenshots = await pdf.screenshot({
   imageWidth: 1200,
   imageQuality: 95
 })
-```
+\`\`\`
 
-#### **PDF Slicing and Processing**
-```typescript
+#### PDF Slicing and Processing
+
+\`\`\`typescript
 const pdf = new PdfDecomposer(buffer)
 await pdf.initialize()
 
-console.log(`Original PDF: ${pdf.numPages} pages`)
+console.log(\`Original PDF: \${pdf.numPages} pages\`)
 
 // Slice to first 5 pages (modifies internal PDF)
-const sliceResult = await pdf.slice({ 
-  numberPages: 5 
+const sliceResult = await pdf.slice({
+  numberPages: 5
 })
 
-console.log(`Sliced PDF: ${pdf.numPages} pages`) // Now shows 5
-console.log(`Saved ${sliceResult.fileSize} bytes`)
+console.log(\`Sliced PDF: \${pdf.numPages} pages\`) // Now shows 5
+console.log(\`Saved \${sliceResult.fileSize} bytes\`)
 
 // Process the sliced PDF
 const pages = await pdf.decompose({
   elementComposer: true
 })
-```
+\`\`\`
 
-#### **🆕 Link Extraction**
-```typescript
+#### Link Extraction
+
+\`\`\`typescript
 const pdf = new PdfDecomposer(buffer)
 await pdf.initialize()
 
 // Extract links from PDF content
 const pagesWithLinks = await pdf.decompose({
-  extractLinks: true,    // Enable link extraction
+  extractLinks: true,
   elementComposer: true
 })
 
 // Process found links
 pagesWithLinks.pages.forEach((page, pageIndex) => {
-  const linkElements = page.elements.filter(el => el.type === 'link')
-  
-  linkElements.forEach(link => {
-    console.log(`Page ${pageIndex + 1}: Found ${link.attributes.linkType}`)
-    console.log(`  URL: ${link.data}`)
-    console.log(`  Position: [${link.boundingBox.left}, ${link.boundingBox.top}]`)
-    
+  const linkElements = page.elements.filter((el) => el.type === 'link')
+
+  linkElements.forEach((link) => {
+    console.log(\`Page \${pageIndex + 1}: Found \${link.attributes.linkType}\`)
+    console.log(\`  URL: \${link.data}\`)
+    console.log(\`  Position: [\${link.boundingBox.left}, \${link.boundingBox.top}]\`)
+
     if (link.attributes.text) {
-      console.log(`  Context: "${link.attributes.text}"`)
+      console.log(\`  Context: "\${link.attributes.text}"\`)
     }
   })
 })
+\`\`\`
 
-// Link element structure:
-// {
-//   id: "uuid-string",
-//   pageIndex: 0,
-//   type: "link",
-//   boundingBox: { top, left, bottom, right, width, height },
-//   data: "http://example.com/path",
-//   attributes: {
-//     linkType: "url" | "email" | "internal" | "annotation",
-//     text: "context text",
-//     extraction: "text-pattern" | "annotation",
-//     annotationId?: "pdf-annotation-id",
-//     dest?: "internal-destination-data"
-//   }
-// }
-```
+## API Reference
 
-#### **Page Range Processing**
-```typescript
-const pdf = new PdfDecomposer(buffer)
-await pdf.initialize()
+### PdfDecomposer Class
 
-// Process specific page range
-const chapterPages = await pdf.decompose({
-  startPage: 5,     // Start from page 5
-  endPage: 15,      // End at page 15  
-  pageComposer: true // Merge continuous content
-})
+#### Constructor
 
-// Generate screenshots for the same range
-const chapterScreenshots = await pdf.screenshot({
-  startPage: 5,
-  endPage: 15,
-  imageWidth: 800
-})
-```
-
-## 🔧 API Reference
-
-### **PdfDecomposer Class**
-
-#### **Constructor**
-```typescript
+\`\`\`typescript
 new PdfDecomposer(input: Buffer | ArrayBuffer | Uint8Array)
-```
+\`\`\`
 
-#### **Static Methods**
-```typescript
+#### Static Methods
+
+\`\`\`typescript
 // Factory method - create and initialize in one step
 static async create(input: Buffer | ArrayBuffer | Uint8Array): Promise<PdfDecomposer>
-```
+\`\`\`
 
-#### **Instance Methods**
+#### Instance Methods
 
-```typescript
+\`\`\`typescript
 // Initialize PDF (required before other operations)
 async initialize(): Promise<void>
 
 // Extract content and structure
 async decompose(options?: PdfDecomposerOptions): Promise<DecomposeResult>
 
-// Generate page screenshots  
+// Generate page screenshots
 async screenshot(options?: ScreenshotOptions): Promise<ScreenshotResult>
 
 // Generate pwa-admin compatible data structure
@@ -393,222 +345,228 @@ subscribe(callback: (state: PdfDecomposerState) => void): void
 
 // Get PDF and page fingerprints for caching
 async getFingerprints(): Promise<{ pdfHash: string; pageHashes: string[]; total: number }>
-```
+\`\`\`
 
-#### **Properties**
-```typescript
+#### Properties
+
+\`\`\`typescript
 readonly numPages: number           // Total number of pages
-readonly fingerprint: string        // PDF fingerprint for caching  
+readonly fingerprint: string        // PDF fingerprint for caching
 readonly initialized: boolean       // Initialization status
-```
+\`\`\`
 
-### **Options Interfaces**
+### Options Interfaces
 
-#### **PdfDecomposerOptions**
-```typescript
+#### PdfDecomposerOptions
+
+\`\`\`typescript
 interface PdfDecomposerOptions {
-  startPage?: number                // First page (1-indexed, default: 1)
-  endPage?: number                  // Last page (1-indexed, default: all)
-  outputDir?: string                // Output directory for files
-  elementComposer?: boolean         // Group text into paragraphs
-  pageComposer?: boolean           // Merge continuous content across pages
-  extractImages?: boolean          // Extract embedded images
-  extractLinks?: boolean           // Extract links and annotations from PDF
-  minify?: boolean                 // Compact output format
-  cleanComposer?: boolean          // Remove headers/footers
+  startPage?: number // First page (1-indexed, default: 1)
+  endPage?: number // Last page (1-indexed, default: all)
+  outputDir?: string // Output directory for files
+  elementComposer?: boolean // Group text into paragraphs
+  pageComposer?: boolean // Merge continuous content across pages
+  extractImages?: boolean // Extract embedded images
+  extractLinks?: boolean // Extract links and annotations from PDF
+  minify?: boolean // Compact output format
+  cleanComposer?: boolean // Remove headers/footers
   cleanComposerOptions?: PdfCleanComposerOptions
   minifyOptions?: {
-    format?: 'plain' | 'html'      // Data field format: 'plain' (default) or 'html'
-    elementAttributes?: boolean    // Include slim element attributes (fontFamily, textColor)
+    format?: 'plain' | 'html' // Data field format
+    elementAttributes?: boolean // Include slim element attributes
   }
 }
-```
+\`\`\`
 
-#### **ScreenshotOptions**
-```typescript
+#### ScreenshotOptions
+
+\`\`\`typescript
 interface ScreenshotOptions {
-  startPage?: number               // First page (1-indexed)
-  endPage?: number                 // Last page (1-indexed)  
-  outputDir?: string               // Output directory for image files
-  imageWidth?: number              // Image width (default: 1200)
-  imageQuality?: number            // JPEG quality 1-100 (default: 90)
+  startPage?: number // First page (1-indexed)
+  endPage?: number // Last page (1-indexed)
+  outputDir?: string // Output directory for image files
+  imageWidth?: number // Image width (default: 1200)
+  imageQuality?: number // JPEG quality 1-100 (default: 90)
 }
-```
+\`\`\`
 
-#### **DataOptions**
-```typescript
+#### DataOptions
+
+\`\`\`typescript
 interface DataOptions {
-  startPage?: number               // First page (1-indexed)
-  endPage?: number                 // Last page (1-indexed)
-  outputDir?: string               // Output directory
-  extractImages?: boolean          // Extract embedded images
-  extractLinks?: boolean           // Extract links and annotations
-  elementComposer?: boolean        // Group elements into paragraphs
-  cleanComposer?: boolean          // Clean content area
-  imageWidth?: number              // Screenshot width (default: 1024)
-  imageQuality?: number            // Screenshot quality (default: 90)
+  startPage?: number // First page (1-indexed)
+  endPage?: number // Last page (1-indexed)
+  outputDir?: string // Output directory
+  extractImages?: boolean // Extract embedded images
+  extractLinks?: boolean // Extract links and annotations
+  elementComposer?: boolean // Group elements into paragraphs
+  cleanComposer?: boolean // Clean content area
+  imageWidth?: number // Screenshot width (default: 1024)
+  imageQuality?: number // Screenshot quality (default: 90)
 }
-```
+\`\`\`
 
-#### **SliceOptions**
-```typescript
+#### SliceOptions
+
+\`\`\`typescript
 interface SliceOptions {
-  numberPages?: number             // Number of pages from start
-  startPage?: number               // Starting page (1-indexed, default: 1)
-  endPage?: number                 // Ending page (1-indexed)
+  numberPages?: number // Number of pages from start
+  startPage?: number // Starting page (1-indexed, default: 1)
+  endPage?: number // Ending page (1-indexed)
 }
-```
+\`\`\`
 
-#### **PdfCleanComposerOptions**
-```typescript
+#### PdfCleanComposerOptions
+
+\`\`\`typescript
 interface PdfCleanComposerOptions {
-  topMarginPercent?: number        // Exclude top % for headers (default: 0.1)
-  bottomMarginPercent?: number     // Exclude bottom % for footers (default: 0.1)
-  sideMarginPercent?: number       // Exclude side % (default: 0.05)
-  minTextHeight?: number           // Minimum text height (default: 8)
-  minTextWidth?: number            // Minimum text width (default: 10)
-  minTextLength?: number           // Minimum text length (default: 3)
+  topMarginPercent?: number // Exclude top % for headers (default: 0.1)
+  bottomMarginPercent?: number // Exclude bottom % for footers (default: 0.1)
+  sideMarginPercent?: number // Exclude side % (default: 0.05)
+  minTextHeight?: number // Minimum text height (default: 8)
+  minTextWidth?: number // Minimum text width (default: 10)
+  minTextLength?: number // Minimum text length (default: 3)
   removeControlCharacters?: boolean // Remove non-printable chars (default: true)
   removeIsolatedCharacters?: boolean // Remove isolated chars (default: true)
-  minImageWidth?: number           // Minimum image width (default: 50)
-  minImageHeight?: number          // Minimum image height (default: 50)
-  minImageArea?: number            // Minimum image area (default: 2500)
-  coverPageDetection?: boolean     // Detect cover pages (default: true)
-  coverPageThreshold?: number      // Cover detection threshold (default: 0.8)
+  minImageWidth?: number // Minimum image width (default: 50)
+  minImageHeight?: number // Minimum image height (default: 50)
+  minImageArea?: number // Minimum image area (default: 2500)
+  coverPageDetection?: boolean // Detect cover pages (default: true)
+  coverPageThreshold?: number // Cover detection threshold (default: 0.8)
 }
-```
+\`\`\`
 
-### **Result Interfaces**
+### Result Interfaces
 
-#### **DecomposeResult**
-```typescript
+#### DecomposeResult
+
+\`\`\`typescript
 interface DecomposeResult {
-  pages: PdfPageContent[]          // Array of page content
+  pages: PdfPageContent[]
 }
 
 interface PdfPageContent {
-  pageIndex: number                // 0-based page index
-  pageNumber: number               // 1-based page number
-  width: number                    // Page width in points
-  height: number                   // Page height in points
-  title: string                    // Page title
-  elements: PdfElement[]           // Extracted elements
-  metadata?: {                     // Optional metadata
-    composedFromPages?: number[]   // Original page indices (for pageComposer)
+  pageIndex: number // 0-based page index
+  pageNumber: number // 1-based page number
+  width: number // Page width in points
+  height: number // Page height in points
+  title: string // Page title
+  elements: PdfElement[] // Extracted elements
+  metadata?: {
+    composedFromPages?: number[] // Original page indices (for pageComposer)
     [key: string]: any
   }
 }
-```
+\`\`\`
 
-#### **ScreenshotResult**
-```typescript
+#### ScreenshotResult
+
+\`\`\`typescript
 interface ScreenshotResult {
   totalPages: number
   screenshots: ScreenshotPageResult[]
 }
 
 interface ScreenshotPageResult {
-  pageNumber: number               // 1-based page number
-  width: number                    // Image width in pixels
-  height: number                   // Image height in pixels
-  screenshot: string               // Base64 data URL
-  filePath?: string                // File path if outputDir provided
-  error?: string                   // Error message if failed
+  pageNumber: number // 1-based page number
+  width: number // Image width in pixels
+  height: number // Image height in pixels
+  screenshot: string // Base64 data URL
+  filePath?: string // File path if outputDir provided
+  error?: string // Error message if failed
 }
-```
+\`\`\`
 
-#### **DataResult**
-```typescript
+#### DataResult
+
+\`\`\`typescript
 interface DataResult {
-  data: PdfData[]                  // pwa-admin compatible format
+  data: PdfData[]
 }
 
 interface PdfData {
-  id: string                       // Unique page identifier
-  index: number                    // 0-based page index
-  image: string                    // Page screenshot URL
-  thumbnail: string                // Thumbnail URL
-  areas: PdfArea[]                 // Interactive areas
+  id: string // Unique page identifier
+  index: number // 0-based page index
+  image: string // Page screenshot URL
+  thumbnail: string // Thumbnail URL
+  areas: PdfArea[] // Interactive areas
 }
 
 interface PdfArea {
-  id: string                       // Unique area identifier
-  coords: number[]                 // [x1, y1, x2, y2] normalized 0-1
-  articleId: number                // Associated article ID
-  widgetId: string                 // Widget identifier (P: or T:)
+  id: string // Unique area identifier
+  coords: number[] // [x1, y1, x2, y2] normalized 0-1
+  articleId: number // Associated article ID
+  widgetId: string // Widget identifier (P: or T:)
 }
-```
+\`\`\`
 
-#### **SliceResult**  
-```typescript
+#### SliceResult
+
+\`\`\`typescript
 interface SliceResult {
-  pdfBytes: Uint8Array            // Sliced PDF data
-  originalPageCount: number        // Original page count
-  slicedPageCount: number         // Sliced page count
-  pageRange: {                    // Page range that was sliced
+  pdfBytes: Uint8Array // Sliced PDF data
+  originalPageCount: number // Original page count
+  slicedPageCount: number // Sliced page count
+  pageRange: {
     startPage: number
     endPage: number
   }
-  fileSize: number                // Size in bytes
+  fileSize: number // Size in bytes
 }
-```
+\`\`\`
 
-## 🧪 Testing & Development
+## Testing and Development
 
-### **Run Tests**
-```bash
+### Run Tests
+
+\`\`\`bash
 npm test                    # Comprehensive test suite
 npm run test:screenshot     # Screenshot generation tests
 npm run test:data          # PDF data generation tests
-```
+\`\`\`
 
-### **Build & Development**
-```bash
+### Build and Development
+
+\`\`\`bash
 npm run build              # Build TypeScript to dist/
 npm run build:watch        # Watch mode for development
 npm run lint               # ESLint validation
-```
+\`\`\`
 
-### **Test Output**
-The test suite generates output in `scripts/test-output/`:
-- Decomposed JSON files
-- Generated screenshots  
-- PDF data structures
-- Performance metrics
+## Environment Support
 
-## 📱 Environment Support
+| Feature               | Node.js | Browser | Notes                                    |
+| --------------------- | ------- | ------- | ---------------------------------------- |
+| Text Extraction       | Yes     | Yes     | Full support both environments           |
+| Image Extraction      | Yes     | Yes     | Universal canvas-based processing        |
+| Screenshots           | Yes     | Yes     | Node.js uses canvas, browser Canvas API  |
+| PDF Slicing           | Yes     | Yes     | Uses pdf-lib in both environments        |
+| Progress Tracking     | Yes     | Yes     | Observable pattern with callbacks        |
+| Memory Management     | Yes     | Limited | Advanced in Node.js, basic in browser    |
+| File Output           | Yes     | No      | Browser returns data URLs/blobs          |
+| Element Composer      | Yes     | Yes     | Smart text grouping                      |
+| Page Composer         | Yes     | Yes     | Cross-page content merging               |
+| Clean Composer        | Yes     | Yes     | Header/footer removal                    |
 
-| Feature | Node.js | Browser | Notes |
-|---------|---------|---------|-------|
-| **Text Extraction** | ✅ | ✅ | Full support both environments |
-| **Image Extraction** | ✅ | ✅ | Universal canvas-based processing |
-| **Screenshots** | ✅ | ✅ | Node.js uses canvas, browser uses Canvas API |
-| **PDF Slicing** | ✅ | ✅ | Uses pdf-lib in both environments |
-| **Progress Tracking** | ✅ | ✅ | Observable pattern with callbacks |
-| **Memory Management** | ✅ | Limited | Advanced in Node.js, basic in browser |
-| **File Output** | ✅ | ❌ | Browser returns data URLs/blobs |
-| **Element Composer** | ✅ | ✅ | Smart text grouping |
-| **Page Composer** | ✅ | ✅ | Cross-page content merging |
-| **Clean Composer** | ✅ | ✅ | Header/footer removal |
+### Browser Compatibility
 
-### **Browser Compatibility**
-- ✅ **Chrome 60+** - Full support
-- ✅ **Firefox 55+** - Full support  
-- ✅ **Safari 11+** - Full support
-- ✅ **Edge 79+** - Full support
-- ✅ **Mobile Browsers** - iOS Safari, Chrome Mobile
+- Chrome 60+
+- Firefox 55+
+- Safari 11+
+- Edge 79+
+- Mobile browsers (iOS Safari, Chrome Mobile)
 
-### **Node.js Requirements**
-- **Node.js 16+** required
-- **Canvas** optional for enhanced screenshot quality
-- **TypeScript 4.9+** for development
+### Node.js Requirements
 
+- Node.js 16+ required
+- Canvas optional for enhanced screenshot quality
+- TypeScript 4.9+ for development
 
+## Production Usage Examples
 
-## 🔍 Production Usage Examples
+### Memory Optimization
 
-### **Memory Optimization**
-```typescript
+\`\`\`typescript
 const pdf = new PdfDecomposer(buffer)
 await pdf.initialize()
 
@@ -618,23 +576,24 @@ const batchSize = 10
 
 for (let start = 1; start <= totalPages; start += batchSize) {
   const end = Math.min(start + batchSize - 1, totalPages)
-  
+
   const batch = await pdf.decompose({
     startPage: start,
     endPage: end,
     elementComposer: true
   })
-  
+
   // Process batch results...
 }
-```
+\`\`\`
 
-### **Error Handling**
-```typescript
+### Error Handling
+
+\`\`\`typescript
 const pdf = new PdfDecomposer(buffer)
 
 pdf.subscribe((state) => {
-  console.log(`Progress: ${state.progress}%`)
+  console.log(\`Progress: \${state.progress}%\`)
 })
 
 try {
@@ -649,16 +608,17 @@ try {
     console.error('Processing failed:', error.message)
   }
 }
-```
+\`\`\`
 
-### **Caching Strategy**
-```typescript
+### Caching Strategy
+
+\`\`\`typescript
 const pdf = new PdfDecomposer(buffer)
 await pdf.initialize()
 
 // Use fingerprint for caching
 const fingerprints = await pdf.getFingerprints()
-const cacheKey = `pdf_${fingerprints.pdfHash}`
+const cacheKey = \`pdf_\${fingerprints.pdfHash}\`
 
 // Check cache before processing
 const cached = cache.get(cacheKey)
@@ -666,46 +626,43 @@ if (!cached) {
   const result = await pdf.decompose()
   cache.set(cacheKey, result, { ttl: 3600 }) // 1 hour
 }
-```
+\`\`\`
 
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
+2. Create a feature branch (\`git checkout -b feature/amazing-feature\`)
+3. Commit your changes (\`git commit -m 'Add amazing feature'\`)
+4. Push to the branch (\`git push origin feature/amazing-feature\`)
 5. Open a Pull Request
 
-### **Development Guidelines**
+### Development Guidelines
+
 - Use TypeScript for all new code
 - Add tests for new features
 - Update README for API changes
 - Follow existing code style
 - Test in both Node.js and browser environments
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## Development & Publishing
+## Publishing
 
 ### Setup for Publishing
-```bash
+
+\`\`\`bash
 # Initial setup (run once)
 npm run setup:publishing
 
 # Verify configuration
 npm run setup:verify
-```
+\`\`\`
 
 ### Publishing Commands
-```bash
+
+\`\`\`bash
 # Publish to NPM only
 npm run publish:npm
 
-# Publish to GitHub Packages only  
+# Publish to GitHub Packages only
 npm run publish:github
 
 # Publish to both registries
@@ -713,36 +670,33 @@ npm run publish:both
 
 # Version bump + publish
 npm version patch && npm run publish:both
-```
+\`\`\`
 
----
+## License
 
-## 📄 License
+PDF-Decomposer is dual-licensed:
 
-**PDF-Decomposer** is dual-licensed:
+### Non-Commercial Use (Free)
 
-### 🆓 Non-Commercial Use (Free)
-- ✅ Personal projects
-- ✅ Educational use
-- ✅ Research purposes
-- ✅ Open source projects
+- Personal projects
+- Educational use
+- Research purposes
+- Open source projects
 
-### 💼 Commercial Use (Paid License Required)
-- 🏢 Commercial applications
-- 💰 Revenue-generating products
-- 🚀 Enterprise software
-- 📦 Distribution in commercial products
+### Commercial Use (Paid License Required)
 
-**For commercial licensing**: Contact [febby.rachmat@gmail.com](mailto:febby.rachmat@gmail.com)
+- Commercial applications
+- Revenue-generating products
+- Enterprise software
+- Distribution in commercial products
+
+For commercial licensing, contact [febby.rachmat@gmail.com](mailto:febby.rachmat@gmail.com)
 
 See [LICENSE](LICENSE) file for complete terms.
 
-## 🔗 Links
+## Links
 
-- **NPM Package**: [@febbyrg/pdf-decomposer](https://www.npmjs.com/package/@febbyrg/pdf-decomposer)
-- **GitHub Repository**: [febbyRG/pdf-decomposer](https://github.com/febbyRG/pdf-decomposer)
-- **Issues**: [GitHub Issues](https://github.com/febbyRG/pdf-decomposer/issues)
-- **Documentation**: [API Reference](https://github.com/febbyRG/pdf-decomposer#-api-reference)
-- **Releases**: [GitHub Releases](https://github.com/febbyRG/pdf-decomposer/releases)
-
----
+- [NPM Package](https://www.npmjs.com/package/@febbyrg/pdf-decomposer)
+- [GitHub Repository](https://github.com/febbyRG/pdf-decomposer)
+- [Issues](https://github.com/febbyRG/pdf-decomposer/issues)
+- [Releases](https://github.com/febbyRG/pdf-decomposer/releases)

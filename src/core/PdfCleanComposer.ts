@@ -198,34 +198,51 @@ export class PdfCleanComposer {
 
     const finalOptions = { ...defaultOptions, ...options }
 
-    // Check for cover page detection if enabled and pdfDocument is provided
-    if (finalOptions.coverPageDetection && pdfDocument && pages.length > 0) {
-      const coverPageResult = await this.detectAndProcessCoverPage(pages[0], pdfDocument, finalOptions)
-      if (coverPageResult) {
-        pages[0] = coverPageResult
-        // Skip normal processing for cover page, but continue with rest
-        const restPages = pages.slice(1)
-        const processedRestPages = await Promise.all(
-          restPages.map((page, _index) => this.cleanPage(page, finalOptions, pdfDocument))
-        )
-        return [coverPageResult, ...processedRestPages]
+    // Process pages SEQUENTIALLY to avoid memory explosion from parallel screenshot generation
+    // Limit screenshot conversions to prevent OOM on large PDFs
+    const MAX_SCREENSHOTS_PER_DOCUMENT = 10
+    let screenshotCount = 0
+    
+    const processedPages: PdfPageContent[] = []
+    
+    for (let i = 0; i < pages.length; i++) {
+      const page = pages[i]
+      
+      // Check for cover page detection on first page
+      if (i === 0 && finalOptions.coverPageDetection && pdfDocument) {
+        const coverPageResult = await this.detectAndProcessCoverPage(page, pdfDocument, finalOptions)
+        if (coverPageResult) {
+          processedPages.push(coverPageResult)
+          if (coverPageResult.metadata?.convertedToScreenshot) {
+            screenshotCount++
+          }
+          continue
+        }
       }
+      
+      // Process page with screenshot limit check
+      const processedPage = await this.cleanPage(page, finalOptions, pdfDocument, screenshotCount >= MAX_SCREENSHOTS_PER_DOCUMENT)
+      
+      // Count if this page was converted to screenshot
+      if (processedPage.metadata?.convertedToScreenshot) {
+        screenshotCount++
+      }
+      
+      processedPages.push(processedPage)
     }
-
-    // Process all pages with async cleanPage method
-    const processedPages = await Promise.all(
-      pages.map((page, _) => this.cleanPage(page, finalOptions, pdfDocument))
-    )
+    
     return processedPages
   }
 
   /**
    * Clean a single PDF page
+   * @param skipScreenshot If true, skip screenshot conversion (used when limit reached)
    */
   private static async cleanPage(
     page: PdfPageContent, 
     options: PdfCleanComposerOptions,
-    pdfDocument?: PdfDocument
+    pdfDocument?: PdfDocument,
+    skipScreenshot = false
   ): Promise<PdfPageContent> {
     // Calculate content area for this page
     const contentArea = this.calculateContentArea(page, options)
@@ -234,7 +251,8 @@ export class PdfCleanComposer {
     const cleaningResult = this.cleanElements(page.elements || [], contentArea, options)
 
     // Check if page should be converted to screenshot (large image detection for any page)
-    if (pdfDocument && cleaningResult.kept.length > 0) {
+    // Skip screenshot conversion if limit reached
+    if (pdfDocument && cleaningResult.kept.length > 0 && !skipScreenshot) {
       const shouldScreenshot = await this.shouldConvertToScreenshot(page, cleaningResult.kept, options)
       
       if (shouldScreenshot.convert) {
@@ -871,6 +889,7 @@ export class PdfCleanComposer {
 
   /**
    * Generate screenshot for cover page
+   * Note: Uses scale 1.0 for memory efficiency on large documents
    */
   private static async generatePageScreenshot(
     page: PdfPageContent, 
@@ -884,10 +903,14 @@ export class PdfCleanComposer {
       // Import PageRenderer dynamically for universal screenshot support
       const { PageRenderer } = await import('../utils/PageRenderer.js')
       
-      // Generate screenshot with high quality using raw PDF.js objects
+      // Use scale 1.0 for memory efficiency on large documents
+      // Higher scales cause OOM on PDFs with many pages
+      const renderScale = 1.0
+      
+      // Generate screenshot with optimized settings
       const screenshotResult = await PageRenderer.renderPageToBase64(pdfPage.rawProxy, pdfDocument.rawProxy, {
-        quality: options.coverPageScreenshotQuality || 95,
-        scale: 2.0 // High quality screenshot with proper scaling
+        quality: options.coverPageScreenshotQuality || 85, // Slightly lower default quality
+        scale: renderScale
       })
       
       // Generate filename pattern - use "cover" for page 0, "page" for others
@@ -941,8 +964,8 @@ export class PdfCleanComposer {
           extraction: page.pageIndex === 0 ? 'cover-page-detection' : 'large-image-detection',
           originalPageWidth: page.width,
           originalPageHeight: page.height,
-          scale: 2.0,
-          quality: options.coverPageScreenshotQuality || 95,
+          scale: 1.0,
+          quality: options.coverPageScreenshotQuality || 85,
           isCoverPage: page.pageIndex === 0
         }
       }

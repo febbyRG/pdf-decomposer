@@ -6,20 +6,39 @@
  * - Browser-native compression via canvas.toBlob()
  * - Direct PDF.js object processing for maximum compatibility
  * - Supports multiple image formats and color spaces
- * - Zero Node.js dependencies - works in all browser environments
+ * - Uses zlib compression in Node.js for efficient PNG creation
  */
 
 // Browser environment check
 const isBrowser = typeof window !== 'undefined' && typeof document !== 'undefined'
+
+// Node.js zlib for compressed PNG (lazy loaded)
+let zlibModule: typeof import('zlib') | null = null
+async function getZlib(): Promise<typeof import('zlib') | null> {
+  if (!isBrowser && !zlibModule) {
+    try {
+      zlibModule = await import('zlib')
+    } catch {
+      zlibModule = null
+    }
+  }
+  return zlibModule
+}
 
 import type { ExtractedImage } from '../types/image.types.js'
 
 export class PdfImageExtractor {
   /**
    * Memory-safe pixel threshold for auto-scaling
+   * Reduced from 8M to 2M pixels for better memory management on large PDFs
    */
-  private static readonly MAX_SAFE_PIXELS = 8 * 1024 * 1024
-  private static readonly MAX_DIMENSION = 4000
+  private static readonly MAX_SAFE_PIXELS = 2 * 1024 * 1024
+  private static readonly MAX_DIMENSION = 2000
+  
+  /**
+   * Maximum images per page to prevent memory explosion
+   */
+  private static readonly MAX_IMAGES_PER_PAGE = 20
 
   /**
    * Browser-compatible image processing using Canvas API
@@ -145,10 +164,19 @@ export class PdfImageExtractor {
       // Track current transformation matrix for position calculations
       let currentTransform = [1, 0, 0, 1, 0, 0] // Identity matrix [a, b, c, d, e, f]
       const transformStack: number[][] = [] // Stack for q/Q operations
+      
+      // Counter for image limit per page
+      let imageCount = 0
 
       // Look for image operations - SIMPLIFIED APPROACH like editor
       // Only check Do (XObject) operations which are most common
       for (let i = 0; i < operatorList.fnArray.length; i++) {
+        // Early exit if we've reached the image limit
+        if (imageCount >= PdfImageExtractor.MAX_IMAGES_PER_PAGE) {
+          console.log(`⚠️ Reached max images limit (${PdfImageExtractor.MAX_IMAGES_PER_PAGE}) for page ${pageNumber}`)
+          break
+        }
+        
         const op = operatorList.fnArray[i]
         const args = operatorList.argsArray[i]
 
@@ -217,7 +245,7 @@ export class PdfImageExtractor {
                 imageObj,
                 imageName,
                 pageNumber, // Use actual page number
-                i,
+                imageCount, // Use imageCount instead of i for proper indexing
                 'document',
                 currentTransform,
                 viewport
@@ -225,6 +253,7 @@ export class PdfImageExtractor {
 
               if (extractedImage) {
                 images.push(extractedImage)
+                imageCount++
               }
             }
           } else if (page.commonObjs && page.commonObjs.has(imageName)) {
@@ -235,7 +264,7 @@ export class PdfImageExtractor {
                 imageObj,
                 imageName,
                 pageNumber, // Use actual page number
-                i,
+                imageCount, // Use imageCount instead of i for proper indexing
                 'document',
                 currentTransform,
                 viewport
@@ -243,6 +272,7 @@ export class PdfImageExtractor {
 
               if (extractedImage) {
                 images.push(extractedImage)
+                imageCount++
               }
             }
           }
@@ -484,12 +514,15 @@ export class PdfImageExtractor {
           dataUrl = await this.imageToBlob(processedData, safeWidth, safeHeight, isRGBA)
         } catch (canvasError) {
           console.warn('Canvas API failed, falling back to manual PNG:', canvasError)
-          dataUrl = this.createSimpleDataUrl(processedData, safeWidth, safeHeight, isRGBA)
+          dataUrl = await this.createSimpleDataUrl(processedData, safeWidth, safeHeight, isRGBA)
         }
       } else {
-        // Node.js environment: use manual PNG creation
-        dataUrl = this.createSimpleDataUrl(processedData, safeWidth, safeHeight, isRGBA)
+        // Node.js environment: use compressed PNG creation
+        dataUrl = await this.createSimpleDataUrl(processedData, safeWidth, safeHeight, isRGBA)
       }
+      
+      // Clear processed data to free memory immediately
+      processedData = null as unknown as Uint8Array
 
       return {
         id: `${imageId.replace(/[^a-zA-Z0-9]/g, '_')}`,
@@ -667,17 +700,91 @@ export class PdfImageExtractor {
 
   /**
    * Create simple data URL using raw pixel data
-   * Simple fallback method for Node.js
+   * Uses zlib compression in Node.js for smaller output and less memory
    */
-  private static createSimpleDataUrl(pixelData: Uint8Array, width: number, height: number, hasAlpha: boolean): string {
-    // For debugging, let's just return a simple data URL that we can verify works
-    // We'll create a minimal valid PNG structure manually
+  private static async createSimpleDataUrl(pixelData: Uint8Array, width: number, height: number, hasAlpha: boolean): Promise<string> {
+    // Try to use zlib for compressed PNG (much smaller, less memory)
+    const zlib = await getZlib()
+    
+    if (zlib) {
+      try {
+        const pngBuffer = await this.createCompressedPNG(pixelData, width, height, hasAlpha, zlib)
+        const base64 = this.uint8ArrayToBase64(pngBuffer)
+        return `data:image/png;base64,${base64}`
+      } catch (error) {
+        console.warn('Compressed PNG creation failed, falling back to uncompressed:', error)
+      }
+    }
 
-
-    // Use the existing PNG creation but with a different approach
+    // Fallback to uncompressed PNG
     const pngBuffer = this.createMinimalValidPNG(pixelData, width, height, hasAlpha)
     const base64 = this.uint8ArrayToBase64(pngBuffer)
     return `data:image/png;base64,${base64}`
+  }
+
+  /**
+   * Create compressed PNG using zlib (Node.js only)
+   * Much smaller output size and uses streaming for better memory management
+   */
+  private static async createCompressedPNG(
+    pixelData: Uint8Array, 
+    width: number, 
+    height: number, 
+    hasAlpha: boolean,
+    zlib: typeof import('zlib')
+  ): Promise<Uint8Array> {
+    // PNG signature
+    const signature = Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])
+
+    // IHDR chunk data
+    const colorType = hasAlpha ? 6 : 2 // 2=RGB, 6=RGBA
+    const ihdrData = Buffer.alloc(13)
+    ihdrData.writeUInt32BE(width, 0)
+    ihdrData.writeUInt32BE(height, 4)
+    ihdrData[8] = 8   // bit depth
+    ihdrData[9] = colorType
+    ihdrData[10] = 0  // compression method (deflate/inflate)
+    ihdrData[11] = 0  // filter method
+    ihdrData[12] = 0  // interlace method
+
+    const ihdr = this.createSimplePNGChunk('IHDR', ihdrData)
+
+    // Prepare raw data with filter bytes
+    const bytesPerPixel = hasAlpha ? 4 : 3
+    const rawDataSize = height * (1 + width * bytesPerPixel)
+    const rawData = Buffer.alloc(rawDataSize)
+
+    // Add filter bytes and copy pixel data
+    for (let y = 0; y < height; y++) {
+      const rowOffset = y * (1 + width * bytesPerPixel)
+      rawData[rowOffset] = 0 // Filter type 0 (None)
+
+      for (let x = 0; x < width; x++) {
+        const srcOffset = (y * width + x) * bytesPerPixel
+        const dstOffset = rowOffset + 1 + (x * bytesPerPixel)
+
+        for (let c = 0; c < bytesPerPixel; c++) {
+          rawData[dstOffset + c] = pixelData[srcOffset + c] || 0
+        }
+      }
+    }
+
+    // Compress with zlib (level 6 is a good balance of speed and compression)
+    const compressedData = await new Promise<Buffer>((resolve, reject) => {
+      zlib.deflate(rawData, { level: 6 }, (err, result) => {
+        if (err) reject(err)
+        else resolve(result)
+      })
+    })
+
+    // Create IDAT chunk with compressed data
+    const idat = this.createSimplePNGChunk('IDAT', compressedData)
+
+    // IEND chunk
+    const iend = this.createSimplePNGChunk('IEND', Buffer.alloc(0))
+
+    // Combine all chunks
+    return Buffer.concat([signature, ihdr, idat, iend])
   }
 
   /**
