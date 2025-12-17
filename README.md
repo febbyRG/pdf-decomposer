@@ -42,6 +42,7 @@ Extract structured text with positioning and formatting:
 - Interactive area mapping with normalized coordinates
 - Widget ID generation following epub conventions
 - Article relationship management
+- `skipScreenshots` option for memory-constrained environments
 
 #### 4. PDF Slicing (\`slice()\`)
 
@@ -586,6 +587,14 @@ for (let start = 1; start <= totalPages; start += batchSize) {
   // Process batch results...
 }
 \`\`\`
+
+**Built-in Memory Limits (v1.0.6+):**
+- MAX_SAFE_PIXELS: 2M pixels per image
+- MAX_DIMENSION: 2000px max width/height
+- MAX_IMAGES_PER_PAGE: 20 images
+- Canvas size limits: 1200x1600 for screenshots
+- Sequential processing to reduce peak memory
+- Use `skipScreenshots: true` in `data()` to skip page image generation
 
 ### Error Handling
 
