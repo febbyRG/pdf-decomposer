@@ -123,7 +123,7 @@ fi
 echo -e "${BLUE}  Publishing to npm...${NC}"
 if [[ -f .npmrc.npmjs ]]; then
     cp .npmrc.npmjs .npmrc
-    npm publish --access=public
+    npm publish --access=public --ignore-scripts
     echo -e "${GREEN}  ✓ Published to npm${NC}"
 else
     echo -e "${YELLOW}  ⚠ .npmrc.npmjs not found, skipping npm publish${NC}"
@@ -133,7 +133,7 @@ fi
 echo -e "${BLUE}  Publishing to GitHub Packages...${NC}"
 if [[ -f .npmrc.github ]]; then
     cp .npmrc.github .npmrc
-    npm publish --access=public
+    npm publish --access=public --ignore-scripts
     echo -e "${GREEN}  ✓ Published to GitHub Packages${NC}"
 else
     echo -e "${YELLOW}  ⚠ .npmrc.github not found, skipping GitHub publish${NC}"
