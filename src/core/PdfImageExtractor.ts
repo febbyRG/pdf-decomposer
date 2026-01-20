@@ -13,11 +13,15 @@
 const isBrowser = typeof window !== 'undefined' && typeof document !== 'undefined'
 
 // Node.js zlib for compressed PNG (lazy loaded)
+// Uses Function constructor to prevent webpack/bundler from resolving 'zlib'
 let zlibModule: typeof import('zlib') | null = null
 async function getZlib(): Promise<typeof import('zlib') | null> {
   if (!isBrowser && !zlibModule) {
     try {
-      zlibModule = await import('zlib')
+      // Use Function constructor to create dynamic require that bundlers won't resolve
+      // This is safe because we only run this in Node.js environment
+      const dynamicRequire = new Function('moduleName', 'return require(moduleName)')
+      zlibModule = dynamicRequire('zlib') as typeof import('zlib')
     } catch {
       zlibModule = null
     }
