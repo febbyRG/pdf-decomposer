@@ -18,25 +18,25 @@ A powerful TypeScript library for comprehensive PDF processing and content extra
 
 ### Main Operations
 
-#### 1. Content Decomposition (\`decompose()\`)
+#### 1. Content Decomposition (`decompose()`)
 
 Extract structured text with positioning and formatting:
 
-- Smart element composition with \`elementComposer\`
-- Content area cleaning with \`cleanComposer\`
-- Page-level composition with \`pageComposer\`
+- Smart element composition with `elementComposer`
+- Content area cleaning with `cleanComposer`
+- Page-level composition with `pageComposer`
 - Image extraction from embedded PDF objects
 - Link extraction from PDF annotations and text patterns
 - Smart URL detection with comprehensive email and domain pattern matching
 
-#### 2. Screenshot Generation (\`screenshot()\`)
+#### 2. Screenshot Generation (`screenshot()`)
 
 - High-quality page rendering to PNG/JPEG
 - Configurable resolution and quality
 - Batch processing with progress tracking
 - File output or base64 data URLs
 
-#### 3. PDF Data Generation (\`data()\`)
+#### 3. PDF Data Generation (`data()`)
 
 - pwa-admin compatible data structure
 - Interactive area mapping with normalized coordinates
@@ -44,7 +44,7 @@ Extract structured text with positioning and formatting:
 - Article relationship management
 - `skipScreenshots` option for memory-constrained environments
 
-#### 4. PDF Slicing (\`slice()\`)
+#### 4. PDF Slicing (`slice()`)
 
 - Extract specific page ranges
 - Generate new PDF documents
@@ -83,7 +83,7 @@ Extract structured text with positioning and formatting:
 - Auto-scaling for memory safety
 - Duplicate detection and removal
 
-#### Link Extraction (\`extractLinks: true\`)
+#### Link Extraction (`extractLinks: true`)
 
 - PDF Annotations: Extract interactive link annotations with URLs and destinations
 - Text Pattern Matching: Detect URLs in text content (e.g., "GIA.edu/jewelryservices")
@@ -103,7 +103,7 @@ Extract structured text with positioning and formatting:
 
 ## Installation
 
-\`\`\`bash
+```bash
 npm install @febbyrg/pdf-decomposer
 
 # For Node.js with canvas support (optional)
@@ -111,13 +111,13 @@ npm install canvas
 
 # For browser usage
 npm install pdfjs-dist
-\`\`\`
+```
 
 ## Quick Start
 
 ### Class-Based API (Recommended)
 
-\`\`\`typescript
+```typescript
 import { PdfDecomposer } from '@febbyrg/pdf-decomposer'
 
 // Load PDF once, use many times
@@ -160,28 +160,27 @@ const sliced = await pdf.slice({
 })
 
 // Access PDF properties
-console.log(\`Pages: \${pdf.numPages}\`)
-console.log(\`Fingerprint: \${pdf.fingerprint}\`)
-\`\`\`
-
+console.log(`Pages: \${pdf.numPages}`)
+console.log(`Fingerprint: \${pdf.fingerprint}`)
+```
 ### Factory Method (One-liner)
 
-\`\`\`typescript
+```typescript
 import { PdfDecomposer } from '@febbyrg/pdf-decomposer'
 
 // Create and initialize in one step
 const pdf = await PdfDecomposer.create(buffer)
 const pages = await pdf.decompose({ elementComposer: true })
-\`\`\`
+```
 
 ### Progress Tracking
 
-\`\`\`typescript
+```typescript
 const pdf = new PdfDecomposer(buffer)
 
 // Subscribe to progress updates
 pdf.subscribe((state) => {
-  console.log(\`\${state.progress}% - \${state.message}\`)
+  console.log(`\${state.progress}% - \${state.message}`)
 })
 
 await pdf.initialize()
@@ -190,11 +189,11 @@ const result = await pdf.decompose({
   endPage: 10,
   elementComposer: true
 })
-\`\`\`
+```
 
 ### Browser Environment (Angular, React, Vue)
 
-\`\`\`typescript
+```typescript
 import { PdfDecomposer } from '@febbyrg/pdf-decomposer'
 
 // In browser - use File API
@@ -212,13 +211,13 @@ async function processPdfFile(file: File) {
 // Configure PDF.js worker (once per app)
 import { PdfWorkerConfig } from '@febbyrg/pdf-decomposer'
 PdfWorkerConfig.configure() // Auto-configures worker URL
-\`\`\`
+```
 
 ### Advanced Usage Examples
 
 #### Content Processing Pipeline
 
-\`\`\`typescript
+```typescript
 const pdf = new PdfDecomposer(buffer)
 await pdf.initialize()
 
@@ -254,33 +253,33 @@ const screenshots = await pdf.screenshot({
   imageWidth: 1200,
   imageQuality: 95
 })
-\`\`\`
+```
 
 #### PDF Slicing and Processing
 
-\`\`\`typescript
+```typescript
 const pdf = new PdfDecomposer(buffer)
 await pdf.initialize()
 
-console.log(\`Original PDF: \${pdf.numPages} pages\`)
+console.log(`Original PDF: \${pdf.numPages} pages`)
 
 // Slice to first 5 pages (modifies internal PDF)
 const sliceResult = await pdf.slice({
   numberPages: 5
 })
 
-console.log(\`Sliced PDF: \${pdf.numPages} pages\`) // Now shows 5
-console.log(\`Saved \${sliceResult.fileSize} bytes\`)
+console.log(`Sliced PDF: \${pdf.numPages} pages`) // Now shows 5
+console.log(`Saved \${sliceResult.fileSize} bytes`)
 
 // Process the sliced PDF
 const pages = await pdf.decompose({
   elementComposer: true
 })
-\`\`\`
+```
 
 #### Link Extraction
 
-\`\`\`typescript
+```typescript
 const pdf = new PdfDecomposer(buffer)
 await pdf.initialize()
 
@@ -295,16 +294,16 @@ pagesWithLinks.pages.forEach((page, pageIndex) => {
   const linkElements = page.elements.filter((el) => el.type === 'link')
 
   linkElements.forEach((link) => {
-    console.log(\`Page \${pageIndex + 1}: Found \${link.attributes.linkType}\`)
-    console.log(\`  URL: \${link.data}\`)
-    console.log(\`  Position: [\${link.boundingBox.left}, \${link.boundingBox.top}]\`)
+    console.log(`Page \${pageIndex + 1}: Found \${link.attributes.linkType}`)
+    console.log(`  URL: \${link.data}`)
+    console.log(`  Position: [\${link.boundingBox.left}, \${link.boundingBox.top}]`)
 
     if (link.attributes.text) {
-      console.log(\`  Context: "\${link.attributes.text}"\`)
+      console.log(`  Context: "\${link.attributes.text}"`)
     }
   })
 })
-\`\`\`
+```
 
 ## API Reference
 
@@ -312,20 +311,20 @@ pagesWithLinks.pages.forEach((page, pageIndex) => {
 
 #### Constructor
 
-\`\`\`typescript
+```typescript
 new PdfDecomposer(input: Buffer | ArrayBuffer | Uint8Array)
-\`\`\`
+```
 
 #### Static Methods
 
-\`\`\`typescript
+```typescript
 // Factory method - create and initialize in one step
 static async create(input: Buffer | ArrayBuffer | Uint8Array): Promise<PdfDecomposer>
-\`\`\`
+```
 
 #### Instance Methods
 
-\`\`\`typescript
+```typescript
 // Initialize PDF (required before other operations)
 async initialize(): Promise<void>
 
@@ -346,21 +345,21 @@ subscribe(callback: (state: PdfDecomposerState) => void): void
 
 // Get PDF and page fingerprints for caching
 async getFingerprints(): Promise<{ pdfHash: string; pageHashes: string[]; total: number }>
-\`\`\`
+```
 
 #### Properties
 
-\`\`\`typescript
+```typescript
 readonly numPages: number           // Total number of pages
 readonly fingerprint: string        // PDF fingerprint for caching
 readonly initialized: boolean       // Initialization status
-\`\`\`
+```
 
 ### Options Interfaces
 
 #### PdfDecomposerOptions
 
-\`\`\`typescript
+```typescript
 interface PdfDecomposerOptions {
   startPage?: number // First page (1-indexed, default: 1)
   endPage?: number // Last page (1-indexed, default: all)
@@ -377,11 +376,11 @@ interface PdfDecomposerOptions {
     elementAttributes?: boolean // Include slim element attributes
   }
 }
-\`\`\`
+```
 
 #### ScreenshotOptions
 
-\`\`\`typescript
+```typescript
 interface ScreenshotOptions {
   startPage?: number // First page (1-indexed)
   endPage?: number // Last page (1-indexed)
@@ -389,11 +388,11 @@ interface ScreenshotOptions {
   imageWidth?: number // Image width (default: 1200)
   imageQuality?: number // JPEG quality 1-100 (default: 90)
 }
-\`\`\`
+```
 
 #### DataOptions
 
-\`\`\`typescript
+```typescript
 interface DataOptions {
   startPage?: number // First page (1-indexed)
   endPage?: number // Last page (1-indexed)
@@ -405,21 +404,21 @@ interface DataOptions {
   imageWidth?: number // Screenshot width (default: 1024)
   imageQuality?: number // Screenshot quality (default: 90)
 }
-\`\`\`
+```
 
 #### SliceOptions
 
-\`\`\`typescript
+```typescript
 interface SliceOptions {
   numberPages?: number // Number of pages from start
   startPage?: number // Starting page (1-indexed, default: 1)
   endPage?: number // Ending page (1-indexed)
 }
-\`\`\`
+```
 
 #### PdfCleanComposerOptions
 
-\`\`\`typescript
+```typescript
 interface PdfCleanComposerOptions {
   topMarginPercent?: number // Exclude top % for headers (default: 0.1)
   bottomMarginPercent?: number // Exclude bottom % for footers (default: 0.1)
@@ -435,13 +434,13 @@ interface PdfCleanComposerOptions {
   coverPageDetection?: boolean // Detect cover pages (default: true)
   coverPageThreshold?: number // Cover detection threshold (default: 0.8)
 }
-\`\`\`
+```
 
 ### Result Interfaces
 
 #### DecomposeResult
 
-\`\`\`typescript
+```typescript
 interface DecomposeResult {
   pages: PdfPageContent[]
 }
@@ -458,11 +457,11 @@ interface PdfPageContent {
     [key: string]: any
   }
 }
-\`\`\`
+```
 
 #### ScreenshotResult
 
-\`\`\`typescript
+```typescript
 interface ScreenshotResult {
   totalPages: number
   screenshots: ScreenshotPageResult[]
@@ -476,11 +475,11 @@ interface ScreenshotPageResult {
   filePath?: string // File path if outputDir provided
   error?: string // Error message if failed
 }
-\`\`\`
+```
 
 #### DataResult
 
-\`\`\`typescript
+```typescript
 interface DataResult {
   data: PdfData[]
 }
@@ -499,11 +498,11 @@ interface PdfArea {
   articleId: number // Associated article ID
   widgetId: string // Widget identifier (P: or T:)
 }
-\`\`\`
+```
 
 #### SliceResult
 
-\`\`\`typescript
+```typescript
 interface SliceResult {
   pdfBytes: Uint8Array // Sliced PDF data
   originalPageCount: number // Original page count
@@ -514,25 +513,25 @@ interface SliceResult {
   }
   fileSize: number // Size in bytes
 }
-\`\`\`
+```
 
 ## Testing and Development
 
 ### Run Tests
 
-\`\`\`bash
+```bash
 npm test                    # Comprehensive test suite
 npm run test:screenshot     # Screenshot generation tests
 npm run test:data          # PDF data generation tests
-\`\`\`
+```
 
 ### Build and Development
 
-\`\`\`bash
+```bash
 npm run build              # Build TypeScript to dist/
 npm run build:watch        # Watch mode for development
 npm run lint               # ESLint validation
-\`\`\`
+```
 
 ## Environment Support
 
@@ -567,7 +566,7 @@ npm run lint               # ESLint validation
 
 ### Memory Optimization
 
-\`\`\`typescript
+```typescript
 const pdf = new PdfDecomposer(buffer)
 await pdf.initialize()
 
@@ -586,7 +585,7 @@ for (let start = 1; start <= totalPages; start += batchSize) {
 
   // Process batch results...
 }
-\`\`\`
+```
 
 **Built-in Memory Limits (v1.0.6+):**
 - MAX_SAFE_PIXELS: 2M pixels per image
@@ -598,11 +597,11 @@ for (let start = 1; start <= totalPages; start += batchSize) {
 
 ### Error Handling
 
-\`\`\`typescript
+```typescript
 const pdf = new PdfDecomposer(buffer)
 
 pdf.subscribe((state) => {
-  console.log(\`Progress: \${state.progress}%\`)
+  console.log(`Progress: \${state.progress}%`)
 })
 
 try {
@@ -617,17 +616,17 @@ try {
     console.error('Processing failed:', error.message)
   }
 }
-\`\`\`
+```
 
 ### Caching Strategy
 
-\`\`\`typescript
+```typescript
 const pdf = new PdfDecomposer(buffer)
 await pdf.initialize()
 
 // Use fingerprint for caching
 const fingerprints = await pdf.getFingerprints()
-const cacheKey = \`pdf_\${fingerprints.pdfHash}\`
+const cacheKey = `pdf_\${fingerprints.pdfHash}`
 
 // Check cache before processing
 const cached = cache.get(cacheKey)
@@ -635,14 +634,14 @@ if (!cached) {
   const result = await pdf.decompose()
   cache.set(cacheKey, result, { ttl: 3600 }) // 1 hour
 }
-\`\`\`
+```
 
 ## Contributing
 
 1. Fork the repository
-2. Create a feature branch (\`git checkout -b feature/amazing-feature\`)
-3. Commit your changes (\`git commit -m 'Add amazing feature'\`)
-4. Push to the branch (\`git push origin feature/amazing-feature\`)
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
 ### Development Guidelines
@@ -657,17 +656,17 @@ if (!cached) {
 
 ### Setup for Publishing
 
-\`\`\`bash
+```bash
 # Initial setup (run once)
 npm run setup:publishing
 
 # Verify configuration
 npm run setup:verify
-\`\`\`
+```
 
 ### Publishing Commands
 
-\`\`\`bash
+```bash
 # Publish to NPM only
 npm run publish:npm
 
@@ -679,7 +678,7 @@ npm run publish:both
 
 # Version bump + publish
 npm version patch && npm run publish:both
-\`\`\`
+```
 
 ## License
 
