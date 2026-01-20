@@ -324,15 +324,18 @@ export class PdfElementComposer {
     // Calculate page statistics for dynamic thresholds
     const pageStats = this.calculatePageStatisticsFromComposites(composites)
 
-    // CRITICAL: Detect columns FIRST before any merging
-    // This prevents text from different columns being merged together
+    // Detect columns - only returns boundaries for true multi-column layouts
+    // Returns empty array for normal single-column or mixed layouts
     const columnBoundaries = this.detectColumnBoundaries(composites, pageStats)
+    const hasMultiColumnLayout = columnBoundaries.length >= 2
     
-    // Assign each composite to a column
+    // Assign each composite to a column (only if multi-column layout detected)
     const compositeToColumn = new Map<string, number>()
-    for (const composite of composites) {
-      const columnIndex = this.assignToColumn(composite, columnBoundaries)
-      compositeToColumn.set(composite.id, columnIndex)
+    if (hasMultiColumnLayout) {
+      for (const composite of composites) {
+        const columnIndex = this.assignToColumn(composite, columnBoundaries)
+        compositeToColumn.set(composite.id, columnIndex)
+      }
     }
 
     const processed = new Set<string>()
@@ -346,7 +349,7 @@ export class PdfElementComposer {
       
       const compositeColumn = compositeToColumn.get(composite.id) ?? -1
 
-      // Find all overlapping/adjacent composites IN THE SAME COLUMN
+      // Find all overlapping/adjacent composites
       let foundMatch = true
       while (foundMatch) {
         foundMatch = false
@@ -354,10 +357,12 @@ export class PdfElementComposer {
         for (const candidate of composites) {
           if (processed.has(candidate.id)) continue
           
-          // CRITICAL: Only consider candidates in the SAME column
-          const candidateColumn = compositeToColumn.get(candidate.id) ?? -1
-          if (candidateColumn !== compositeColumn && compositeColumn !== -1 && candidateColumn !== -1) {
-            continue // Skip candidates from different columns
+          // If multi-column layout detected, only merge within same column
+          if (hasMultiColumnLayout) {
+            const candidateColumn = compositeToColumn.get(candidate.id) ?? -1
+            if (candidateColumn !== compositeColumn && compositeColumn !== -1 && candidateColumn !== -1) {
+              continue // Skip candidates from different columns
+            }
           }
 
           // Check if candidate should merge with any composite in cluster
@@ -382,32 +387,40 @@ export class PdfElementComposer {
   }
 
   /**
-   * Detect column boundaries using horizontal gap analysis
+   * Detect column boundaries using strict multi-column layout detection
    * Returns array of column boundaries: [{left, right}, ...]
    * 
-   * Algorithm:
-   * 1. Filter to text composites with meaningful content (10+ chars)
-   * 2. Cluster elements by their left position (within 30pt threshold)
-   * 3. Find significant clusters (at least 10% of elements or 3+ elements)
-   * 4. Validate gaps between clusters are large enough (50pt+) to be column separators
-   * 5. Create column boundaries at midpoints between clusters
+   * STRICT CRITERIA for multi-column detection:
+   * 1. Must have at least 2 distinct left-position clusters with 100pt+ gap
+   * 2. Each cluster must have at least 5 elements (real column content)
+   * 3. Clusters must overlap vertically (side-by-side columns)
+   * 4. Each cluster's width must be similar (within 50% of each other)
+   * 5. Total cluster width must be < 80% of page width (room for gaps)
+   * 
+   * This prevents false positives from:
+   * - Centered headers with different left positions
+   * - Mixed alignments (left, center, right)
+   * - Normal text flow variations
    */
   private static detectColumnBoundaries(composites: Composite[], pageStats: any): Array<{left: number, right: number}> {
     if (composites.length === 0) return []
 
-    // Filter to only text composites with meaningful content (at least 10 chars to avoid stray punctuation)
+    // Default: no column separation (treat whole page as one column)
+    const noColumns: Array<{left: number, right: number}> = []
+
+    // Filter to only text composites with meaningful content (at least 20 chars for paragraphs)
     const textComposites = composites.filter(c => 
-      c.data && c.data.trim().length >= 10
+      c.data && c.data.trim().length >= 20
     )
 
-    if (textComposites.length < 5) {
-      // Not enough elements to detect columns
-      return [{ left: 0, right: pageStats.pageWidth }]
+    // Need at least 10 elements to consider multi-column
+    if (textComposites.length < 10) {
+      return noColumns
     }
 
     // Group elements by their left position into clusters
-    const leftClusters: Array<{left: number, elements: Composite[]}> = []
-    const clusterThreshold = 30 // Elements within 30pt are in same cluster
+    const leftClusters: Array<{left: number, elements: Composite[], minTop: number, maxBottom: number, avgWidth: number}> = []
+    const clusterThreshold = 25 // Elements within 25pt are in same cluster
     
     for (const comp of textComposites) {
       const elemLeft = comp.boundingBox.left
@@ -417,53 +430,82 @@ export class PdfElementComposer {
       for (const cluster of leftClusters) {
         if (Math.abs(cluster.left - elemLeft) < clusterThreshold) {
           cluster.elements.push(comp)
-          // Update cluster left to average
+          // Update cluster stats
           const total = cluster.elements.reduce((sum, c) => sum + c.boundingBox.left, 0)
           cluster.left = total / cluster.elements.length
+          cluster.minTop = Math.min(cluster.minTop, comp.boundingBox.top)
+          cluster.maxBottom = Math.max(cluster.maxBottom, comp.boundingBox.bottom)
+          const widthTotal = cluster.elements.reduce((sum, c) => sum + c.boundingBox.width, 0)
+          cluster.avgWidth = widthTotal / cluster.elements.length
           found = true
           break
         }
       }
       
       if (!found) {
-        leftClusters.push({ left: elemLeft, elements: [comp] })
+        leftClusters.push({ 
+          left: elemLeft, 
+          elements: [comp],
+          minTop: comp.boundingBox.top,
+          maxBottom: comp.boundingBox.bottom,
+          avgWidth: comp.boundingBox.width
+        })
       }
     }
 
-    // Filter to significant clusters (at least 3 elements or 10% of total)
-    const minElements = Math.max(3, textComposites.length * 0.1)
+    // STRICT: Each cluster must have at least 5 elements
     const significantClusters = leftClusters
-      .filter(c => c.elements.length >= minElements)
+      .filter(c => c.elements.length >= 5)
       .sort((a, b) => a.left - b.left)
 
-    if (significantClusters.length < 2) {
-      return [{ left: 0, right: pageStats.pageWidth + 100 }]
+    // Must have exactly 2 or 3 clusters for valid column layout
+    if (significantClusters.length < 2 || significantClusters.length > 4) {
+      return noColumns
     }
 
-    // Check if gaps between clusters are large enough to be column separators
-    // Typical column gap is 50-100pt or more
-    const minColumnGap = 50
-    let hasValidGaps = true
-    
+    // STRICT: Check gaps between clusters are large enough (100pt minimum for true columns)
+    const minColumnGap = 100
     for (let i = 0; i < significantClusters.length - 1; i++) {
       const gap = significantClusters[i + 1].left - significantClusters[i].left
       if (gap < minColumnGap) {
-        hasValidGaps = false
-        break
+        return noColumns
       }
     }
 
-    if (!hasValidGaps) {
-      return [{ left: 0, right: pageStats.pageWidth + 100 }]
+    // STRICT: Clusters must overlap vertically (they're side-by-side, not stacked)
+    // Check each pair of adjacent clusters
+    for (let i = 0; i < significantClusters.length - 1; i++) {
+      const c1 = significantClusters[i]
+      const c2 = significantClusters[i + 1]
+      
+      // Calculate vertical overlap
+      const overlapTop = Math.max(c1.minTop, c2.minTop)
+      const overlapBottom = Math.min(c1.maxBottom, c2.maxBottom)
+      const overlap = overlapBottom - overlapTop
+      
+      // Must have at least 100pt of vertical overlap
+      if (overlap < 100) {
+        return noColumns
+      }
     }
 
+    // Column widths can vary - TOC columns are often narrower than paragraph columns
+    // Only reject if width ratio is extreme (5x+ difference would be unusual)
+    const widths = significantClusters.map(c => c.avgWidth)
+    const maxWidth = Math.max(...widths)
+    const minWidth = Math.min(...widths)
+    if (maxWidth > minWidth * 5) {
+      return noColumns
+    }
+
+    // All checks passed - this is a true multi-column layout
     // Create column boundaries from clusters
     const columns: Array<{left: number, right: number}> = []
     
     for (let i = 0; i < significantClusters.length; i++) {
       const cluster = significantClusters[i]
       
-      // Column left starts a bit before the cluster's left
+      // Column left starts at midpoint from previous cluster, or page start
       const colLeft = i === 0 ? 0 : (significantClusters[i-1].left + cluster.left) / 2
       
       // Column right ends at midpoint to next cluster, or page end
@@ -802,23 +844,12 @@ export class PdfElementComposer {
 
     if (relativeFontDiff > 0.1) return false
 
-    // Get width information
+    // Get width information for overlap calculations
     const widthA = compA.boundingBox.width
     const widthB = compB.boundingBox.width
-    const maxWidth = Math.max(widthA, widthB)
     const minWidth = Math.min(widthA, widthB)
 
-    // NEW: Check for significant width difference (indicates different layout zones)
-    // If one element is more than 2x wider than the other, they're likely in different layout zones
-    // (e.g., full-width intro paragraph vs. column content)
-    const widthRatio = maxWidth / minWidth
-    if (widthRatio > 2.0 && minWidth < pageStats.pageWidth * 0.5) {
-      // One element is significantly wider AND the narrower one is less than half page width
-      // This suggests mixing full-width content with column content - don't merge
-      return false
-    }
-
-    // Check if elements are on the same horizontal line
+    // Check if elements are on the same horizontal line FIRST
     const verticalOverlap = this.getVerticalOverlap(compA.boundingBox, compB.boundingBox)
     const avgHeight = (compA.boundingBox.height + compB.boundingBox.height) / 2
     const areOnSameLine = verticalOverlap > avgHeight * 0.5 // More than 50% vertical overlap
@@ -826,8 +857,8 @@ export class PdfElementComposer {
     // Calculate horizontal gap between elements
     const horizontalGap = this.getHorizontalGap(compA.boundingBox, compB.boundingBox)
 
-    // If elements are on the same line, apply STRICT horizontal distance check
-    // This prevents merging text from different columns
+    // If elements are on the same line, only check horizontal distance
+    // Width ratio doesn't matter for same-line elements - they're meant to be read together
     if (areOnSameLine) {
       const avgFontSize = (fontSizeA + fontSizeB) / 2
       
@@ -841,44 +872,46 @@ export class PdfElementComposer {
         return false // Elements are too far apart horizontally - likely different columns
       }
       
-      // For same-line elements, only merge if they're close enough
-      return horizontalGap <= maxHorizontalGap
+      // For same-line elements, merge if they're close enough
+      return true
     }
 
-    // For elements NOT on the same line (vertically stacked), we need to be careful
-    // Only merge if they are in the same column (horizontally aligned)
+    // For elements NOT on the same line (vertically stacked):
+    // We need to check if they belong to the same text column/flow
     
-    // Check horizontal alignment - elements should have significant horizontal overlap
-    // to be considered in the same column
-    const horizontalOverlap = this.getHorizontalOverlap(compA.boundingBox, compB.boundingBox)
-    
-    // Require at least 30% horizontal overlap to be in the same column
-    // This prevents merging elements from different columns that happen to be close vertically
-    if (horizontalOverlap < minWidth * 0.3) {
-      return false // Not enough horizontal alignment - likely different columns
-    }
-
-    // NEW: For vertically stacked elements, also check that their left edges are aligned
-    // This prevents merging column 1 content with full-width content that happens to overlap
     const leftA = compA.boundingBox.left
     const leftB = compB.boundingBox.left
     const rightA = compA.boundingBox.right
     const rightB = compB.boundingBox.right
     
-    // Check if left edges are reasonably aligned (within 20% of min width)
+    // Check if one element is horizontally contained within the other
+    // This handles cases where a short line fragment is part of a paragraph
+    const aContainsB = leftA <= leftB && rightA >= rightB
+    const bContainsA = leftB <= leftA && rightB >= rightA
+    const horizontallyContained = aContainsB || bContainsA
+    
+    // Check if left edges are close (within 30pt - typical indent/variation)
     const leftDiff = Math.abs(leftA - leftB)
-    const leftAlignmentThreshold = minWidth * 0.2
+    const leftEdgesClose = leftDiff <= 30
     
-    // Check if right edges are reasonably aligned
-    const rightDiff = Math.abs(rightA - rightB)
-    const rightAlignmentThreshold = minWidth * 0.2
+    // Check horizontal overlap
+    const horizontalOverlap = this.getHorizontalOverlap(compA.boundingBox, compB.boundingBox)
+    const hasSignificantOverlap = horizontalOverlap > minWidth * 0.3
     
-    // At least one edge should be aligned for vertical stacking
-    const leftAligned = leftDiff <= leftAlignmentThreshold
-    const rightAligned = rightDiff <= rightAlignmentThreshold
-    
-    if (!leftAligned && !rightAligned) {
-      return false // Neither edge aligned - likely different columns or layout zones
+    // For vertical stacking, allow merge if:
+    // 1. One element is contained within the other horizontally, OR
+    // 2. Left edges are close (within 30pt) AND there's horizontal overlap
+    if (!horizontallyContained && !(leftEdgesClose && hasSignificantOverlap)) {
+      // Check if they might be from different columns (large left gap)
+      // Only block if left edges are far apart (100pt+ = typical column gap)
+      if (leftDiff > 100) {
+        return false // Definitely different columns
+      }
+      
+      // If no overlap and left edges aren't close, don't merge
+      if (!hasSignificantOverlap && !leftEdgesClose) {
+        return false
+      }
     }
 
     const avgFontSize = (fontSizeA + fontSizeB) / 2
