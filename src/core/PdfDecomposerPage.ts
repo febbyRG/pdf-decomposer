@@ -453,8 +453,12 @@ export class PdfDecomposerPage {
     }
 
     // Try reverse - check if any element text is contained in item text
+    // IMPORTANT: Only match if element text is substantial (at least 3 chars) to avoid
+    // false positives like "O" matching "ONE" or "OPERATIONS"
     const reversePartialMatch = colorAwareElements.find(element => {
-      return element.text && itemText.includes(element.text) && 
+      return element.text && 
+             element.text.length >= 3 && // Avoid short fragments causing mismatches
+             itemText.includes(element.text) && 
              (element.textColor || element.fontFamily)
     })
     if (reversePartialMatch) {
