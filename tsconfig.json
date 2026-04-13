@@ -3,6 +3,7 @@
     "target": "es2020",
     "lib": ["es2020", "DOM", "DOM.Iterable"],
     "module": "commonjs",
+    "rootDir": "./src",
     "outDir": "dist",
     "moduleResolution": "node",
     "resolveJsonModule": true,
@@ -14,11 +15,8 @@
     "strict": true,
     "skipLibCheck": true,
     "isolatedModules": false,
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["src/*"]
-    },
-    "typeRoots": ["./types", "./node_modules/@types"]
+    "types": ["node"],
+    "ignoreDeprecations": "6.0"
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "scripts"]
