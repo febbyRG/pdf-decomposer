@@ -50,7 +50,7 @@ class ComprehensiveTest {
   private results: TestResult[] = []
   private baseOutputDir: string
   private pdfPath: string
-  private pdfFile = 'demo.pdf'
+  private pdfFile = 'acw.pdf'
   private decomposer!: PdfDecomposer
 
   constructor(customPdfPath?: string) {
@@ -134,8 +134,8 @@ class ComprehensiveTest {
       // Test without cleanComposer for comparison
       const decomposeResult = await this.decomposer.decompose({
         outputDir,
-        // startPage: 1,
-        // endPage: 15,
+        startPage: 9,
+        endPage: 9,
         extractImages: true,
         extractLinks: true,
         elementComposer: true,

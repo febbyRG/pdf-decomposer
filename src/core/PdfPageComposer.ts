@@ -357,9 +357,13 @@ export class PdfPageComposer {
   /**
    * Order elements spatially while preserving page context.
    * Elements from the same original page stay together in proper reading order.
+   * 
+   * IMPORTANT: We preserve the original element order from PdfElementComposer,
+   * which has already established proper column-based reading order.
+   * We only ensure pages are concatenated in the correct sequence.
    */
   private static orderElementsSpatially(elements: PdfElement[]): PdfElement[] {
-    // Group elements by their original page
+    // Group elements by their original page while preserving order
     const elementsByPage = new Map<number, PdfElement[]>()
 
     elements.forEach(element => {
@@ -373,33 +377,20 @@ export class PdfPageComposer {
       }
     })
 
-    // Sort elements within each page group by reading order
+    // Combine elements preserving the original order within each page
+    // (PdfElementComposer has already established proper column-based reading order)
     const orderedElements: PdfElement[] = []
 
-    // Process pages in order
+    // Process pages in numeric order (in case they were encountered out of order)
     const sortedPageIndexes = Array.from(elementsByPage.keys()).sort((a, b) => a - b)
 
     for (const pageIndex of sortedPageIndexes) {
       const pageElements = elementsByPage.get(pageIndex)
       if (!pageElements) continue
 
-      // Sort elements within this page by reading order (top-to-bottom, left-to-right)
-      const sortedPageElements = pageElements.sort((a, b) => {
-        const aTop = a.boundingBox?.top || 0
-        const bTop = b.boundingBox?.top || 0
-        const yDiff = aTop - bTop
-
-        // If elements are on different lines (>10pt difference), sort by Y position
-        if (Math.abs(yDiff) > 10) return yDiff
-
-        // If on same line, sort by X position (left-to-right)
-        const aLeft = a.boundingBox?.left || (Array.isArray(a.boundingBox) ? a.boundingBox[0] : 0)
-        const bLeft = b.boundingBox?.left || (Array.isArray(b.boundingBox) ? b.boundingBox[0] : 0)
-        return aLeft - bLeft
-      })
-
-      // Add all elements from this page to the final result
-      orderedElements.push(...sortedPageElements)
+      // Preserve the original order - don't re-sort!
+      // The elements are already in correct column-based reading order from PdfElementComposer
+      orderedElements.push(...pageElements)
     }
 
     return orderedElements
