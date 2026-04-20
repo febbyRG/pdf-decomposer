@@ -414,7 +414,9 @@ export async function pdfData(
         image: imageValue
       }
       
-      return generator.convertPageToPdfData(pageWithScreenshot, index)
+      // Use page.pageIndex (actual PDF page index) instead of local array index
+      // This ensures correct index when processing page ranges (e.g. startPage: 11, endPage: 20)
+      return generator.convertPageToPdfData(pageWithScreenshot, page.pageIndex)
     })
     
     updateProgress(100, 'Completed')
