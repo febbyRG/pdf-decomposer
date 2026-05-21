@@ -10,9 +10,13 @@
 # 4. Publish to npm and GitHub packages
 #
 # Usage:
-#   npm run publish           # patch version bump (default)
-#   npm run publish:minor     # minor version bump
-#   npm run publish:major     # major version bump
+#   npm run release           # patch version bump (default)
+#   npm run release:minor     # minor version bump
+#   npm run release:major     # major version bump
+#
+# NOTE: These scripts are named `release` (not `publish`) because `publish` is
+# a reserved npm lifecycle hook — having a `publish` script in package.json
+# causes recursive invocations when running `npm publish` directly.
 # =============================================================================
 
 set -e  # Exit on any error
@@ -103,48 +107,36 @@ npm version $BUMP_TYPE --no-git-tag-version
 echo -e "${GREEN}✓ Version bumped to $NEW_VERSION${NC}"
 
 echo ""
-echo -e "${BLUE}Step 5/6: Committing and tagging...${NC}"
+echo -e "${BLUE}Step 5/7: Committing and tagging locally...${NC}"
+# Only commit + tag locally here. Push is deferred to Step 7 so a failed
+# publish doesn't leave an orphan tag on origin.
 git add package.json package-lock.json
 git commit -m "chore: release v$NEW_VERSION"
 git tag -a "v$NEW_VERSION" -m "Release v$NEW_VERSION"
-git push
-git push --tags
-echo -e "${GREEN}✓ Committed and tagged${NC}"
+echo -e "${GREEN}✓ Committed and tagged locally${NC}"
 
 echo ""
-echo -e "${BLUE}Step 6/6: Publishing to registries...${NC}"
+echo -e "${BLUE}Step 6/7: Publishing to registries...${NC}"
 
-# Backup original .npmrc if exists
-if [[ -f .npmrc ]]; then
-    cp .npmrc .npmrc.backup
-fi
-
-# Publish to npm
+# Match the simpler `release:npm` / `release:github` npm scripts: copy the
+# target-specific .npmrc into place, then publish. No backup/restore dance —
+# the previous attempt at that left the script wedged when `set -e` killed
+# execution before the restore step could run.
 echo -e "${BLUE}  Publishing to npm...${NC}"
-if [[ -f .npmrc.npmjs ]]; then
-    cp .npmrc.npmjs .npmrc
-    npm publish --access=public --ignore-scripts
-    echo -e "${GREEN}  ✓ Published to npm${NC}"
-else
-    echo -e "${YELLOW}  ⚠ .npmrc.npmjs not found, skipping npm publish${NC}"
-fi
+cp .npmrc.npmjs .npmrc
+npm publish --access=public --ignore-scripts
+echo -e "${GREEN}  ✓ Published to npm${NC}"
 
-# Publish to GitHub Packages
 echo -e "${BLUE}  Publishing to GitHub Packages...${NC}"
-if [[ -f .npmrc.github ]]; then
-    cp .npmrc.github .npmrc
-    npm publish --access=public --ignore-scripts
-    echo -e "${GREEN}  ✓ Published to GitHub Packages${NC}"
-else
-    echo -e "${YELLOW}  ⚠ .npmrc.github not found, skipping GitHub publish${NC}"
-fi
+cp .npmrc.github .npmrc
+npm publish --access=public --ignore-scripts
+echo -e "${GREEN}  ✓ Published to GitHub Packages${NC}"
 
-# Restore original .npmrc
-if [[ -f .npmrc.backup ]]; then
-    mv .npmrc.backup .npmrc
-elif [[ -f .npmrc.npmjs ]]; then
-    cp .npmrc.npmjs .npmrc
-fi
+echo ""
+echo -e "${BLUE}Step 7/7: Pushing commit + tag to origin...${NC}"
+git push
+git push --tags
+echo -e "${GREEN}✓ Pushed to origin${NC}"
 
 echo ""
 echo -e "${GREEN}========================================${NC}"

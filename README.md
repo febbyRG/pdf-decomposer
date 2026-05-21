@@ -727,16 +727,16 @@ npm run setup:verify
 
 ```bash
 # Publish to NPM only
-npm run publish:npm
+npm run release:npm
 
 # Publish to GitHub Packages only
-npm run publish:github
+npm run release:github
 
 # Publish to both registries
-npm run publish:both
+npm run release:both
 
-# Version bump + publish
-npm version patch && npm run publish:both
+# Version bump + publish (patch/minor/major)
+npm run release:minor
 ```
 
 ## License

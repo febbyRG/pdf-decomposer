@@ -37,12 +37,12 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "clean": "rm -rf dist",
-    "publish": "./scripts/publish.sh patch",
-    "publish:minor": "./scripts/publish.sh minor",
-    "publish:major": "./scripts/publish.sh major",
-    "publish:npm": "cp .npmrc.npmjs .npmrc && npm publish --access=public",
-    "publish:github": "cp .npmrc.github .npmrc && npm publish --access=public",
-    "publish:both": "npm run publish:npm && npm run publish:github"
+    "release": "./scripts/publish.sh patch",
+    "release:minor": "./scripts/publish.sh minor",
+    "release:major": "./scripts/publish.sh major",
+    "release:npm": "cp .npmrc.npmjs .npmrc && npm publish --access=public",
+    "release:github": "cp .npmrc.github .npmrc && npm publish --access=public",
+    "release:both": "npm run release:npm && npm run release:github"
   },
   "repository": {
     "type": "git",
