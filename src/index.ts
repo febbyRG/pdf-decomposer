@@ -51,6 +51,14 @@ export { MemoryManager } from './utils/MemoryManager.js'
 export { ValidationUtils } from './utils/ValidationUtils.js'
 export { MemoryPackageDir } from './utils/MemoryPackageDir.js'
 
+// Optional pluggable renderers (e.g. for swapping node-canvas with Puppeteer)
+export { PuppeteerRenderer } from './utils/PuppeteerRenderer.js'
+export type { PuppeteerRendererOptions } from './utils/PuppeteerRenderer.js'
+export type {
+  PdfPageRenderer, PdfPageRenderOptions, PdfPageRenderResult
+} from './types/renderer.types.js'
+export type { PdfDecomposerConstructorOptions } from './api/PdfDecomposer.js'
+
 // Configuration
 export { ENV_CONFIG, PDF_CONFIG } from './config/constants.js'
 

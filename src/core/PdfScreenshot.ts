@@ -164,9 +164,26 @@ export async function pdfScreenshot(
           }
 
           screenshots.push(pageResult)
-          
+
+          // Release pdf.js worker-side state for this page so RSS doesn't
+          // climb linearly across the loop. The proxy stays valid; if anyone
+          // accesses this page again, the wrapper rebuilds.
+          await pdfDocument.releasePage(pageNum)
+
+          // Yield to the event loop so V8 has a chance to finalize the
+          // canvas wrapper object — node-canvas's Cairo surface is released
+          // when `width = 0` is set, but the JS object itself only frees
+          // through V8 GC, which won't run while we're still inside a tight
+          // async loop. Without this yield, multiple finalized-but-not-yet-
+          // collected canvases pile up under external memory pressure.
+          await new Promise<void>(resolve => setImmediate(resolve))
+
           // Memory cleanup for large documents
           if (isLargeDocument && (pageIndex + 1) % cleanupInterval === 0) {
+            // Drop pdf.js document-level caches (fonts/colorspaces/image
+            // dictionaries) that grow across pages and aren't reached by
+            // per-page cleanup alone.
+            await pdfDocument.cleanupCaches()
             await MemoryManager.cleanupMemory()
           }
 
@@ -209,7 +226,16 @@ export async function pdfScreenshot(
 
     const screenshotCount = endPage - startPage + 1
     const successCount = screenshots.filter(s => !s.error).length
-    
+
+    // Belt-and-suspenders: every page in the loop already called
+    // releasePage(), but releaseAll() also picks up any page rebuilt by an
+    // error path or by a downstream consumer between iterations.
+    try {
+      await pdfDocument.releaseAll()
+    } catch (releaseError) {
+      console.warn('Failed to release pdf.js pages after screenshot:', releaseError)
+    }
+
     updateProgress(100, `Screenshot generation completed: ${successCount}/${screenshots.length} pages successful`)
 
     return {

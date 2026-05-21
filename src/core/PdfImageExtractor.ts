@@ -449,9 +449,11 @@ export class PdfImageExtractor {
     source = 'unknown'
   ): Promise<ExtractedImage | null> {
     try {
-      // Auto-scaling limits for memory safety (EXACT from Editor)
-      const MAX_CANVAS_DIMENSION = 4000
-      const MAX_PIXELS = 8 * 1024 * 1024 // 8M pixels max
+      // Use the class-level limits. Previously this method shadowed them with
+      // hard-coded 8M pixels / 4000px values that meant the v1.0.6 lower
+      // limits never actually took effect at the gating site.
+      const dimensionLimit = PdfImageExtractor.MAX_DIMENSION
+      const pixelLimit = PdfImageExtractor.MAX_SAFE_PIXELS
 
       // Calculate safe dimensions with auto-scaling
       const pixels = width * height
@@ -460,12 +462,12 @@ export class PdfImageExtractor {
       let scalingApplied = false
 
 
-      // Check if scaling is needed (EXACT from Editor)
-      if (pixels > MAX_PIXELS || width > MAX_CANVAS_DIMENSION || height > MAX_CANVAS_DIMENSION) {
+      // Check if scaling is needed
+      if (pixels > pixelLimit || width > dimensionLimit || height > dimensionLimit) {
         const scale = Math.min(
-          Math.sqrt(MAX_PIXELS / pixels),
-          MAX_CANVAS_DIMENSION / width,
-          MAX_CANVAS_DIMENSION / height
+          Math.sqrt(pixelLimit / pixels),
+          dimensionLimit / width,
+          dimensionLimit / height
         )
         safeWidth = Math.floor(width * scale)
         safeHeight = Math.floor(height * scale)
@@ -579,15 +581,15 @@ export class PdfImageExtractor {
 
       return rgbaData
     } else {
-      // No scaling needed - keep RGBA format directly
-      const actualPixels = Math.min(Math.floor(data.length / 4), originalWidth * originalHeight)
-      const rgbaData = new Uint8Array(actualPixels * 4)
-
-      for (let i = 0; i < actualPixels * 4; i++) {
-        rgbaData[i] = data[i] || 0
+      // No scaling needed - return a view over the original buffer (or
+      // truncate via subarray if the input is over-long). Previously this
+      // allocated a fresh Uint8Array and copied byte-by-byte, doubling peak
+      // memory for full-resolution pages.
+      const expectedLength = originalWidth * originalHeight * 4
+      if (data.length === expectedLength) {
+        return data
       }
-
-      return rgbaData
+      return data.subarray(0, Math.min(data.length, expectedLength))
     }
   }
 
@@ -617,15 +619,13 @@ export class PdfImageExtractor {
 
       return rgbData
     } else {
-      // No scaling needed - direct RGB processing
-      const actualPixels = Math.min(Math.floor(data.length / 3), originalWidth * originalHeight)
-      const rgbData = new Uint8Array(actualPixels * 3)
-
-      for (let i = 0; i < actualPixels * 3; i++) {
-        rgbData[i] = data[i] || 0
+      // No scaling needed - return a view over the original buffer instead
+      // of allocating + copying byte-by-byte.
+      const expectedLength = originalWidth * originalHeight * 3
+      if (data.length === expectedLength) {
+        return data
       }
-
-      return rgbData
+      return data.subarray(0, Math.min(data.length, expectedLength))
     }
   }
 

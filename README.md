@@ -15,6 +15,7 @@ A powerful TypeScript library for comprehensive PDF processing and content extra
 - **Error Handling** - Comprehensive error reporting with page-level context
 - **Memory Efficient** - Built-in memory management and cleanup
 - **Universal Support** - Works in Node.js 16+ and all modern browsers
+- **Pluggable Renderer** - Default node-canvas/browser canvas, with optional Puppeteer renderer for very large PDFs on Node.js
 
 ### Main Operations
 
@@ -162,6 +163,10 @@ const sliced = await pdf.slice({
 // Access PDF properties
 console.log(`Pages: \${pdf.numPages}`)
 console.log(`Fingerprint: \${pdf.fingerprint}`)
+
+// Optional but recommended for long-running consumers: release pdf.js worker
+// state and (if used) the custom renderer. Required when using PuppeteerRenderer.
+await pdf.dispose()
 ```
 ### Factory Method (One-liner)
 
@@ -535,18 +540,19 @@ npm run lint               # ESLint validation
 
 ## Environment Support
 
-| Feature               | Node.js | Browser | Notes                                    |
-| --------------------- | ------- | ------- | ---------------------------------------- |
-| Text Extraction       | Yes     | Yes     | Full support both environments           |
-| Image Extraction      | Yes     | Yes     | Universal canvas-based processing        |
-| Screenshots           | Yes     | Yes     | Node.js uses canvas, browser Canvas API  |
-| PDF Slicing           | Yes     | Yes     | Uses pdf-lib in both environments        |
-| Progress Tracking     | Yes     | Yes     | Observable pattern with callbacks        |
-| Memory Management     | Yes     | Limited | Advanced in Node.js, basic in browser    |
-| File Output           | Yes     | No      | Browser returns data URLs/blobs          |
-| Element Composer      | Yes     | Yes     | Smart text grouping                      |
-| Page Composer         | Yes     | Yes     | Cross-page content merging               |
-| Clean Composer        | Yes     | Yes     | Header/footer removal                    |
+| Feature               | Node.js | Browser | Notes                                                           |
+| --------------------- | ------- | ------- | --------------------------------------------------------------- |
+| Text Extraction       | Yes     | Yes     | Full support both environments                                  |
+| Image Extraction      | Yes     | Yes     | Universal canvas-based processing                               |
+| Screenshots           | Yes     | Yes     | Node uses canvas (default) or Puppeteer (opt-in); browser canvas |
+| PDF Slicing           | Yes     | Yes     | Uses pdf-lib in both environments                               |
+| Progress Tracking     | Yes     | Yes     | Observable pattern with callbacks                               |
+| Memory Management     | Yes     | Limited | Advanced in Node.js, basic in browser                           |
+| File Output           | Yes     | No      | Browser returns data URLs/blobs                                 |
+| Element Composer      | Yes     | Yes     | Smart text grouping                                             |
+| Page Composer         | Yes     | Yes     | Cross-page content merging                                      |
+| Clean Composer        | Yes     | Yes     | Header/footer removal                                           |
+| `dispose()` lifecycle | Yes     | Yes     | Releases pdf.js + custom renderer resources                     |
 
 ### Browser Compatibility
 
@@ -559,7 +565,8 @@ npm run lint               # ESLint validation
 ### Node.js Requirements
 
 - Node.js 16+ required
-- Canvas optional for enhanced screenshot quality
+- `canvas` optional for the default Node screenshot path
+- `puppeteer` optional for the [`PuppeteerRenderer`](#pluggable-renderer-nodejs-large-pdfs) (large PDFs on Node)
 - TypeScript 4.9+ for development
 
 ## Production Usage Examples
@@ -594,6 +601,58 @@ for (let start = 1; start <= totalPages; start += batchSize) {
 - Canvas size limits: 1200x1600 for screenshots
 - Sequential processing to reduce peak memory
 - Use `skipScreenshots: true` in `data()` to skip page image generation
+
+### Pluggable Renderer (Node.js, large PDFs)
+
+The default Node.js screenshot path uses `node-canvas`. For very large PDFs (100+ pages, hundreds of MB) the underlying `Context2d::GetImageData` can hit `v8::ArrayBuffer::New` OOM regardless of `--max-old-space-size` — this is a documented limitation of the node-canvas + pdf.js + V8 ArrayBuffer allocator interaction. See [docs/NODE_CANVAS_OOM_VS_PUPPETEER.md](docs/NODE_CANVAS_OOM_VS_PUPPETEER.md) for the full write-up.
+
+The library exposes an optional `renderer` constructor option that swaps the per-page rasterization path without changing any other behavior. Browser usage is unaffected. Text/image/link extraction (`decompose()`, `data()` minus screenshots) still runs on the Node-side pdf.js — only the page→image step moves into the alternative renderer.
+
+```typescript
+import { PdfDecomposer, PuppeteerRenderer } from '@febbyrg/pdf-decomposer'
+
+// Install puppeteer separately (downloads Chromium, ~300MB):
+//   npm install puppeteer
+const renderer = new PuppeteerRenderer()
+
+const pdf = new PdfDecomposer(buffer, { renderer })
+await pdf.initialize()
+
+const screenshots = await pdf.screenshot({ imageWidth: 1024 })
+// `data()` also routes through the renderer when generating page images:
+const data = await pdf.data({ imageWidth: 1024 })
+
+// IMPORTANT: dispose closes Chromium, the temp HTTP server, and pdf.js doc.
+await pdf.dispose()
+```
+
+`PuppeteerRenderer` renders pages inside a headless Chromium browser using the same `document.createElement('canvas')` + pdf.js pipeline that the in-browser path uses. Chromium handles canvas memory natively, so the OOM at `Context2d::GetImageData` is bypassed entirely.
+
+How PDF bytes reach Chromium: the renderer spawns a tiny localhost HTTP server (bound to `127.0.0.1` on a random ephemeral port) that serves the PDF and pdf.js worker. Chromium fetches them via standard browser XHR — no CDP-bound binary blobs, no JSON serialization of 100+ MB payloads. The server lifecycle is tied to `initialize()` / `dispose()`.
+
+#### Trade-offs
+
+- Cold-start adds ~1500–2500 ms per `PdfDecomposer` lifetime (one-time, not per page).
+- Requires Chromium on disk (~300 MB) — already present in environments that use Puppeteer for other tasks (e.g. drone-jobs).
+- Text/image extraction (`decompose()`, `data()` minus screenshots) still runs on the Node-side pdf.js.
+- `dispose()` becomes mandatory — without it, the Chromium subprocess and HTTP server leak.
+
+#### When to use
+
+- Cloud Functions handling PDFs ≥ 50 pages / ≥ 100 MB where the default path hits the documented node-canvas OOM.
+- Local batch jobs against very large PDFs.
+- Any environment where flexpdf-class stability is required server-side.
+
+#### When **not** to use
+
+- Small PDFs where the default node-canvas path comfortably fits in memory — cold-start overhead isn't worth it.
+- Browser environments — the browser already gives the same memory model.
+- Disk-constrained images that can't afford the extra ~300 MB Chromium.
+
+#### Reference
+
+- [docs/NODE_CANVAS_OOM_VS_PUPPETEER.md](docs/NODE_CANVAS_OOM_VS_PUPPETEER.md) — root cause, design rationale, references to upstream issues.
+- [`PdfPageRenderer`](src/types/renderer.types.ts) — interface for writing custom renderers.
 
 ### Error Handling
 

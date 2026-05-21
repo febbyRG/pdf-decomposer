@@ -36,6 +36,28 @@ export class PdfPage {
   }
 
   /**
+   * Release pdf.js worker-side state for this page. The proxy remains valid
+   * and can be re-fetched on next access; this just drops cached operator
+   * lists, glyph data, and similar per-page allocations on the worker thread.
+   * Also nulls the local operator list reference so V8 can collect it.
+   *
+   * Safe to call repeatedly. Errors are swallowed because cleanup should
+   * never block a calling flow.
+   */
+  async cleanup(): Promise<void> {
+    try {
+      const proxyCleanup = (this.proxy as any)?.cleanup
+      if (typeof proxyCleanup === 'function') {
+        await proxyCleanup.call(this.proxy)
+      }
+    } catch {
+      // pdf.js cleanup can throw if the page is mid-render; ignore.
+    }
+    // Drop local heavy refs so V8 can collect the operator list.
+    this.operatorList = null as unknown as PdfOperatorList
+  }
+
+  /**
    * Public method to get annotations for this page (calls PDF.js proxy).
    */
   public async getAnnotations() {

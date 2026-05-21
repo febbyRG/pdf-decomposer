@@ -913,11 +913,20 @@ export class PdfCleanComposer {
         scale: renderScale
       })
       
+      // Infer extension from the returned data URL. PageRenderer returns
+      // JPEG in Node mode (since v1.0.6) and PNG in browser; the previous
+      // hard-coded `.png` filename + `^data:image/png;base64,` strip
+      // produced corrupted files when the actual payload was JPEG (the
+      // unstripped `data:image/jpeg;base64,` prefix got decoded as bytes).
+      const dataUrl = screenshotResult.base64
+      const isJpeg = /^data:image\/jpe?g;base64,/i.test(dataUrl)
+      const extension = isJpeg ? 'jpg' : 'png'
+
       // Generate filename pattern - use "cover" for page 0, "page" for others
-      const screenshotFilename = page.pageIndex === 0 
-        ? `cover_screenshot_p${page.pageIndex}_1.png`
-        : `page_screenshot_p${page.pageIndex}_1.png`
-      
+      const screenshotFilename = page.pageIndex === 0
+        ? `cover_screenshot_p${page.pageIndex}_1.${extension}`
+        : `page_screenshot_p${page.pageIndex}_1.${extension}`
+
       // Handle output data like other image elements
       let screenshotData: string
       if (options.outputDir) {
@@ -925,28 +934,31 @@ export class PdfCleanComposer {
           // Save screenshot to file and return filename (consistent with image pattern)
           const fs = await import('fs')
           const path = await import('path')
-          
+
           // Ensure output directory exists
           if (!fs.existsSync(options.outputDir)) {
             fs.mkdirSync(options.outputDir, { recursive: true })
           }
-          
-          // Convert base64 to buffer and save
-          const base64Data = screenshotResult.base64.replace(/^data:image\/png;base64,/, '')
+
+          // Split on the data-URL comma to strip ANY image MIME prefix,
+          // not just PNG. Falls back to the whole string if no comma is
+          // present (defensive).
+          const commaIndex = dataUrl.indexOf(',')
+          const base64Data = commaIndex >= 0 ? dataUrl.slice(commaIndex + 1) : dataUrl
           const buffer = Buffer.from(base64Data, 'base64')
           const filePath = path.join(options.outputDir, screenshotFilename)
-          
+
           fs.writeFileSync(filePath, buffer)
-          
+
           // Return filename like other image elements
           screenshotData = screenshotFilename
         } catch (fileError) {
           console.warn('⚠️ Failed to save cover screenshot file, using base64:', fileError)
-          screenshotData = screenshotResult.base64
+          screenshotData = dataUrl
         }
       } else {
         // Use base64 data URL when no outputDir specified
-        screenshotData = screenshotResult.base64
+        screenshotData = dataUrl
       }
       
       // Create screenshot element with consistent structure

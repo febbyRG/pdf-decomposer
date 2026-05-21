@@ -52,24 +52,26 @@ export class PdfLoader {
           const nodeCanvas = await import('canvas').catch(() => null)
           
           if (nodeCanvas) {
-            
-            // Register fonts FIRST (following official examples)
-            try {
-              nodeCanvas.registerFont('/System/Library/Fonts/ArialHB.ttc', { family: 'Arial' })
-            } catch (e) {
-              // Font registration may fail in some environments
-            }
-            
-            try {
-              nodeCanvas.registerFont('/System/Library/Fonts/Helvetica.ttc', { family: 'Helvetica' })
-            } catch (e) {
-              // Font registration may fail in some environments
-            }
-            
-            try {
-              nodeCanvas.registerFont('/System/Library/Fonts/Times.ttc', { family: 'Times' })
-            } catch (e) {
-              // Font registration may fail in some environments
+
+            // Register macOS system fonts so canvas can render text-heavy PDF
+            // pages reliably during local development. The hardcoded paths
+            // only exist on macOS; on Linux (e.g. Cloud Functions) every
+            // registerFont call silently throws, so guard the whole block
+            // behind a platform check instead of pretending Arial/Helvetica/
+            // Times got registered.
+            if (process.platform === 'darwin') {
+              const macFonts: Array<[string, string]> = [
+                ['/System/Library/Fonts/ArialHB.ttc', 'Arial'],
+                ['/System/Library/Fonts/Helvetica.ttc', 'Helvetica'],
+                ['/System/Library/Fonts/Times.ttc', 'Times']
+              ]
+              for (const [fontPath, family] of macFonts) {
+                try {
+                  nodeCanvas.registerFont(fontPath, { family })
+                } catch {
+                  // Font may be missing on minimal macOS installs; ignore.
+                }
+              }
             }
             
             // Simple NodeCanvasFactory (following PDF.js official examples)

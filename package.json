@@ -31,6 +31,8 @@
     "test:screenshot": "npx ts-node scripts/test-screenshot.ts",
     "test:data": "npx ts-node scripts/test-pdf-data.ts",
     "test:slice": "npx ts-node scripts/test-slice.ts",
+    "test:details": "node --max-old-space-size=8192 --expose-gc -r ts-node/register scripts/test-details.ts",
+    "test:puppeteer": "node --max-old-space-size=8192 --expose-gc -r ts-node/register scripts/test-puppeteer.ts",
     "test:all": "npm run test && npm run test:screenshot && npm run test:data && npm run test:slice",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -81,7 +83,8 @@
     "uuid": "^9.0.0"
   },
   "optionalDependencies": {
-    "canvas": "^2.11.2"
+    "canvas": "^2.11.2",
+    "puppeteer": "^24.0.0"
   },
   "devDependencies": {
     "@types/md5": "^2.3.5",

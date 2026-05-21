@@ -50,3 +50,6 @@ scripts/comprehensive-test-output/*
 # Legacy demo files
 demo.output.json
 scripts/assets
+
+# Local working docs (analysis, plans, logs — not part of the public package)
+docs/

@@ -12,6 +12,39 @@ const MAX_CANVAS_HEIGHT = 1600
 const MAX_CANVAS_PIXELS = MAX_CANVAS_WIDTH * MAX_CANVAS_HEIGHT
 
 /**
+ * Encode a node-canvas instance as JPEG with bounded peak memory.
+ *
+ * Prefers createJPEGStream() (chunked encode through libjpeg), falls back to
+ * toBuffer('image/jpeg') for older canvas versions. toBuffer materializes a
+ * full GetImageData ArrayBuffer alongside the JPEG output, which under
+ * fragmented native heap can fail with "Allocation failed" — exactly the
+ * production OOM signature.
+ *
+ * Quality is taken as a 0..1 fraction. node-canvas's streaming API expects
+ * a 0..100 integer; toBuffer's options.quality is 0..1. Normalize so callers
+ * don't have to care which path is taken.
+ */
+async function encodeJpeg(canvas: any, quality: number): Promise<Buffer> {
+  const streamQuality = Math.round(quality * 100)
+
+  const stream = typeof canvas.createJPEGStream === 'function'
+    ? canvas.createJPEGStream({ quality: streamQuality })
+    : (typeof canvas.jpegStream === 'function' ? canvas.jpegStream({ quality: streamQuality }) : null)
+
+  if (stream) {
+    return new Promise<Buffer>((resolve, reject) => {
+      const chunks: Buffer[] = []
+      stream.on('data', (chunk: Buffer) => chunks.push(chunk))
+      stream.on('end', () => resolve(Buffer.concat(chunks)))
+      stream.on('error', (err: Error) => reject(err))
+    })
+  }
+
+  // Fallback for canvas versions without a streaming API.
+  return canvas.toBuffer('image/jpeg', { quality })
+}
+
+/**
  * Universal page renderer - Memory optimized
  */
 export class PageRenderer {
@@ -131,49 +164,67 @@ export class PageRenderer {
         }
       } else {
         // Node.js server-side rendering - Memory optimized
+        let nodeCanvas: any = null
+        let context: any = null
         try {
           // Import Canvas directly
           const canvasModule = await import('canvas')
-          
+
           const canvasWidth = Math.floor(viewport.width)
           const canvasHeight = Math.floor(viewport.height)
-          
+
           // Create Node.js canvas with memory-safe dimensions
-          const nodeCanvas = canvasModule.createCanvas(canvasWidth, canvasHeight)
-          const context = nodeCanvas.getContext('2d')
-          
+          nodeCanvas = canvasModule.createCanvas(canvasWidth, canvasHeight)
+          context = nodeCanvas.getContext('2d')
+
           // Clear canvas with white background
           context.fillStyle = 'white'
           context.fillRect(0, 0, canvasWidth, canvasHeight)
-          
+
           // Render PDF page to canvas
           const renderContext = {
             canvasContext: context,
             viewport: viewport
           }
-          
+
           const renderTask = pdfPage.render(renderContext)
           await renderTask.promise
-          
-          // Convert to JPEG (smaller than PNG, less memory)
-          const jpegBuffer = nodeCanvas.toBuffer('image/jpeg', { quality: 0.85 })
+
+          // Encode JPEG. createJPEGStream chunks through libjpeg instead of
+          // materializing the full ImageData buffer at once, which is the
+          // exact allocation path that crashed production at large RSS (the
+          // `Context2d::GetImageData` OOM in canvas.node). Fall back to
+          // toBuffer() if the streaming API isn't available in the canvas
+          // version on hand.
+          const jpegBuffer = await encodeJpeg(nodeCanvas, 0.85)
           const base64 = `data:image/jpeg;base64,${jpegBuffer.toString('base64')}`
-          
+
           const result = {
             width: canvasWidth,
             height: canvasHeight,
-            base64: base64
+            base64
           }
-          
-          // Explicit cleanup - help GC by clearing references
-          // Note: node-canvas doesn't have explicit dispose, but clearing context helps
-          context.clearRect(0, 0, canvasWidth, canvasHeight)
-          
+
           return result
-          
+
         } catch (canvasError) {
           console.error('❌ Node.js Canvas rendering failed:', canvasError)
           throw new Error(`Node.js rendering failed: ${canvasError}`)
+        } finally {
+          // Release the Cairo surface backing this canvas. Setting width=0
+          // is node-canvas's documented way to drop native memory — clearRect
+          // alone only zeroes pixels and leaves the surface allocated.
+          // Mirrors the NodeCanvasFactory.destroy() pattern used by pdf.js.
+          if (nodeCanvas) {
+            try {
+              nodeCanvas.width = 0
+              nodeCanvas.height = 0
+            } catch {
+              // Some canvas versions throw on width=0; ignore.
+            }
+          }
+          context = null
+          nodeCanvas = null
         }
       }
 

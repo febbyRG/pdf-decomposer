@@ -278,11 +278,24 @@ export async function pdfDecompose(
           }
         }, memoryConfig)
 
-        
+        // Release pdf.js worker-side state for this page. If a downstream
+        // stage (cleanComposer) needs the page again it will be rebuilt on
+        // demand; the one-time re-fetch is cheaper than carrying every page
+        // in the worker for the whole document.
+        await pdfDocument.releasePage(actualPageNumber)
+
+        // Yield to the event loop so V8 can finalize the page wrapper and
+        // any canvas surfaces created during decomposition before the next
+        // iteration starts allocating more.
+        await new Promise<void>(resolve => setImmediate(resolve))
+
         // More aggressive memory cleanup for large documents
         // Every 3 pages for large docs, every 5 pages for small docs
         const cleanupInterval = isLargeDocument ? 3 : 5
         if ((pageIndex + 1) % cleanupInterval === 0 && pageIndex + 1 < total) {
+          // Drop pdf.js document-level caches periodically — these accumulate
+          // across pages and don't get reached by per-page releasePage().
+          await pdfDocument.cleanupCaches()
           await MemoryManager.cleanupMemory()
         }
 
@@ -360,11 +373,20 @@ export async function pdfDecompose(
       pkg.pages = minifyPagesData(pkg.pages, options.minifyOptions?.elementAttributes || false)
     }
 
+    // Final release of any pages that downstream stages (e.g. cleanComposer)
+    // re-fetched. The decomposed result is already in pkg.pages; no consumer
+    // needs the live PdfPage wrappers after this point.
+    try {
+      await pdfDocument.releaseAll()
+    } catch (releaseError) {
+      console.warn('Failed to release pdf.js pages after decompose:', releaseError)
+    }
+
     updateProgress(100, 'Completed')
     return {
       pages: pkg.pages as PdfPageContent[]
     }
-    
+
   } catch (error) {
     console.error('❌ PDF decomposition failed:', error)
     
