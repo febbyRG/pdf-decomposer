@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2026-06-18
+
+### 🐛 Fixed
+- **`cleanComposer` page rasterization now follows the configured renderer.** When `cleanComposer` converted a full-page-image or cover page into a single page screenshot, it rasterized via node-canvas (`PageRenderer`) regardless of the `renderer` passed to `PdfDecomposer`. PDFs with large CMYK images could still OOM in `Context2d::GetImageData` (`v8::ArrayBuffer::New` allocation failed) even with `PuppeteerRenderer` configured, because `cleanComposer` bypassed it. The renderer is now threaded from `PdfDecomposer` through `data()` / `decompose()` into `PdfCleanComposer`, so cover/page screenshots use `renderer.renderPage()` (e.g. Chromium) when a renderer is set and fall back to node-canvas otherwise. Verified on a 128-page CMYK-heavy PDF that previously aborted around page 80.
+
+### ✨ Added
+- `PdfCleanComposerOptions.coverPageScreenshotWidth` (default 1024) to tune the page/cover screenshot width on the renderer path.
+
+## [1.1.0] - 2026-05-21
+
+### ✨ Added
+- **Pluggable renderer** via the `renderer` constructor option and the `PdfPageRenderer` interface, letting per-page rasterization run outside node-canvas without changing any other behavior.
+- **`PuppeteerRenderer`** renders pages inside headless Chromium to bypass the node-canvas `Context2d::GetImageData` / `v8::ArrayBuffer::New` OOM on very large PDFs (100+ pages, hundreds of MB). PDF bytes reach Chromium through a localhost HTTP server rather than CDP-serialized blobs.
+- `PdfDecomposer.dispose()` and `releasePages()` lifecycle, plus lazy `PdfDocument` page caching, to bound memory on large documents.
+- Streaming JPEG encode in the node-canvas screenshot path.
+
+### Notes
+- All changes are additive and backward compatible. `puppeteer` is an optional dependency, required only when using `PuppeteerRenderer`.
+
 ## [1.0.5] - 2025-09-29
 
 ### 🏆 QUALITY EXCELLENCE: All Metrics Now EXCELLENT ⭐⭐⭐⭐⭐

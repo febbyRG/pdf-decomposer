@@ -438,8 +438,12 @@ interface PdfCleanComposerOptions {
   minImageArea?: number // Minimum image area (default: 2500)
   coverPageDetection?: boolean // Detect cover pages (default: true)
   coverPageThreshold?: number // Cover detection threshold (default: 0.8)
+  coverPageScreenshotQuality?: number // JPEG quality for page/cover screenshots, 1-100 (default: 95)
+  coverPageScreenshotWidth?: number // Target width (px) for page/cover screenshots when rendered via a renderer (default: 1024)
 }
 ```
+
+> When `cleanComposer` converts a full-page-image or cover page into a single screenshot, that page is rasterized through the `renderer` configured on `PdfDecomposer` (e.g. `PuppeteerRenderer`) when one is set, and through node-canvas otherwise. `coverPageScreenshotWidth` only applies to the renderer path. The renderer is applied automatically. It is not something you pass in `cleanComposerOptions`.
 
 ### Result Interfaces
 
@@ -606,7 +610,7 @@ for (let start = 1; start <= totalPages; start += batchSize) {
 
 The default Node.js screenshot path uses `node-canvas`. For very large PDFs (100+ pages, hundreds of MB) the underlying `Context2d::GetImageData` can hit `v8::ArrayBuffer::New` OOM regardless of `--max-old-space-size` — this is a documented limitation of the node-canvas + pdf.js + V8 ArrayBuffer allocator interaction. See [docs/NODE_CANVAS_OOM_VS_PUPPETEER.md](docs/NODE_CANVAS_OOM_VS_PUPPETEER.md) for the full write-up.
 
-The library exposes an optional `renderer` constructor option that swaps the per-page rasterization path without changing any other behavior. Browser usage is unaffected. Text/image/link extraction (`decompose()`, `data()` minus screenshots) still runs on the Node-side pdf.js — only the page→image step moves into the alternative renderer.
+The library exposes an optional `renderer` constructor option that swaps the per-page rasterization path without changing any other behavior. Browser usage is unaffected. Text/image/link extraction still runs on the Node-side pdf.js. Every page→image step follows the renderer: `screenshot()`, the page images `data()` produces, and the cover/page-screenshot conversion that `cleanComposer` performs on full-page-image pages. When no renderer is set, all of these fall back to node-canvas. This consistency matters for large CMYK-heavy PDFs, where the `cleanComposer` cover/page conversion would otherwise still hit the node-canvas OOM even when a renderer was configured (fixed in 1.1.1).
 
 ```typescript
 import { PdfDecomposer, PuppeteerRenderer } from '@febbyrg/pdf-decomposer'
@@ -633,8 +637,8 @@ How PDF bytes reach Chromium: the renderer spawns a tiny localhost HTTP server (
 #### Trade-offs
 
 - Cold-start adds ~1500–2500 ms per `PdfDecomposer` lifetime (one-time, not per page).
-- Requires Chromium on disk (~300 MB) — already present in environments that use Puppeteer for other tasks (e.g. drone-jobs).
-- Text/image extraction (`decompose()`, `data()` minus screenshots) still runs on the Node-side pdf.js.
+- Requires Chromium on disk (~300 MB), already present in environments that use Puppeteer for other tasks (e.g. cloud-run-jobs).
+- Text/image extraction still runs on the Node-side pdf.js. Only page rasterization (screenshots and the `cleanComposer` cover/page conversion) uses the renderer.
 - `dispose()` becomes mandatory — without it, the Chromium subprocess and HTTP server leak.
 
 #### When to use
