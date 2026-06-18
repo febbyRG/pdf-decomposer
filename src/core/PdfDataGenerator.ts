@@ -6,6 +6,7 @@ import type {
   PdfDecomposerError 
 } from '../types/decomposer.types.js'
 import type { DataOptions, DataResult, PdfData, PdfArea, PdfDataGeneratorOptions } from '../types/data.types.js'
+import type { PdfPageRenderer } from '../types/renderer.types.js'
 
 /**
  * Generates pdfData structure compatible with pwa-admin from pdf-decomposer output
@@ -311,7 +312,8 @@ export async function pdfData(
   pdfDocument: PdfDocument,
   options: DataOptions = {},
   progressCallback?: (state: PdfDecomposerState) => void,
-  errorCallback?: (error: PdfDecomposerError) => void
+  errorCallback?: (error: PdfDecomposerError) => void,
+  renderer?: PdfPageRenderer | null
 ): Promise<DataResult> {
   // Helper function to update progress
   const updateProgress = (progress: number, message: string) => {
@@ -347,7 +349,8 @@ export async function pdfData(
         const adjustedProgress = 10 + (state.progress * 0.7)
         updateProgress(adjustedProgress, state.message)
       },
-      errorCallback
+      errorCallback,
+      renderer // forward the configured renderer down to cleanComposer's page rasterization
     )
     
     const pages = decomposeResult.pages

@@ -14,6 +14,7 @@ import { PdfDecomposerPage } from './PdfDecomposerPage.js'
 import { PdfElementComposer } from './PdfElementComposer.js'
 import { PdfPageComposer } from './PdfPageComposer.js'
 import { PdfCleanComposer } from './PdfCleanComposer.js'
+import type { PdfPageRenderer } from '../types/renderer.types.js'
 import { MemoryManager } from '../utils/MemoryManager.js'
 import { MemoryPackageDir } from '../utils/MemoryPackageDir.js'
 
@@ -163,7 +164,8 @@ export async function pdfDecompose(
   pdfDocument: PdfDocument,
   options: PdfDecomposerOptions = {},
   progressCallback?: (state: PdfDecomposerState) => void,
-  errorCallback?: (error: PdfDecomposerError) => void
+  errorCallback?: (error: PdfDecomposerError) => void,
+  renderer?: PdfPageRenderer | null
 ): Promise<DecomposeResult> {
 
   // Helper function to update progress
@@ -349,7 +351,8 @@ export async function pdfDecompose(
       const cleanOptions = {
         ...defaultCleanOptions,
         ...options.cleanComposerOptions,
-        outputDir: options.outputDir // Always use outputDir from main options
+        outputDir: options.outputDir, // Always use outputDir from main options
+        renderer // Follow the configured renderer: cleanComposer rasterizes via it (Chromium) when set, node-canvas otherwise
       }
       
       pkg.pages = await PdfCleanComposer.cleanPages(pkg.pages, cleanOptions, pdfDocument)

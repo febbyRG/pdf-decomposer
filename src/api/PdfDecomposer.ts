@@ -185,10 +185,11 @@ export class PdfDecomposer {
     // Use core decompose logic with already loaded PdfDocument and pass callbacks
     const { pdfDecompose } = await import('../core/PdfDecompose.js')
     return await pdfDecompose(
-      this.pdfDocument as PdfDocument, 
+      this.pdfDocument as PdfDocument,
       options,
       (state) => this.notify(state), // Pass progress callback
-      (error) => this.notifyDecomposeError(error) // Pass error callback
+      (error) => this.notifyDecomposeError(error), // Pass error callback
+      this.renderer // cleanComposer rasterizes via this renderer when set (else node-canvas)
     )
   }
 
@@ -237,10 +238,11 @@ export class PdfDecomposer {
     // Use core data logic with already loaded PdfDocument and pass callbacks
     const { pdfData } = await import('../core/PdfDataGenerator.js')
     return await pdfData(
-      this.pdfDocument as PdfDocument, 
+      this.pdfDocument as PdfDocument,
       options,
       (state) => this.notify(state),
-      (error) => this.notifyDecomposeError(error)
+      (error) => this.notifyDecomposeError(error),
+      this.renderer // cleanComposer rasterizes via this renderer when set (else node-canvas)
     )
   }
 

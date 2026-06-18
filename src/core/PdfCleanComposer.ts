@@ -14,6 +14,7 @@
 
 import type { PdfPageContent } from '../models/PdfPageContent.js'
 import type { PdfDocument } from './PdfDocument.js'
+import type { PdfPageRenderer } from '../types/renderer.types.js'
 
 // Environment detection
 const isNodeJS = typeof process !== 'undefined' && process.versions && process.versions.node
@@ -140,6 +141,20 @@ export interface PdfCleanComposerOptions {
    * If provided, removed image files will be deleted from disk
    */
   outputDir?: string
+
+  /**
+   * Pluggable page renderer. When set (e.g. PuppeteerRenderer), cleanComposer
+   * rasterizes cover/page screenshots through it (Chromium) instead of
+   * node-canvas. When null/undefined, the node-canvas PageRenderer path is used.
+   * Mirrors how PdfDecomposer.screenshot() picks its rasterization path.
+   */
+  renderer?: PdfPageRenderer | null
+
+  /**
+   * Target width (px) for the page/cover screenshot when rendering via `renderer`.
+   * Default: 1024. Ignored by the node-canvas fallback (which uses scale 1.0).
+   */
+  coverPageScreenshotWidth?: number
 }
 
 /**
@@ -897,21 +912,38 @@ export class PdfCleanComposer {
     options: PdfCleanComposerOptions
   ): Promise<any | null> {
     try {
-      // Get PDF page
-      const pdfPage = await pdfDocument.getPage(page.pageIndex + 1)
-      
-      // Import PageRenderer dynamically for universal screenshot support
-      const { PageRenderer } = await import('../utils/PageRenderer.js')
-      
-      // Use scale 1.0 for memory efficiency on large documents
-      // Higher scales cause OOM on PDFs with many pages
-      const renderScale = 1.0
-      
-      // Generate screenshot with optimized settings
-      const screenshotResult = await PageRenderer.renderPageToBase64(pdfPage.rawProxy, pdfDocument.rawProxy, {
-        quality: options.coverPageScreenshotQuality || 85, // Slightly lower default quality
-        scale: renderScale
-      })
+      const rawQuality = options.coverPageScreenshotQuality ?? 85
+
+      let screenshotResult: { width: number; height: number; base64: string }
+
+      if (options.renderer) {
+        // Renderer present (e.g. PuppeteerRenderer): rasterize the page inside the
+        // renderer (Chromium) instead of node-canvas. Same contract screenshot()
+        // uses. This keeps cleanComposer consistent with the configured renderer
+        // and avoids the node-canvas Context2d::GetImageData OOM that fires when
+        // pdf.js decodes very large (e.g. CMYK) embedded images onto node-canvas.
+        // renderPage normalizes its own page state, so the Node-side pdf.js page
+        // is intentionally NOT materialized on this path.
+        const quality = rawQuality > 1 ? rawQuality / 100 : rawQuality
+        screenshotResult = await options.renderer.renderPage(page.pageIndex + 1, {
+          width: options.coverPageScreenshotWidth ?? 1024,
+          quality
+        })
+      } else {
+        // No renderer: default node-canvas path (unchanged behaviour).
+        // Get PDF page
+        const pdfPage = await pdfDocument.getPage(page.pageIndex + 1)
+
+        // Import PageRenderer dynamically for universal screenshot support
+        const { PageRenderer } = await import('../utils/PageRenderer.js')
+
+        // Use scale 1.0 for memory efficiency on large documents.
+        // Higher scales cause OOM on PDFs with many pages.
+        screenshotResult = await PageRenderer.renderPageToBase64(pdfPage.rawProxy, pdfDocument.rawProxy, {
+          quality: rawQuality,
+          scale: 1.0
+        })
+      }
       
       // Infer extension from the returned data URL. PageRenderer returns
       // JPEG in Node mode (since v1.0.6) and PNG in browser; the previous
