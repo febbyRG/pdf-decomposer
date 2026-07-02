@@ -27,13 +27,15 @@
     "preversion": "npm run lint && npm test",
     "version": "npm run build",
     "postversion": "git push && git push --tags",
-    "test": "npx ts-node scripts/test.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:harness": "npx ts-node scripts/test.ts",
     "test:screenshot": "npx ts-node scripts/test-screenshot.ts",
     "test:data": "npx ts-node scripts/test-pdf-data.ts",
     "test:slice": "npx ts-node scripts/test-slice.ts",
     "test:details": "node --max-old-space-size=8192 --expose-gc -r ts-node/register scripts/test-details.ts",
     "test:puppeteer": "node --max-old-space-size=8192 --expose-gc -r ts-node/register scripts/test-puppeteer.ts",
-    "test:all": "npm run test && npm run test:screenshot && npm run test:data && npm run test:slice",
+    "test:all": "npm run test:harness && npm run test:screenshot && npm run test:data && npm run test:slice",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "clean": "rm -rf dist",
@@ -94,7 +96,8 @@
     "@typescript-eslint/parser": "^5.0.0",
     "eslint": "^8.0.0",
     "ts-node": "^10.9.2",
-    "typescript": "^4.9.0"
+    "typescript": "^4.9.0",
+    "vitest": "^4.1.9"
   },
   "publishConfig": {
     "access": "public"

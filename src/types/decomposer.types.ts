@@ -274,6 +274,24 @@ export interface PdfCleanComposerOptions {
    * If provided, removed image files will be deleted from disk
    */
   outputDir?: string
+
+  /**
+   * Hero-image coverage (0-1) that flags a full-page advertisement even when the
+   * page also carries scattered promo text. Default: 0.55.
+   */
+  heroImageCoverageThreshold?: number
+
+  /**
+   * Longest continuous text block (chars) that marks a page as real editorial
+   * content and prevents screenshot conversion. Default: 300.
+   */
+  significantTextBlockThreshold?: number
+
+  /**
+   * Maximum total text (chars) for a hero-image ad. Above this the page is
+   * treated as content. Default: 600.
+   */
+  adMaxTextChars?: number
 }
 
 /**

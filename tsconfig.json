@@ -19,5 +19,5 @@
     "ignoreDeprecations": "6.0"
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "scripts"]
+  "exclude": ["node_modules", "dist", "scripts", "src/**/*.spec.ts", "src/**/__fixtures__/**"]
 }

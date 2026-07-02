@@ -65,10 +65,10 @@ Extract structured text with positioning and formatting:
 
 #### Page Composer
 
-- Merges continuous content across pages
-- Detects article boundaries and section breaks
-- Interview and feature content recognition
-- Typography consistency analysis
+- Merges continuous content across consecutive pages
+- Document-agnostic continuity: a page pair merges only when there is real evidence (the current page's main body ends mid-sentence, the next page begins mid-sentence, or a "continued on/from page N" marker links them)
+- Detects article boundaries and section breaks (a new display heading or section-marker word starts a new article)
+- Never merges a cover, advertisement, or full-page screenshot into a neighbour
 
 #### Clean Composer
 
@@ -76,6 +76,7 @@ Extract structured text with positioning and formatting:
 - Content area detection with configurable margins
 - Image size validation and filtering
 - Control character removal
+- Collapses covers and full-page advertisements to a single screenshot, while keeping text-heavy pages (including articles over a full-bleed background image) decomposed
 
 #### Image Extraction
 
@@ -437,13 +438,18 @@ interface PdfCleanComposerOptions {
   minImageHeight?: number // Minimum image height (default: 50)
   minImageArea?: number // Minimum image area (default: 2500)
   coverPageDetection?: boolean // Detect cover pages (default: true)
-  coverPageThreshold?: number // Cover detection threshold (default: 0.8)
+  coverPageThreshold?: number // Single/aggregate image coverage that marks a full-page visual (default: 0.8)
   coverPageScreenshotQuality?: number // JPEG quality for page/cover screenshots, 1-100 (default: 95)
   coverPageScreenshotWidth?: number // Target width (px) for page/cover screenshots when rendered via a renderer (default: 1024)
+  heroImageCoverageThreshold?: number // Hero-image coverage that flags a full-page ad even when it carries scattered text (default: 0.55)
+  significantTextBlockThreshold?: number // Longest continuous text block that marks a page as real content and keeps it decomposed (default: 300)
+  adMaxTextChars?: number // Max total text for a hero-image ad; above this the page is treated as content (default: 600)
 }
 ```
 
 > When `cleanComposer` converts a full-page-image or cover page into a single screenshot, that page is rasterized through the `renderer` configured on `PdfDecomposer` (e.g. `PuppeteerRenderer`) when one is set, and through node-canvas otherwise. `coverPageScreenshotWidth` only applies to the renderer path. The renderer is applied automatically. It is not something you pass in `cleanComposerOptions`.
+
+> Full-page detection keys on the **longest continuous text block**, not total text. A page with at least one long paragraph (>= `significantTextBlockThreshold`) is treated as real content and stays decomposed, even when a full-bleed background image covers the whole page. Covers and full-page advertisements (a dominant image with only short scattered text) are collapsed to a single screenshot. Tune `heroImageCoverageThreshold` / `significantTextBlockThreshold` / `adMaxTextChars` if a specific publication needs a different balance.
 
 ### Result Interfaces
 
@@ -529,9 +535,11 @@ interface SliceResult {
 ### Run Tests
 
 ```bash
-npm test                    # Comprehensive test suite
+npm test                    # Unit tests (Vitest) for the ad / merge heuristics
+npm run test:watch          # Vitest in watch mode
+npm run test:harness        # End-to-end decompose harness over a sample PDF
 npm run test:screenshot     # Screenshot generation tests
-npm run test:data          # PDF data generation tests
+npm run test:data           # PDF data generation tests
 ```
 
 ### Build and Development

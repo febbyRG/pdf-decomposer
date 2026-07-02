@@ -15,6 +15,8 @@
 import type { PdfPageContent } from '../models/PdfPageContent.js'
 import type { PdfDocument } from './PdfDocument.js'
 import type { PdfPageRenderer } from '../types/renderer.types.js'
+import { computeImageDistribution, isImageElement, isTextElement, normalizeBoundingBox } from './heuristics/elementUtils.js'
+import { DEFAULT_SCREENSHOT_THRESHOLDS, decideScreenshot, type ScreenshotThresholds } from './heuristics/screenshotHeuristics.js'
 
 // Environment detection
 const isNodeJS = typeof process !== 'undefined' && process.versions && process.versions.node
@@ -155,6 +157,24 @@ export interface PdfCleanComposerOptions {
    * Default: 1024. Ignored by the node-canvas fallback (which uses scale 1.0).
    */
   coverPageScreenshotWidth?: number
+
+  /**
+   * Hero-image coverage (0-1) that flags a full-page advertisement even when the
+   * page also carries scattered promo text. Default: 0.55.
+   */
+  heroImageCoverageThreshold?: number
+
+  /**
+   * Longest continuous text block (chars) that marks a page as real editorial
+   * content and prevents screenshot conversion. Default: 300.
+   */
+  significantTextBlockThreshold?: number
+
+  /**
+   * Maximum total text (chars) for a hero-image ad. Above this the page is
+   * treated as content. Default: 600.
+   */
+  adMaxTextChars?: number
 }
 
 /**
@@ -355,7 +375,7 @@ export class PdfCleanComposer {
         })
         
         // Remove associated image file if it exists and outputDir is provided
-        if (options.outputDir && this.isImageElement(element)) {
+        if (options.outputDir && isImageElement(element)) {
           this.removeImageFile(element, options.outputDir)
         }
         
@@ -372,7 +392,7 @@ export class PdfCleanComposer {
         })
         
         // Remove associated image file if it exists and outputDir is provided
-        if (options.outputDir && this.isImageElement(element)) {
+        if (options.outputDir && isImageElement(element)) {
           this.removeImageFile(element, options.outputDir)
         }
         
@@ -398,7 +418,7 @@ export class PdfCleanComposer {
       return true // Keep elements without bounding box
     }
 
-    const bbox = this.normalizeBoundingBox(element.boundingBox)
+    const bbox = normalizeBoundingBox(element.boundingBox)
     
     // For large elements (images that might be full-page or covers), be more lenient
     const elementArea = bbox.width * bbox.height
@@ -431,9 +451,9 @@ export class PdfCleanComposer {
     const cleanedElement = { ...element }
 
     // Clean based on element type
-    if (this.isTextElement(element)) {
+    if (isTextElement(element)) {
       return this.cleanTextElement(cleanedElement, options)
-    } else if (this.isImageElement(element)) {
+    } else if (isImageElement(element)) {
       return this.cleanImageElement(cleanedElement, options)
     }
 
@@ -491,7 +511,7 @@ export class PdfCleanComposer {
     }
 
     // Get image dimensions from bounding box
-    const bbox = this.normalizeBoundingBox(element.boundingBox)
+    const bbox = normalizeBoundingBox(element.boundingBox)
     
     // Check minimum width requirement
     if (bbox.width < (options.minImageWidth || 50)) {
@@ -562,57 +582,14 @@ export class PdfCleanComposer {
       return true // Keep elements without bounding box
     }
 
-    const bbox = this.normalizeBoundingBox(element.boundingBox)
+    const bbox = normalizeBoundingBox(element.boundingBox)
     
     return bbox.width >= (options.minTextWidth || 10) && bbox.height >= (options.minTextHeight || 8)
   }
 
-  /**
-   * Check if element is a text element
-   */
-  private static isTextElement(element: any): boolean {
-    return element.type === 'paragraph' || 
-           element.type === 'heading' || 
-           element.type === 'text' ||
-           (element.type && element.type.startsWith('h')) // h1, h2, etc.
-  }
-
-  /**
-   * Check if element is an image element
-   */
-  private static isImageElement(element: any): boolean {
-    return element.type === 'image'
-  }
-
-  /**
-   * Normalize bounding box to consistent format
-   */
-  private static normalizeBoundingBox(boundingBox: any): { top: number, left: number, width: number, height: number } {
-    if (Array.isArray(boundingBox)) {
-      // Format: [left, top, width, height] or [top, left, width, height]
-      const [a, b, width, height] = boundingBox
-      
-      // Determine if it's [left, top, width, height] or [top, left, width, height]
-      // Usually PDF coordinates have origin at bottom-left, so larger values are typically top
-      return {
-        left: Math.min(a, b),
-        top: Math.max(a, b),
-        width: width || 0,
-        height: height || 0
-      }
-    } else if (typeof boundingBox === 'object') {
-      // Object format: {top, left, width, height} or {x, y, width, height}
-      return {
-        top: boundingBox.top || boundingBox.y || 0,
-        left: boundingBox.left || boundingBox.x || 0,
-        width: boundingBox.width || 0,
-        height: boundingBox.height || 0
-      }
-    }
-
-    // Fallback
-    return { top: 0, left: 0, width: 0, height: 0 }
-  }
+  // normalizeBoundingBox / isImageElement / isTextElement now live in
+  // ./heuristics/elementUtils (single source of truth, shared with the pure
+  // screenshot + continuity heuristics).
 
   /**
    * Check if element was modified during cleaning
@@ -693,7 +670,7 @@ export class PdfCleanComposer {
       const threshold = options.coverPageThreshold || 0.8
       
       // Check if page has large images that might indicate a cover
-      const imageElements = (page.elements || []).filter(element => this.isImageElement(element))
+      const imageElements = (page.elements || []).filter(element => isImageElement(element))
       
       if (imageElements.length === 0) {
         return null
@@ -701,7 +678,7 @@ export class PdfCleanComposer {
       
       // Method 1: Check individual large images (original logic)
       for (const imageElement of imageElements) {
-        const bbox = this.normalizeBoundingBox(imageElement.boundingBox)
+        const bbox = normalizeBoundingBox(imageElement.boundingBox)
         const imageArea = bbox.width * bbox.height
         const coverageRatio = imageArea / pageArea
         
@@ -727,14 +704,14 @@ export class PdfCleanComposer {
       
       // Method 2: Check aggregate coverage for tiled images (NEW LOGIC)
       const totalImageArea = imageElements.reduce((total, element) => {
-        const bbox = this.normalizeBoundingBox(element.boundingBox)
+        const bbox = normalizeBoundingBox(element.boundingBox)
         return total + (bbox.width * bbox.height)
       }, 0)
       
       const aggregateCoverageRatio = totalImageArea / pageArea
       
       // Also check if images are distributed across the page (not just clustered in one corner)
-      const imageDistribution = this.calculateImageDistribution(imageElements, page.width, page.height)
+      const imageDistribution = computeImageDistribution(imageElements, page.width, page.height)
       
       // Cover page criteria for tiled images:
       // 1. Total image coverage >= threshold
@@ -775,131 +752,26 @@ export class PdfCleanComposer {
   }
 
   /**
-   * Determine if a page should be converted to screenshot based on its content
+   * Determine if a page should be converted to a single full-page screenshot.
+   * Thin wrapper over the pure decideScreenshot heuristic (see
+   * ./heuristics/screenshotHeuristics). Async only to preserve the existing
+   * call-site contract; the decision itself is synchronous.
    */
   private static async shouldConvertToScreenshot(
-    page: PdfPageContent, 
-    cleanedElements: any[], 
+    page: PdfPageContent,
+    cleanedElements: any[],
     options: PdfCleanComposerOptions
   ): Promise<{ convert: boolean, reason: string }> {
-    if (cleanedElements.length === 0) {
-      return { convert: false, reason: 'no-elements' }
+    const thresholds: ScreenshotThresholds = {
+      coverPageThreshold: options.coverPageThreshold ?? DEFAULT_SCREENSHOT_THRESHOLDS.coverPageThreshold,
+      heroImageCoverageThreshold: options.heroImageCoverageThreshold ?? DEFAULT_SCREENSHOT_THRESHOLDS.heroImageCoverageThreshold,
+      significantTextBlockThreshold: options.significantTextBlockThreshold ?? DEFAULT_SCREENSHOT_THRESHOLDS.significantTextBlockThreshold,
+      adMaxTextChars: options.adMaxTextChars ?? DEFAULT_SCREENSHOT_THRESHOLDS.adMaxTextChars
     }
-    
-    const pageArea = page.width * page.height
-    const threshold = options.coverPageThreshold || 0.8
-    
-    // Check if page has image elements
-    const imageElements = cleanedElements.filter(element => this.isImageElement(element))
-    
-    if (imageElements.length === 0) {
-      return { convert: false, reason: 'no-images' }
-    }
-    
-    // Check for significant text content that should be preserved
-    const textElements = cleanedElements.filter(element => this.isTextElement(element))
-    const totalTextLength = textElements.reduce((total, element) => {
-      return total + (element.data?.length || 0)
-    }, 0)
-    
-    // Don't convert to screenshot if there's substantial text content
-    const significantTextThreshold = 200 // 200 characters minimum
-    if (totalTextLength >= significantTextThreshold) {
-      return { 
-        convert: false, 
-        reason: `significant-text-content (${totalTextLength} characters)` 
-      }
-    }
-    
-    // Method 1: Single large image covering most of the page
-    for (const imageElement of imageElements) {
-      const bbox = this.normalizeBoundingBox(imageElement.boundingBox)
-      const imageArea = bbox.width * bbox.height
-      const coverageRatio = imageArea / pageArea
-      
-      if (coverageRatio >= threshold) {
-        return { 
-          convert: true, 
-          reason: `single-large-image (${(coverageRatio * 100).toFixed(1)}% coverage)` 
-        }
-      }
-    }
-    
-    // Method 2: Multiple images with high aggregate coverage (for tiled pages)
-    // Early return if insufficient image count for tiled detection
-    const minImageCount = 3
-    if (imageElements.length < minImageCount) {
-      return { convert: false, reason: 'insufficient-image-count' }
-    }
-    
-    const totalImageArea = imageElements.reduce((total, element) => {
-      const bbox = this.normalizeBoundingBox(element.boundingBox)
-      return total + (bbox.width * bbox.height)
-    }, 0)
-    
-    const aggregateCoverageRatio = totalImageArea / pageArea
-    
-    // Early return if coverage is insufficient
-    if (aggregateCoverageRatio < threshold) {
-      return { convert: false, reason: 'insufficient-aggregate-coverage' }
-    }
-    
-    // Check distribution for tiled images
-    const imageDistribution = this.calculateImageDistribution(imageElements, page.width, page.height)
-    const minDistributionScore = 0.4
-    
-    if (imageDistribution.distributionScore >= minDistributionScore) {
-      
-      return { 
-        convert: true, 
-        reason: `tiled-images (${imageElements.length} images, ${(aggregateCoverageRatio * 100).toFixed(1)}% coverage)` 
-      }
-    }
-    
-    return { convert: false, reason: 'insufficient-coverage' }
-  }
-
-  /**
-   * Calculate how well images are distributed across the page
-   * Returns distribution score (0-1) indicating coverage of page dimensions
-   */
-  private static calculateImageDistribution(
-    imageElements: any[], 
-    pageWidth: number, 
-    pageHeight: number
-  ): { distributionScore: number, widthCoverage: number, heightCoverage: number } {
-    if (imageElements.length === 0) {
-      return { distributionScore: 0, widthCoverage: 0, heightCoverage: 0 }
-    }
-    
-    // Find the bounding box that encompasses all images
-    let minX = pageWidth
-    let maxX = 0
-    let minY = pageHeight  
-    let maxY = 0
-    
-    for (const element of imageElements) {
-      const bbox = this.normalizeBoundingBox(element.boundingBox)
-      
-      minX = Math.min(minX, bbox.left)
-      maxX = Math.max(maxX, bbox.left + bbox.width)
-      minY = Math.min(minY, bbox.top)
-      maxY = Math.max(maxY, bbox.top + bbox.height)
-    }
-    
-    // Calculate coverage of page dimensions
-    const widthCoverage = Math.max(0, (maxX - minX)) / pageWidth
-    const heightCoverage = Math.max(0, (maxY - minY)) / pageHeight
-    
-    // Distribution score is the minimum of width and height coverage
-    // This ensures images are distributed in BOTH dimensions
-    const distributionScore = Math.min(widthCoverage, heightCoverage)
-    
-    return {
-      distributionScore,
-      widthCoverage,
-      heightCoverage
-    }
+    return decideScreenshot(
+      { pageWidth: page.width, pageHeight: page.height, elements: cleanedElements },
+      thresholds
+    )
   }
 
   /**
