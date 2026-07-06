@@ -228,14 +228,16 @@ export class PdfCleanComposer {
       coverPageDetection: true,
       coverPageThreshold: 0.8,
       coverPageScreenshotQuality: 95,
+      maxScreenshotsPerDocument: 10,
       outputDir: undefined
     }
 
     const finalOptions = { ...defaultOptions, ...options }
 
     // Process pages SEQUENTIALLY to avoid memory explosion from parallel screenshot generation
-    // Limit screenshot conversions to prevent OOM on large PDFs
-    const MAX_SCREENSHOTS_PER_DOCUMENT = 10
+    // Limit screenshot conversions to bound memory on large PDFs (configurable:
+    // ad-heavy magazines need more than the default, see maxScreenshotsPerDocument)
+    const maxScreenshots = finalOptions.maxScreenshotsPerDocument
     let screenshotCount = 0
     
     const processedPages: PdfPageContent[] = []
@@ -256,7 +258,7 @@ export class PdfCleanComposer {
       }
       
       // Process page with screenshot limit check
-      const processedPage = await this.cleanPage(page, finalOptions, pdfDocument, screenshotCount >= MAX_SCREENSHOTS_PER_DOCUMENT)
+      const processedPage = await this.cleanPage(page, finalOptions, pdfDocument, screenshotCount >= maxScreenshots)
       
       // Count if this page was converted to screenshot
       if (processedPage.metadata?.convertedToScreenshot) {

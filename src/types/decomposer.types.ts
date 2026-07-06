@@ -292,6 +292,16 @@ export interface PdfCleanComposerOptions {
    * treated as content. Default: 600.
    */
   adMaxTextChars?: number
+
+  /**
+   * Maximum pages converted to a full-page screenshot per document (ads,
+   * covers). Once reached, further pages stay decomposed even when the
+   * screenshot heuristics match, so ad-heavy documents longer than the cap
+   * fall back to element output. Originally a node-canvas memory guard; with
+   * a pluggable renderer it can safely be raised to the page count.
+   * Default: 10 (backward compatible).
+   */
+  maxScreenshotsPerDocument?: number
 }
 
 /**
