@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### ✨ Added
 - `PdfCleanComposerOptions.maxScreenshotsPerDocument` (default 10, the previous hardcoded cap). Ads and covers are collapsed to a full-page screenshot, but only up to this many per document. Ad-heavy magazines longer than a few dozen pages exceed 10, and every ad past the cap silently stayed decomposed (re-introducing the double-render the 1.2.0 heuristics fixed). The cap was originally a node-canvas memory guard; consumers on a pluggable renderer can raise it to the page count.
 
+### 🔧 Changed
+- Dev toolchain runs on Node 16 again: `vitest` pinned to `^0.34.6` (the last line supporting Node >= 14.18; vitest 4 required Node >= 20 and broke `npm install` under Node 16). Dev-only, no effect on the published package. All 35 tests, build, and lint verified green under Node 16.20.2.
+
 ## [1.2.0] - 2026-07-02
 
 Generalizes ad detection and page merging so they no longer depend on one sample document, and makes both heuristics unit-testable. Public API (`decompose` / `composePages` / options) is unchanged and additive, so this is a minor release when published.
