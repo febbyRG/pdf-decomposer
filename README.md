@@ -444,12 +444,15 @@ interface PdfCleanComposerOptions {
   heroImageCoverageThreshold?: number // Hero-image coverage that flags a full-page ad even when it carries scattered text (default: 0.55)
   significantTextBlockThreshold?: number // Longest continuous text block that marks a page as real content and keeps it decomposed (default: 300)
   adMaxTextChars?: number // Max total text for a hero-image ad; above this the page is treated as content (default: 600)
+  maxScreenshotsPerDocument?: number // Max pages converted to a full-page screenshot per document (default: 10)
 }
 ```
 
 > When `cleanComposer` converts a full-page-image or cover page into a single screenshot, that page is rasterized through the `renderer` configured on `PdfDecomposer` (e.g. `PuppeteerRenderer`) when one is set, and through node-canvas otherwise. `coverPageScreenshotWidth` only applies to the renderer path. The renderer is applied automatically. It is not something you pass in `cleanComposerOptions`.
 
 > Full-page detection keys on the **longest continuous text block**, not total text. A page with at least one long paragraph (>= `significantTextBlockThreshold`) is treated as real content and stays decomposed, even when a full-bleed background image covers the whole page. Covers and full-page advertisements (a dominant image with only short scattered text) are collapsed to a single screenshot. Tune `heroImageCoverageThreshold` / `significantTextBlockThreshold` / `adMaxTextChars` if a specific publication needs a different balance.
+
+> Screenshot conversions are capped at `maxScreenshotsPerDocument` per document (default 10, originally a node-canvas memory guard). Pages past the cap stay decomposed even when the ad/cover heuristics match, so raise it for ad-heavy magazines. With a pluggable renderer (e.g. `PuppeteerRenderer`) it can safely be set to the page count.
 
 ### Result Interfaces
 
