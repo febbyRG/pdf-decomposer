@@ -22,6 +22,52 @@ describe('decideScreenshot', () => {
     expect(result.reason).toMatch(/^hero-image-ad/)
   })
 
+  it('converts a text-heavy ad whose single promo block exceeds the block threshold (regression: mivision Rohto)', () => {
+    // Real signals measured on the Rohto Dry Eye ad: hero 66.7%, one 333-char
+    // marketing paragraph, 518 chars total. The editorial guard must not keep
+    // it decomposed: a page whose entire text fits in adMaxTextChars has no
+    // article substance to protect.
+    const elements = [
+      makeImageElement({ width: PAGE_W, height: Math.round(PAGE_H * 0.67) }),
+      makeTextElement({ data: 'x'.repeat(333), fontSize: 10 }),
+      makeTextElement({ data: 'x'.repeat(47), fontSize: 14 }),
+      makeTextElement({ data: 'x'.repeat(40), fontSize: 12 }),
+      makeTextElement({ data: 'x'.repeat(55), fontSize: 8 }),
+      makeTextElement({ data: 'x'.repeat(43), fontSize: 8 })
+    ]
+    const result = decideScreenshot(input(elements))
+    expect(result.convert).toBe(true)
+    expect(result.reason).toMatch(/^hero-image-ad/)
+  })
+
+  it('keeps a photo-editorial page decomposed (full-bleed photo + one long caption + credit)', () => {
+    // Corpus pattern (heather hotel roundups, kandy profiles): a dominant photo
+    // with a single 300-500 char descriptive caption and a credit line. Total
+    // text fits the ad budget, but the text is NOT scattered across ad-style
+    // boxes, so the guard exemption must not fire: the caption is the content.
+    const elements = [
+      makeImageElement({ width: PAGE_W, height: PAGE_H }),
+      makeTextElement({ data: 'x'.repeat(470), fontSize: 10 }),
+      makeTextElement({ data: 'x'.repeat(37), fontSize: 8 })
+    ]
+    const result = decideScreenshot(input(elements))
+    expect(result.convert).toBe(false)
+    expect(result.reason).toMatch(/^significant-text-content/)
+  })
+
+  it('the guard exemption does not fire when total text exceeds adMaxTextChars (hero page with real body text)', () => {
+    // Same dominant hero, but the page carries article-scale text: one long
+    // block plus enough total to pass adMaxTextChars. Stays decomposed.
+    const elements = [
+      makeImageElement({ width: PAGE_W, height: Math.round(PAGE_H * 0.67) }),
+      makeTextElement({ data: 'x'.repeat(400), fontSize: 10 }),
+      makeTextElement({ data: 'x'.repeat(350), fontSize: 10 })
+    ]
+    const result = decideScreenshot(input(elements))
+    expect(result.convert).toBe(false)
+    expect(result.reason).toMatch(/^significant-text-content/)
+  })
+
   it('keeps an editorial page (one long paragraph) decomposed', () => {
     const result = decideScreenshot(input(editorialElements()))
     expect(result.convert).toBe(false)

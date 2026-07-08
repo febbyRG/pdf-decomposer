@@ -23,13 +23,20 @@ export interface ScreenshotThresholds {
   significantTextBlockThreshold: number
   /** Max total text for a hero-image ad (above this it is treated as content). Default 600. */
   adMaxTextChars: number
+  /**
+   * Min distinct text elements for the editorial-guard exemption. Ads scatter
+   * their copy across many boxes (headline, body, CTA, legal line, URL);
+   * a photo-editorial page has only a title + caption + credit. Default 5.
+   */
+  adMinTextFragments: number
 }
 
 export const DEFAULT_SCREENSHOT_THRESHOLDS: ScreenshotThresholds = {
   coverPageThreshold: 0.8,
   heroImageCoverageThreshold: 0.55,
   significantTextBlockThreshold: 300,
-  adMaxTextChars: 600
+  adMaxTextChars: 600,
+  adMinTextFragments: 5
 }
 
 // Tiled-cover detection (multiple distributed images). Internal, not tunable.
@@ -94,7 +101,25 @@ export function decideScreenshot(
   //    background (image coverage ~1.0 + body text on top) is wrongly collapsed
   //    to a screenshot. A genuine cover / full-page ad has only short scattered
   //    text, so this guard does not fire on it.
-  if (longestTextBlockChars >= thresholds.significantTextBlockThreshold) {
+  //
+  //    Exemption: when the hero-image-ad signals hold (dominant image, the
+  //    page's ENTIRE text fits in adMaxTextChars, AND the text is scattered
+  //    across adMinTextFragments+ boxes — the ad layout pattern of headline /
+  //    body / CTA / legal / URL), the guard is skipped. Such a page has no
+  //    article substance to protect, and a single marketing paragraph can
+  //    exceed the block threshold on its own (mivision Rohto ad: 333-char promo
+  //    block, 518 total, 66.7% hero, 6 fragments) — without the exemption
+  //    text-heavy ads stay decomposed and double-render in the reader (ad image
+  //    + transcribed promo text). The fragment minimum keeps photo-editorial
+  //    pages (full-bleed photo + one long caption + credit, 1-3 fragments)
+  //    decomposed: for those the long block IS the substance.
+  const heroAdSignals = heroImageCoverage >= thresholds.heroImageCoverageThreshold
+    && totalTextChars <= thresholds.adMaxTextChars
+  // Nullish fallback: callers may pass a thresholds object built before this
+  // field existed, and `count >= undefined` would silently disable the exemption.
+  const minTextFragments = thresholds.adMinTextFragments ?? DEFAULT_SCREENSHOT_THRESHOLDS.adMinTextFragments
+  const guardExempt = heroAdSignals && textElements.length >= minTextFragments
+  if (!guardExempt && longestTextBlockChars >= thresholds.significantTextBlockThreshold) {
     return { convert: false, reason: `significant-text-content (${longestTextBlockChars} char block)` }
   }
 
@@ -105,7 +130,7 @@ export function decideScreenshot(
   }
 
   // 3. Hero-image ad: a dominant image with only short scattered promo text.
-  if (heroImageCoverage >= thresholds.heroImageCoverageThreshold && totalTextChars <= thresholds.adMaxTextChars) {
+  if (heroAdSignals) {
     return {
       convert: true,
       reason: `hero-image-ad (${(heroImageCoverage * 100).toFixed(1)}% hero, ${totalTextChars} text chars)`

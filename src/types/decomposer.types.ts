@@ -292,6 +292,12 @@ export interface PdfCleanComposerOptions {
    * treated as content. Default: 600.
    */
   adMaxTextChars?: number
+  /**
+   * Minimum distinct text elements for the editorial-guard exemption on a
+   * hero-image ad (scattered ad copy: headline, body, CTA, legal, URL).
+   * Below this a long text block keeps the page decomposed. Default: 5.
+   */
+  adMinTextFragments?: number
 
   /**
    * Maximum pages converted to a full-page screenshot per document (ads,

@@ -175,6 +175,12 @@ export interface PdfCleanComposerOptions {
    * treated as content. Default: 600.
    */
   adMaxTextChars?: number
+  /**
+   * Minimum distinct text elements for the editorial-guard exemption on a
+   * hero-image ad (scattered ad copy: headline, body, CTA, legal, URL).
+   * Below this a long text block keeps the page decomposed. Default: 5.
+   */
+  adMinTextFragments?: number
 }
 
 /**
@@ -768,7 +774,8 @@ export class PdfCleanComposer {
       coverPageThreshold: options.coverPageThreshold ?? DEFAULT_SCREENSHOT_THRESHOLDS.coverPageThreshold,
       heroImageCoverageThreshold: options.heroImageCoverageThreshold ?? DEFAULT_SCREENSHOT_THRESHOLDS.heroImageCoverageThreshold,
       significantTextBlockThreshold: options.significantTextBlockThreshold ?? DEFAULT_SCREENSHOT_THRESHOLDS.significantTextBlockThreshold,
-      adMaxTextChars: options.adMaxTextChars ?? DEFAULT_SCREENSHOT_THRESHOLDS.adMaxTextChars
+      adMaxTextChars: options.adMaxTextChars ?? DEFAULT_SCREENSHOT_THRESHOLDS.adMaxTextChars,
+      adMinTextFragments: options.adMinTextFragments ?? DEFAULT_SCREENSHOT_THRESHOLDS.adMinTextFragments
     }
     return decideScreenshot(
       { pageWidth: page.width, pageHeight: page.height, elements: cleanedElements },

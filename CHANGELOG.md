@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### 🐛 Fixed
+- **Text-heavy full-page ads whose single promo block exceeds the editorial-guard threshold are now collapsed to a screenshot.** The editorial guard (a >= 300-char continuous block keeps the page decomposed) protected pages with real article substance, but one long marketing paragraph could trip it on an ad: mivision's Rohto Dry Eye ad (66.7% hero image, 518 total text chars, one 333-char promo block scattered across 6 boxes) stayed decomposed and double-rendered in the AI-conversion consumer (ad image + transcribed promo text). The guard is now skipped when ALL the ad signals hold: dominant hero image (`heroImageCoverageThreshold`), total text within `adMaxTextChars`, AND the text scattered across at least `adMinTextFragments` boxes (new threshold, default 5 — the ad layout pattern of headline / body / CTA / legal / URL). The fragment minimum keeps photo-editorial pages (full-bleed photo + one long caption + credit, 1-3 text boxes) decomposed, and articles over full-bleed backgrounds keep the guard via the text budget. Verified against the 16-document corpus: exactly one page flips (the Rohto ad).
+
 ## [1.3.0] - 2026-07-06
 
 ### ✨ Added
