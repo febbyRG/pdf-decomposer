@@ -1,0 +1,4841 @@
+[
+ {
+  "type": "text",
+  "data": "26",
+  "formattedData": "<span style=\"font-size: 9.2145px; font-family: Avenir Lt Std Light; color: #ffffff\">26</span>",
+  "boundingBox": {
+   "top": 26.79,
+   "left": 45.13,
+   "width": 9.58,
+   "height": 9.21
+  },
+  "attributes": {
+   "fontSize": 9.2145,
+   "fontFamily": "Avenir Lt Std Light"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 92.52,
+   "left": 39.69,
+   "width": 10.98,
+   "height": 11.2
+  },
+  "attributes": {
+   "fontSize": 10.976,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "Feedback Confirms",
+  "formattedData": "<span style=\"font-size: 10.976px; font-family: Avenir Next; color: #2c2e35\">Feedback Confirms</span>",
+  "boundingBox": {
+   "top": 92.52,
+   "left": 39.69,
+   "width": 102.52,
+   "height": 11.2
+  },
+  "attributes": {
+   "fontSize": 10.976,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 105.72,
+   "left": 39.69,
+   "width": 10.98,
+   "height": 11.2
+  },
+  "attributes": {
+   "fontSize": 10.976,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "SeeWay Approach",
+  "formattedData": "<span style=\"font-size: 10.976px; font-family: Avenir Next; color: #2c2e35\">SeeWay Approach</span>",
+  "boundingBox": {
+   "top": 105.72,
+   "left": 39.69,
+   "width": 97.42,
+   "height": 11.2
+  },
+  "attributes": {
+   "fontSize": 10.976,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 125.97,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "Data from SeeWay has highlihted",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">Data from SeeWay has highlihted</span>",
+  "boundingBox": {
+   "top": 125.97,
+   "left": 39.69,
+   "width": 109.32,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 138.27,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "the critical importance of early,",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">the critical importance of early,</span>",
+  "boundingBox": {
+   "top": 138.27,
+   "left": 39.69,
+   "width": 101.92,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 150.57,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "lifestyle-focussed support for",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">lifestyle-focussed support for</span>",
+  "boundingBox": {
+   "top": 150.57,
+   "left": 39.69,
+   "width": 97.33,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 162.87,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "patients adjusting to vision loss. In",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">patients adjusting to vision loss. In</span>",
+  "boundingBox": {
+   "top": 162.87,
+   "left": 39.69,
+   "width": 113.9,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 175.17,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "its first year of operation, more than",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">its first year of operation, more than</span>",
+  "boundingBox": {
+   "top": 175.17,
+   "left": 39.69,
+   "width": 118.56,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 187.47,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "14,000 Australians with some level of",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">14,000 Australians with some level of</span>",
+  "boundingBox": {
+   "top": 187.47,
+   "left": 39.69,
+   "width": 121.42,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 199.77,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "vision loss connected with SeeWay to",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">vision loss connected with SeeWay to</span>",
+  "boundingBox": {
+   "top": 199.77,
+   "left": 39.69,
+   "width": 122.78,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 212.07,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "seek practical guidance, digital skills",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">seek practical guidance, digital skills</span>",
+  "boundingBox": {
+   "top": 212.07,
+   "left": 39.69,
+   "width": 120.19,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 224.37,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "support, and emotional reassurance.",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">support, and emotional reassurance.</span>",
+  "boundingBox": {
+   "top": 224.37,
+   "left": 39.69,
+   "width": 121.49,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 236.67,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "Across more than 250 engagements",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">Across more than 250 engagements</span>",
+  "boundingBox": {
+   "top": 236.67,
+   "left": 39.69,
+   "width": 120.85,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 248.97,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "with eye care professionals and",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">with eye care professionals and</span>",
+  "boundingBox": {
+   "top": 248.97,
+   "left": 39.69,
+   "width": 103.06,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 261.27,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "community events nationwide, the",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">community events nationwide, the</span>",
+  "boundingBox": {
+   "top": 261.27,
+   "left": 39.69,
+   "width": 113.5,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 273.57,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "organisation said one message",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">organisation said one message</span>",
+  "boundingBox": {
+   "top": 273.57,
+   "left": 39.69,
+   "width": 102.74,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 285.87,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "emerged consistently: patients want",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">emerged consistently: patients want</span>",
+  "boundingBox": {
+   "top": 285.87,
+   "left": 39.69,
+   "width": 119.95,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 298.17,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "earlier support that addresses their",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">earlier support that addresses their</span>",
+  "boundingBox": {
+   "top": 298.17,
+   "left": 39.69,
+   "width": 115.83,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 310.47,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "whole-person needs.",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">whole-person needs.</span>",
+  "boundingBox": {
+   "top": 310.47,
+   "left": 39.69,
+   "width": 70.41,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 328.44,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "“For people adjusting to low vision,",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">“For people adjusting to low vision,</span>",
+  "boundingBox": {
+   "top": 328.44,
+   "left": 39.69,
+   "width": 115.97,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 340.74,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "the most disorienting challenges",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">the most disorienting challenges</span>",
+  "boundingBox": {
+   "top": 340.74,
+   "left": 39.69,
+   "width": 108.11,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 353.04,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "often emerge in daily life – feeling",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">often emerge in daily life – feeling</span>",
+  "boundingBox": {
+   "top": 353.04,
+   "left": 39.69,
+   "width": 110.37,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 365.34,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "unsafe navigating unfamiliar spaces,",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">unsafe navigating unfamiliar spaces,</span>",
+  "boundingBox": {
+   "top": 365.34,
+   "left": 39.69,
+   "width": 119.49,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 377.64,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "withdrawing from social situations, or",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">withdrawing from social situations, or</span>",
+  "boundingBox": {
+   "top": 377.64,
+   "left": 39.69,
+   "width": 122.89,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 389.94,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "losing confidence with technology,”",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">losing confidence with technology,”</span>",
+  "boundingBox": {
+   "top": 389.94,
+   "left": 39.69,
+   "width": 117.79,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 402.24,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "the organisation reported. “This",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">the organisation reported. “This</span>",
+  "boundingBox": {
+   "top": 402.24,
+   "left": 39.69,
+   "width": 105.58,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 414.54,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "is where holistic care becomes",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">is where holistic care becomes</span>",
+  "boundingBox": {
+   "top": 414.54,
+   "left": 39.69,
+   "width": 100.63,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 426.84,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "essential.” Patient feedback revealed",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">essential.” Patient feedback revealed</span>",
+  "boundingBox": {
+   "top": 426.84,
+   "left": 39.69,
+   "width": 121.38,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 439.14,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "that although clinicians often express",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">that although clinicians often express</span>",
+  "boundingBox": {
+   "top": 439.14,
+   "left": 39.69,
+   "width": 122.47,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 451.44,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "concern about over-referring or",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">concern about over-referring or</span>",
+  "boundingBox": {
+   "top": 451.44,
+   "left": 39.69,
+   "width": 104.48,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 463.74,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "referring too early, for patients, early",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">referring too early, for patients, early</span>",
+  "boundingBox": {
+   "top": 463.74,
+   "left": 39.69,
+   "width": 120.05,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 476.04,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "lifestyle-focussed support helps",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">lifestyle-focussed support helps</span>",
+  "boundingBox": {
+   "top": 476.04,
+   "left": 39.69,
+   "width": 106.23,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 488.34,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "them stabilise sooner, adapt more",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">them stabilise sooner, adapt more</span>",
+  "boundingBox": {
+   "top": 488.34,
+   "left": 39.69,
+   "width": 112.22,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 500.64,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "confidently, and remain engaged",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">confidently, and remain engaged</span>",
+  "boundingBox": {
+   "top": 500.64,
+   "left": 39.69,
+   "width": 110.45,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 512.94,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "with their care.",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">with their care.</span>",
+  "boundingBox": {
+   "top": 512.94,
+   "left": 39.69,
+   "width": 48.44,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 530.91,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "“Modest interventions like lighting",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">“Modest interventions like lighting</span>",
+  "boundingBox": {
+   "top": 530.91,
+   "left": 39.69,
+   "width": 113.6,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 543.21,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "advice, magnification strategies,",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">advice, magnification strategies,</span>",
+  "boundingBox": {
+   "top": 543.21,
+   "left": 39.69,
+   "width": 107.17,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 555.51,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "emotional adjustment support, and",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">emotional adjustment support, and</span>",
+  "boundingBox": {
+   "top": 555.51,
+   "left": 39.69,
+   "width": 117.06,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 567.81,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "digital literacy coaching can shift",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">digital literacy coaching can shift</span>",
+  "boundingBox": {
+   "top": 567.81,
+   "left": 39.69,
+   "width": 108.1,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 580.11,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "a person’s sense of control,” the",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">a person’s sense of control,” the</span>",
+  "boundingBox": {
+   "top": 580.11,
+   "left": 39.69,
+   "width": 105.58,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 592.41,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "organisation said. Support doesn’t",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">organisation said. Support doesn’t</span>",
+  "boundingBox": {
+   "top": 592.41,
+   "left": 39.69,
+   "width": 113.91,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 604.71,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "need to wait until vision meets a",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">need to wait until vision meets a</span>",
+  "boundingBox": {
+   "top": 604.71,
+   "left": 39.69,
+   "width": 104.55,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 617.01,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "particular threshold. If daily life is",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">particular threshold. If daily life is</span>",
+  "boundingBox": {
+   "top": 617.01,
+   "left": 39.69,
+   "width": 108.05,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 629.31,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "being affected, even subtly, it is both",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">being affected, even subtly, it is both</span>",
+  "boundingBox": {
+   "top": 629.31,
+   "left": 39.69,
+   "width": 120.7,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 641.61,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "appropriate and deserved.",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">appropriate and deserved.</span>",
+  "boundingBox": {
+   "top": 641.61,
+   "left": 39.69,
+   "width": 89.09,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 659.58,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "By embedding holistic pathways",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">By embedding holistic pathways</span>",
+  "boundingBox": {
+   "top": 659.58,
+   "left": 39.69,
+   "width": 106.99,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 671.88,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "alongside clinical management,",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">alongside clinical management,</span>",
+  "boundingBox": {
+   "top": 671.88,
+   "left": 39.69,
+   "width": 105.28,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 684.18,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "eye care professionals strengthen",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">eye care professionals strengthen</span>",
+  "boundingBox": {
+   "top": 684.18,
+   "left": 39.69,
+   "width": 111.55,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 696.48,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "therapeutic alliance, reduce",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">therapeutic alliance, reduce</span>",
+  "boundingBox": {
+   "top": 696.48,
+   "left": 39.69,
+   "width": 92.06,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 708.78,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "downstream psychosocial burden,",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">downstream psychosocial burden,</span>",
+  "boundingBox": {
+   "top": 708.78,
+   "left": 39.69,
+   "width": 114.13,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 721.08,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "and support better long-term",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">and support better long-term</span>",
+  "boundingBox": {
+   "top": 721.08,
+   "left": 39.69,
+   "width": 97.69,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 733.38,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "outcomes for patients navigating",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">outcomes for patients navigating</span>",
+  "boundingBox": {
+   "top": 733.38,
+   "left": 39.69,
+   "width": 108.95,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 745.68,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "vision loss.",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">vision loss.</span>",
+  "boundingBox": {
+   "top": 745.68,
+   "left": 39.69,
+   "width": 35.58,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 763.65,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 775.95,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "resources. Patients do not need",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">resources. Patients do not need</span>",
+  "boundingBox": {
+   "top": 775.95,
+   "left": 39.69,
+   "width": 104.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 788.39,
+   "left": 39.69,
+   "width": 7.26,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "a referral.",
+  "formattedData": "<span style=\"font-size: 7.2615px; font-family: Avenir Next; color: #2c2e35\">a referral.</span>",
+  "boundingBox": {
+   "top": 788.39,
+   "left": 39.69,
+   "width": 31.57,
+   "height": 7.5
+  },
+  "attributes": {
+   "fontSize": 7.2615,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 26.56,
+   "left": 449.22,
+   "width": 9.44,
+   "height": 9.44
+  },
+  "attributes": {
+   "fontSize": 9.4355,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "mivision",
+  "formattedData": "<span style=\"font-size: 9.4355px; font-family: Avenir Lt Std Light; color: #2c2e35\">mivision</span>",
+  "boundingBox": {
+   "top": 26.56,
+   "left": 449.22,
+   "width": 34.07,
+   "height": 9.44
+  },
+  "attributes": {
+   "fontSize": 9.4355,
+   "fontFamily": "Avenir Lt Std Light"
+  }
+ },
+ {
+  "type": "text",
+  "data": " ",
+  "formattedData": "<span style=\"font-size: 9.4355px; font-family: Open Sans\"> </span>",
+  "boundingBox": {
+   "top": 26.56,
+   "left": 483.29,
+   "width": 0.13,
+   "height": 9.44
+  },
+  "attributes": {
+   "fontSize": 9.4355,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "•",
+  "formattedData": "<span style=\"font-size: 4.7177px; font-family: Open Sans\">•</span>",
+  "boundingBox": {
+   "top": 30.61,
+   "left": 484.52,
+   "width": 2.36,
+   "height": 4.72
+  },
+  "attributes": {
+   "fontSize": 4.7177,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": " ",
+  "formattedData": "<span style=\"font-size: 4.7177px; font-family: Open Sans\"> </span>",
+  "boundingBox": {
+   "top": 30.61,
+   "left": 486.87,
+   "width": 0.37,
+   "height": 4.72
+  },
+  "attributes": {
+   "fontSize": 4.7177,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "ISSUE 219",
+  "formattedData": "<span style=\"font-size: 7.4136px; font-family: Avenir Lt Std Light; color: #2c2e35\">ISSUE 219</span>",
+  "boundingBox": {
+   "top": 28.59,
+   "left": 488.63,
+   "width": 33.13,
+   "height": 7.41
+  },
+  "attributes": {
+   "fontSize": 7.4136,
+   "fontFamily": "Avenir Lt Std Light"
+  }
+ },
+ {
+  "type": "text",
+  "data": " ",
+  "formattedData": "<span style=\"font-size: 7.4136px; font-family: Open Sans\"> </span>",
+  "boundingBox": {
+   "top": 28.59,
+   "left": 521.76,
+   "width": 0.17,
+   "height": 7.41
+  },
+  "attributes": {
+   "fontSize": 7.4136,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "•",
+  "formattedData": "<span style=\"font-size: 4.7177px; font-family: Open Sans\">•</span>",
+  "boundingBox": {
+   "top": 30.61,
+   "left": 522.98,
+   "width": 2.36,
+   "height": 4.72
+  },
+  "attributes": {
+   "fontSize": 4.7177,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": " ",
+  "formattedData": "<span style=\"font-size: 4.7177px; font-family: Open Sans\"> </span>",
+  "boundingBox": {
+   "top": 30.61,
+   "left": 525.34,
+   "width": 0.37,
+   "height": 4.72
+  },
+  "attributes": {
+   "fontSize": 4.7177,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "FEB 26",
+  "formattedData": "<span style=\"font-size: 7.4136px; font-family: Avenir Lt Std Light; color: #2c2e35\">FEB 26</span>",
+  "boundingBox": {
+   "top": 28.59,
+   "left": 527.1,
+   "width": 22.83,
+   "height": 7.41
+  },
+  "attributes": {
+   "fontSize": 7.4136,
+   "fontFamily": "Avenir Lt Std Light"
+  }
+ },
+ {
+  "type": "text",
+  "data": "mi",
+  "formattedData": "<span style=\"font-size: 14px; font-family: Avenir Lt Std Light; color: #23c4d9\">mi</span>",
+  "boundingBox": {
+   "top": 22,
+   "left": 66.73,
+   "width": 15.67,
+   "height": 14
+  },
+  "attributes": {
+   "fontSize": 14,
+   "fontFamily": "Avenir Lt Std Light"
+  }
+ },
+ {
+  "type": "text",
+  "data": "news",
+  "formattedData": "<span style=\"font-size: 14px; font-family: Avenir Lt Std Light; color: #2c2e35\">news</span>",
+  "boundingBox": {
+   "top": 22,
+   "left": 82.79,
+   "width": 32.9,
+   "height": 14
+  },
+  "attributes": {
+   "fontSize": 14,
+   "fontFamily": "Avenir Lt Std Light"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 63.15,
+   "left": 194.87,
+   "width": 19.4,
+   "height": 20
+  },
+  "attributes": {
+   "fontSize": 19.4,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "AU$2 Million Campaign to Train",
+  "formattedData": "<span style=\"font-size: 19.4px; font-family: Avenir Lt Std Heavy; color: #362e3c\"><h3><strong>AU$2 Million Campaign to Train</strong></h3></span>",
+  "boundingBox": {
+   "top": 63.15,
+   "left": 194.87,
+   "width": 264.99,
+   "height": 20
+  },
+  "attributes": {
+   "fontSize": 19.4,
+   "fontFamily": "Avenir Lt Std Heavy"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 86.15,
+   "left": 194.87,
+   "width": 19.4,
+   "height": 20
+  },
+  "attributes": {
+   "fontSize": 19.4,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "Advanced Practice Optometrists",
+  "formattedData": "<span style=\"font-size: 19.4px; font-family: Avenir Lt Std Heavy; color: #362e3c\"><h3><strong>Advanced Practice Optometrists</strong></h3></span>",
+  "boundingBox": {
+   "top": 86.15,
+   "left": 194.87,
+   "width": 272.88,
+   "height": 20
+  },
+  "attributes": {
+   "fontSize": 19.4,
+   "fontFamily": "Avenir Lt Std Heavy"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 123.93,
+   "left": 196.54,
+   "width": 8.59,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.585,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "The UNSW School",
+  "formattedData": "<span style=\"font-size: 8.585px; font-family: Avenir Lt Std; color: #23c4d9\">The UNSW School</span>",
+  "boundingBox": {
+   "top": 123.93,
+   "left": 196.54,
+   "width": 71.63,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.585,
+   "fontFamily": "Avenir Lt Std"
+  }
+ },
+ {
+  "type": "text",
+  "data": " ",
+  "formattedData": "<span style=\"font-size: 8.585px; font-family: Open Sans\"> </span>",
+  "boundingBox": {
+   "top": 123.93,
+   "left": 268.17,
+   "width": 0.21,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.585,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "of Optometry and Vision",
+  "formattedData": "<span style=\"font-size: 8.585px; font-family: Minion3; color: #2c2e35\">of Optometry and Vision</span>",
+  "boundingBox": {
+   "top": 123.93,
+   "left": 269.99,
+   "width": 86.14,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.585,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 134.43,
+   "left": 196.54,
+   "width": 8.76,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "Science has set an ambitious goal: to raise",
+  "formattedData": "<span style=\"font-size: 8.755px; font-family: Minion3; color: #2c2e35\">Science has set an ambitious goal: to raise</span>",
+  "boundingBox": {
+   "top": 134.43,
+   "left": 196.54,
+   "width": 145.8,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 144.93,
+   "left": 196.54,
+   "width": 8.76,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "over AU$2 million by May 2026 to fund its",
+  "formattedData": "<span style=\"font-size: 8.755px; font-family: Minion3; color: #2c2e35\">over AU$2 million by May 2026 to fund its</span>",
+  "boundingBox": {
+   "top": 144.93,
+   "left": 196.54,
+   "width": 149.33,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 155.43,
+   "left": 196.54,
+   "width": 8.76,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "optometry residency program and empower",
+  "formattedData": "<span style=\"font-size: 8.755px; font-family: Minion3; color: #2c2e35\">optometry residency program and empower</span>",
+  "boundingBox": {
+   "top": 155.43,
+   "left": 196.54,
+   "width": 154.87,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 165.93,
+   "left": 196.54,
+   "width": 8.76,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "the next generation of eye care leaders. The",
+  "formattedData": "<span style=\"font-size: 8.755px; font-family: Minion3; color: #2c2e35\">the next generation of eye care leaders. The</span>",
+  "boundingBox": {
+   "top": 165.93,
+   "left": 196.54,
+   "width": 151.01,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 176.43,
+   "left": 196.54,
+   "width": 8.59,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.585,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "critical funds will ensure that graduates receive",
+  "formattedData": "<span style=\"font-size: 8.585px; font-family: Minion3; color: #2c2e35\">critical funds will ensure that graduates receive</span>",
+  "boundingBox": {
+   "top": 176.43,
+   "left": 196.54,
+   "width": 160.87,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.585,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 186.93,
+   "left": 196.54,
+   "width": 8.76,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "advanced clinical training, preparing them",
+  "formattedData": "<span style=\"font-size: 8.755px; font-family: Minion3; color: #2c2e35\">advanced clinical training, preparing them</span>",
+  "boundingBox": {
+   "top": 186.93,
+   "left": 196.54,
+   "width": 149.3,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 197.43,
+   "left": 196.54,
+   "width": 8.76,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "to innovate and transform eye care across",
+  "formattedData": "<span style=\"font-size: 8.755px; font-family: Minion3; color: #2c2e35\">to innovate and transform eye care across</span>",
+  "boundingBox": {
+   "top": 197.43,
+   "left": 196.54,
+   "width": 145.07,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 207.93,
+   "left": 196.54,
+   "width": 8.76,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "Australia and beyond.",
+  "formattedData": "<span style=\"font-size: 8.755px; font-family: Minion3; color: #2c2e35\">Australia and beyond.</span>",
+  "boundingBox": {
+   "top": 207.93,
+   "left": 196.54,
+   "width": 76.69,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 224.1,
+   "left": 196.54,
+   "width": 8.76,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "“Residency programs are where theory meets",
+  "formattedData": "<span style=\"font-size: 8.755px; font-family: Minion3; color: #2c2e35\">“Residency programs are where theory meets</span>",
+  "boundingBox": {
+   "top": 224.1,
+   "left": 196.54,
+   "width": 158.38,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 234.6,
+   "left": 196.54,
+   "width": 8.76,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "practice,” said Professor Lisa Keay, Head of",
+  "formattedData": "<span style=\"font-size: 8.755px; font-family: Minion3; color: #2c2e35\">practice,” said Professor Lisa Keay, Head of</span>",
+  "boundingBox": {
+   "top": 234.6,
+   "left": 196.54,
+   "width": 149.79,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 245.1,
+   "left": 196.54,
+   "width": 8.5,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "School and an internationally recognised leader",
+  "formattedData": "<span style=\"font-size: 8.5px; font-family: Minion3; color: #2c2e35\">School and an internationally recognised leader</span>",
+  "boundingBox": {
+   "top": 245.1,
+   "left": 196.54,
+   "width": 162.07,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 255.6,
+   "left": 196.54,
+   "width": 8.76,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "in optometry education and research. “They",
+  "formattedData": "<span style=\"font-size: 8.755px; font-family: Minion3; color: #2c2e35\">in optometry education and research. “They</span>",
+  "boundingBox": {
+   "top": 255.6,
+   "left": 196.54,
+   "width": 154.99,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 266.1,
+   "left": 196.54,
+   "width": 8.76,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "give emerging optometrists the confidence",
+  "formattedData": "<span style=\"font-size: 8.755px; font-family: Minion3; color: #2c2e35\">give emerging optometrists the confidence</span>",
+  "boundingBox": {
+   "top": 266.1,
+   "left": 196.54,
+   "width": 148.21,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 276.6,
+   "left": 196.54,
+   "width": 8.76,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "and expertise to manage complex cases, lead",
+  "formattedData": "<span style=\"font-size: 8.755px; font-family: Minion3; color: #2c2e35\">and expertise to manage complex cases, lead</span>",
+  "boundingBox": {
+   "top": 276.6,
+   "left": 196.54,
+   "width": 155.1,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 287.1,
+   "left": 196.54,
+   "width": 8.76,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "multidisciplinary teams, and drive change",
+  "formattedData": "<span style=\"font-size: 8.755px; font-family: Minion3; color: #2c2e35\">multidisciplinary teams, and drive change</span>",
+  "boundingBox": {
+   "top": 287.1,
+   "left": 196.54,
+   "width": 146.84,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 297.6,
+   "left": 196.54,
+   "width": 8.76,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "in eye care.”",
+  "formattedData": "<span style=\"font-size: 8.755px; font-family: Minion3; color: #2c2e35\">in eye care.”</span>",
+  "boundingBox": {
+   "top": 297.6,
+   "left": 196.54,
+   "width": 41.45,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 313.76,
+   "left": 196.54,
+   "width": 8.5,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "Under Prof Keay’s leadership, UNSW has",
+  "formattedData": "<span style=\"font-size: 8.5px; font-family: Minion3; color: #2c2e35\">Under Prof Keay’s leadership, UNSW has</span>",
+  "boundingBox": {
+   "top": 313.76,
+   "left": 196.54,
+   "width": 140.66,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 324.26,
+   "left": 196.54,
+   "width": 8.5,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "become a global powerhouse in optometry",
+  "formattedData": "<span style=\"font-size: 8.5px; font-family: Minion3; color: #2c2e35\">become a global powerhouse in optometry</span>",
+  "boundingBox": {
+   "top": 324.26,
+   "left": 196.54,
+   "width": 144.88,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 334.76,
+   "left": 196.54,
+   "width": 8.5,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "education, ranked among the top programs",
+  "formattedData": "<span style=\"font-size: 8.5px; font-family: Minion3; color: #2c2e35\">education, ranked among the top programs</span>",
+  "boundingBox": {
+   "top": 334.76,
+   "left": 196.54,
+   "width": 147.11,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 345.26,
+   "left": 196.54,
+   "width": 8.5,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "worldwide for research and clinical excellence.",
+  "formattedData": "<span style=\"font-size: 8.5px; font-family: Minion3; color: #2c2e35\">worldwide for research and clinical excellence.</span>",
+  "boundingBox": {
+   "top": 345.26,
+   "left": 196.54,
+   "width": 157.78,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 355.76,
+   "left": 196.54,
+   "width": 8.5,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "Her vision for the future is clear: to create",
+  "formattedData": "<span style=\"font-size: 8.5px; font-family: Minion3; color: #2c2e35\">Her vision for the future is clear: to create</span>",
+  "boundingBox": {
+   "top": 355.76,
+   "left": 196.54,
+   "width": 141.61,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 366.26,
+   "left": 196.54,
+   "width": 8.5,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "pathways that produce clinicians who are not",
+  "formattedData": "<span style=\"font-size: 8.5px; font-family: Minion3; color: #2c2e35\">pathways that produce clinicians who are not</span>",
+  "boundingBox": {
+   "top": 366.26,
+   "left": 196.54,
+   "width": 153.49,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 376.76,
+   "left": 196.54,
+   "width": 8.5,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "only skilled but also adaptable and innovative in",
+  "formattedData": "<span style=\"font-size: 8.5px; font-family: Minion3; color: #2c2e35\">only skilled but also adaptable and innovative in</span>",
+  "boundingBox": {
+   "top": 376.76,
+   "left": 196.54,
+   "width": 164.01,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 387.26,
+   "left": 196.54,
+   "width": 8.5,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "a rapidly evolving digital healthcare landscape.",
+  "formattedData": "<span style=\"font-size: 8.5px; font-family: Minion3; color: #2c2e35\">a rapidly evolving digital healthcare landscape.</span>",
+  "boundingBox": {
+   "top": 387.26,
+   "left": 196.54,
+   "width": 158.54,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 403.43,
+   "left": 196.54,
+   "width": 8.24,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.245,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "ALIGNING WITH HEALTH",
+  "formattedData": "<span style=\"font-size: 8.245px; font-family: Avenir Lt Std; color: #23c4d9\">ALIGNING WITH HEALTH</span>",
+  "boundingBox": {
+   "top": 403.43,
+   "left": 196.54,
+   "width": 99.68,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.245,
+   "fontFamily": "Avenir Lt Std"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 413.93,
+   "left": 196.54,
+   "width": 8.24,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.245,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "TRANSLATION HUB",
+  "formattedData": "<span style=\"font-size: 8.245px; font-family: Avenir Lt Std; color: #23c4d9\">TRANSLATION HUB</span>",
+  "boundingBox": {
+   "top": 413.93,
+   "left": 196.54,
+   "width": 77.74,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.245,
+   "fontFamily": "Avenir Lt Std"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 424.43,
+   "left": 196.54,
+   "width": 8.5,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "The UNSW program aligns with the opening",
+  "formattedData": "<span style=\"font-size: 8.5px; font-family: Minion3; color: #2c2e35\">The UNSW program aligns with the opening</span>",
+  "boundingBox": {
+   "top": 424.43,
+   "left": 196.54,
+   "width": 153.04,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 434.93,
+   "left": 196.54,
+   "width": 8.5,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "of a world-leading integrated medical, research,",
+  "formattedData": "<span style=\"font-size: 8.5px; font-family: Minion3; color: #2c2e35\">of a world-leading integrated medical, research,</span>",
+  "boundingBox": {
+   "top": 434.93,
+   "left": 196.54,
+   "width": 161.2,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 445.43,
+   "left": 196.54,
+   "width": 8.5,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "and health innovation centre at UNSW Sydney.",
+  "formattedData": "<span style=\"font-size: 8.5px; font-family: Minion3; color: #2c2e35\">and health innovation centre at UNSW Sydney.</span>",
+  "boundingBox": {
+   "top": 445.43,
+   "left": 196.54,
+   "width": 160.71,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 455.93,
+   "left": 196.54,
+   "width": 8.5,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "The",
+  "formattedData": "<span style=\"font-size: 8.5px; font-family: Minion3; color: #2c2e35\">The</span>",
+  "boundingBox": {
+   "top": 455.93,
+   "left": 196.54,
+   "width": 13.49,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": " ",
+  "formattedData": "<span style=\"font-size: 8.5px; font-family: Open Sans\"> </span>",
+  "boundingBox": {
+   "top": 455.93,
+   "left": 210.02,
+   "width": 0.23,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "UNSW Health Translation Hub",
+  "formattedData": "<span style=\"font-size: 8.5px; font-family: Minion3; color: #2c2e35\">UNSW Health Translation Hub</span>",
+  "boundingBox": {
+   "top": 455.93,
+   "left": 211.95,
+   "width": 107.66,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": " ",
+  "formattedData": "<span style=\"font-size: 8.5px; font-family: Open Sans\"> </span>",
+  "boundingBox": {
+   "top": 455.93,
+   "left": 319.61,
+   "width": 0.23,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "connects",
+  "formattedData": "<span style=\"font-size: 8.5px; font-family: Minion3; color: #2c2e35\">connects</span>",
+  "boundingBox": {
+   "top": 455.93,
+   "left": 321.54,
+   "width": 30.3,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 466.43,
+   "left": 196.54,
+   "width": 8.5,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "pioneering research and education with public",
+  "formattedData": "<span style=\"font-size: 8.5px; font-family: Minion3; color: #2c2e35\">pioneering research and education with public</span>",
+  "boundingBox": {
+   "top": 466.43,
+   "left": 196.54,
+   "width": 158.3,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 476.93,
+   "left": 196.54,
+   "width": 8.5,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "health, private industry and community – the",
+  "formattedData": "<span style=\"font-size: 8.5px; font-family: Minion3; color: #2c2e35\">health, private industry and community – the</span>",
+  "boundingBox": {
+   "top": 476.93,
+   "left": 196.54,
+   "width": 154.44,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 487.43,
+   "left": 196.54,
+   "width": 8.5,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "first of its kind in Australia to operationalise",
+  "formattedData": "<span style=\"font-size: 8.5px; font-family: Minion3; color: #2c2e35\">first of its kind in Australia to operationalise</span>",
+  "boundingBox": {
+   "top": 487.43,
+   "left": 196.54,
+   "width": 148.95,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 497.93,
+   "left": 196.54,
+   "width": 8.5,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "translational health at scale.",
+  "formattedData": "<span style=\"font-size: 8.5px; font-family: Minion3; color: #2c2e35\">translational health at scale.</span>",
+  "boundingBox": {
+   "top": 497.93,
+   "left": 196.54,
+   "width": 94.05,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 514.1,
+   "left": 196.54,
+   "width": 8.5,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "The 35,600 m",
+  "formattedData": "<span style=\"font-size: 8.5px; font-family: Minion3; color: #2c2e35\">The 35,600 m</span>",
+  "boundingBox": {
+   "top": 514.1,
+   "left": 196.54,
+   "width": 46.6,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "2",
+  "formattedData": "<span style=\"font-size: 4.9555px; font-family: Open Sans\">2</span>",
+  "boundingBox": {
+   "top": 514.82,
+   "left": 243.13,
+   "width": 2.39,
+   "height": 4.96
+  },
+  "attributes": {
+   "fontSize": 4.9555,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": " ",
+  "formattedData": "<span style=\"font-size: 4.9555px; font-family: Open Sans\"> </span>",
+  "boundingBox": {
+   "top": 514.82,
+   "left": 245.52,
+   "width": 0.39,
+   "height": 4.96
+  },
+  "attributes": {
+   "fontSize": 4.9555,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "facility was developed in",
+  "formattedData": "<span style=\"font-size: 8.5px; font-family: Minion3; color: #2c2e35\">facility was developed in</span>",
+  "boundingBox": {
+   "top": 514.1,
+   "left": 247.45,
+   "width": 83.49,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 524.6,
+   "left": 196.54,
+   "width": 8.5,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "partnership by UNSW Sydney and leading",
+  "formattedData": "<span style=\"font-size: 8.5px; font-family: Minion3; color: #2c2e35\">partnership by UNSW Sydney and leading</span>",
+  "boundingBox": {
+   "top": 524.6,
+   "left": 196.54,
+   "width": 144.69,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 535.1,
+   "left": 196.54,
+   "width": 8.5,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "infrastructure developer",
+  "formattedData": "<span style=\"font-size: 8.5px; font-family: Minion3; color: #2c2e35\">infrastructure developer</span>",
+  "boundingBox": {
+   "top": 535.1,
+   "left": 196.54,
+   "width": 82.25,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": " ",
+  "formattedData": "<span style=\"font-size: 8.5px; font-family: Open Sans\"> </span>",
+  "boundingBox": {
+   "top": 535.1,
+   "left": 278.79,
+   "width": 0.23,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "Plenary. Its opening, late",
+  "formattedData": "<span style=\"font-size: 8.5px; font-family: Minion3; color: #2c2e35\">Plenary. Its opening, late</span>",
+  "boundingBox": {
+   "top": 535.1,
+   "left": 280.72,
+   "width": 83.82,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 545.6,
+   "left": 196.54,
+   "width": 8.5,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "last year, marked a major milestone in the state",
+  "formattedData": "<span style=\"font-size: 8.5px; font-family: Minion3; color: #2c2e35\">last year, marked a major milestone in the state</span>",
+  "boundingBox": {
+   "top": 545.6,
+   "left": 196.54,
+   "width": 158.76,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 556.1,
+   "left": 196.54,
+   "width": 8.5,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "government’s $1.5 billion Randwick Campus",
+  "formattedData": "<span style=\"font-size: 8.5px; font-family: Minion3; color: #2c2e35\">government’s $1.5 billion Randwick Campus</span>",
+  "boundingBox": {
+   "top": 556.1,
+   "left": 196.54,
+   "width": 152.23,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 566.6,
+   "left": 196.54,
+   "width": 8.5,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "Redevelopment; one of the largest health",
+  "formattedData": "<span style=\"font-size: 8.5px; font-family: Minion3; color: #2c2e35\">Redevelopment; one of the largest health</span>",
+  "boundingBox": {
+   "top": 566.6,
+   "left": 196.54,
+   "width": 138.93,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 577.1,
+   "left": 196.54,
+   "width": 8.5,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "infrastructure projects in NSW.",
+  "formattedData": "<span style=\"font-size: 8.5px; font-family: Minion3; color: #2c2e35\">infrastructure projects in NSW.</span>",
+  "boundingBox": {
+   "top": 577.1,
+   "left": 196.54,
+   "width": 106.01,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 593.35,
+   "left": 196.54,
+   "width": 8.76,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "The UNSW Health Translation Hub offers a",
+  "formattedData": "<span style=\"font-size: 8.755px; font-family: Minion3; color: #2c2e35\">The UNSW Health Translation Hub offers a</span>",
+  "boundingBox": {
+   "top": 593.35,
+   "left": 196.54,
+   "width": 154.01,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 603.93,
+   "left": 196.54,
+   "width": 8.76,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "uniquely interdisciplinary student experience,",
+  "formattedData": "<span style=\"font-size: 8.755px; font-family: Minion3; color: #2c2e35\">uniquely interdisciplinary student experience,</span>",
+  "boundingBox": {
+   "top": 603.93,
+   "left": 196.54,
+   "width": 160.69,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 614.51,
+   "left": 196.54,
+   "width": 8.76,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "connecting future health professionals directly",
+  "formattedData": "<span style=\"font-size: 8.755px; font-family: Minion3; color: #2c2e35\">connecting future health professionals directly</span>",
+  "boundingBox": {
+   "top": 614.51,
+   "left": 196.54,
+   "width": 162.52,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 625.09,
+   "left": 196.54,
+   "width": 8.76,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "with industry, clinical communities and the",
+  "formattedData": "<span style=\"font-size: 8.755px; font-family: Minion3; color: #2c2e35\">with industry, clinical communities and the</span>",
+  "boundingBox": {
+   "top": 625.09,
+   "left": 196.54,
+   "width": 152.02,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 635.67,
+   "left": 196.54,
+   "width": 8.76,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "public. Students are able to engage in every",
+  "formattedData": "<span style=\"font-size: 8.755px; font-family: Minion3; color: #2c2e35\">public. Students are able to engage in every</span>",
+  "boundingBox": {
+   "top": 635.67,
+   "left": 196.54,
+   "width": 150.44,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 646.25,
+   "left": 196.54,
+   "width": 8.76,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "aspect of care – from medicine to allied health,",
+  "formattedData": "<span style=\"font-size: 8.755px; font-family: Minion3; color: #2c2e35\">aspect of care – from medicine to allied health,</span>",
+  "boundingBox": {
+   "top": 646.25,
+   "left": 196.54,
+   "width": 163.33,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 656.83,
+   "left": 196.54,
+   "width": 8.76,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "population health, and biomedical engineering",
+  "formattedData": "<span style=\"font-size: 8.755px; font-family: Minion3; color: #2c2e35\">population health, and biomedical engineering</span>",
+  "boundingBox": {
+   "top": 656.83,
+   "left": 196.54,
+   "width": 164.12,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 324.83,
+   "left": 381.73,
+   "width": 8.76,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "– working side-by-side with researchers and",
+  "formattedData": "<span style=\"font-size: 8.755px; font-family: Minion3; color: #2c2e35\">– working side-by-side with researchers and</span>",
+  "boundingBox": {
+   "top": 324.83,
+   "left": 381.73,
+   "width": 154.07,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 335.41,
+   "left": 381.73,
+   "width": 8.76,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "practitioners on real-world projects. The",
+  "formattedData": "<span style=\"font-size: 8.755px; font-family: Minion3; color: #2c2e35\">practitioners on real-world projects. The</span>",
+  "boundingBox": {
+   "top": 335.41,
+   "left": 381.73,
+   "width": 141.74,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 345.99,
+   "left": 381.73,
+   "width": 8.76,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "facility’s immersive, collaborative environment",
+  "formattedData": "<span style=\"font-size: 8.755px; font-family: Minion3; color: #2c2e35\">facility’s immersive, collaborative environment</span>",
+  "boundingBox": {
+   "top": 345.99,
+   "left": 381.73,
+   "width": 163.65,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 356.57,
+   "left": 381.73,
+   "width": 8.76,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "enhances patient care and community",
+  "formattedData": "<span style=\"font-size: 8.755px; font-family: Minion3; color: #2c2e35\">enhances patient care and community</span>",
+  "boundingBox": {
+   "top": 356.57,
+   "left": 381.73,
+   "width": 133.39,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 367.15,
+   "left": 381.73,
+   "width": 8.76,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "participation while cultivating the leadership",
+  "formattedData": "<span style=\"font-size: 8.755px; font-family: Minion3; color: #2c2e35\">participation while cultivating the leadership</span>",
+  "boundingBox": {
+   "top": 367.15,
+   "left": 381.73,
+   "width": 156.83,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 377.73,
+   "left": 381.73,
+   "width": 8.76,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "and problem-solving skills needed to shape",
+  "formattedData": "<span style=\"font-size: 8.755px; font-family: Minion3; color: #2c2e35\">and problem-solving skills needed to shape</span>",
+  "boundingBox": {
+   "top": 377.73,
+   "left": 381.73,
+   "width": 151.37,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 388.31,
+   "left": 381.73,
+   "width": 8.76,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "the future of health.",
+  "formattedData": "<span style=\"font-size: 8.755px; font-family: Minion3; color: #2c2e35\">the future of health.</span>",
+  "boundingBox": {
+   "top": 388.31,
+   "left": 381.73,
+   "width": 69.15,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 404.56,
+   "left": 381.73,
+   "width": 8.76,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "Last month (January), a new optometry clinic",
+  "formattedData": "<span style=\"font-size: 8.755px; font-family: Minion3; color: #2c2e35\">Last month (January), a new optometry clinic</span>",
+  "boundingBox": {
+   "top": 404.56,
+   "left": 381.73,
+   "width": 160.92,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 415.14,
+   "left": 381.73,
+   "width": 8.76,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "opened within the Health Translation Hub,",
+  "formattedData": "<span style=\"font-size: 8.755px; font-family: Minion3; color: #2c2e35\">opened within the Health Translation Hub,</span>",
+  "boundingBox": {
+   "top": 415.14,
+   "left": 381.73,
+   "width": 151.37,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 425.72,
+   "left": 381.73,
+   "width": 8.76,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "offering eye care alongside a range of health",
+  "formattedData": "<span style=\"font-size: 8.755px; font-family: Minion3; color: #2c2e35\">offering eye care alongside a range of health</span>",
+  "boundingBox": {
+   "top": 425.72,
+   "left": 381.73,
+   "width": 152.76,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 436.3,
+   "left": 381.73,
+   "width": 8.76,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "and wellbeing services. The multidisciplinary",
+  "formattedData": "<span style=\"font-size: 8.755px; font-family: Minion3; color: #2c2e35\">and wellbeing services. The multidisciplinary</span>",
+  "boundingBox": {
+   "top": 436.3,
+   "left": 381.73,
+   "width": 158.88,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 446.88,
+   "left": 381.73,
+   "width": 8.76,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "service enables inter-professional clinical",
+  "formattedData": "<span style=\"font-size: 8.755px; font-family: Minion3; color: #2c2e35\">service enables inter-professional clinical</span>",
+  "boundingBox": {
+   "top": 446.88,
+   "left": 381.73,
+   "width": 143.6,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 457.46,
+   "left": 381.73,
+   "width": 8.76,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "training for UNSW optometry students",
+  "formattedData": "<span style=\"font-size: 8.755px; font-family: Minion3; color: #2c2e35\">training for UNSW optometry students</span>",
+  "boundingBox": {
+   "top": 457.46,
+   "left": 381.73,
+   "width": 137.62,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 468.04,
+   "left": 381.73,
+   "width": 8.76,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "alongside medical and allied health students.",
+  "formattedData": "<span style=\"font-size: 8.755px; font-family: Minion3; color: #2c2e35\">alongside medical and allied health students.</span>",
+  "boundingBox": {
+   "top": 468.04,
+   "left": 381.73,
+   "width": 156.07,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 478.62,
+   "left": 381.73,
+   "width": 8.76,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "While the UNSW Optometry Clinic on the",
+  "formattedData": "<span style=\"font-size: 8.755px; font-family: Minion3; color: #2c2e35\">While the UNSW Optometry Clinic on the</span>",
+  "boundingBox": {
+   "top": 478.62,
+   "left": 381.73,
+   "width": 150.66,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 489.2,
+   "left": 381.73,
+   "width": 8.76,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "main campus continues as a student led clinic,",
+  "formattedData": "<span style=\"font-size: 8.755px; font-family: Minion3; color: #2c2e35\">main campus continues as a student led clinic,</span>",
+  "boundingBox": {
+   "top": 489.2,
+   "left": 381.73,
+   "width": 161.99,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 499.78,
+   "left": 381.73,
+   "width": 8.76,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "the UNSW Health Translation Hub offers a",
+  "formattedData": "<span style=\"font-size: 8.755px; font-family: Minion3; color: #2c2e35\">the UNSW Health Translation Hub offers a</span>",
+  "boundingBox": {
+   "top": 499.78,
+   "left": 381.73,
+   "width": 151.15,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 510.36,
+   "left": 381.73,
+   "width": 8.76,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "unique opportunity to integrate eye care with",
+  "formattedData": "<span style=\"font-size: 8.755px; font-family: Minion3; color: #2c2e35\">unique opportunity to integrate eye care with</span>",
+  "boundingBox": {
+   "top": 510.36,
+   "left": 381.73,
+   "width": 158.5,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 520.94,
+   "left": 381.73,
+   "width": 8.76,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "other services, innovate in healthcare delivery,",
+  "formattedData": "<span style=\"font-size: 8.755px; font-family: Minion3; color: #2c2e35\">other services, innovate in healthcare delivery,</span>",
+  "boundingBox": {
+   "top": 520.94,
+   "left": 381.73,
+   "width": 161.81,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 531.52,
+   "left": 381.73,
+   "width": 8.76,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "and have a lasting impact on community health.",
+  "formattedData": "<span style=\"font-size: 8.755px; font-family: Minion3; color: #2c2e35\">and have a lasting impact on community health.</span>",
+  "boundingBox": {
+   "top": 531.52,
+   "left": 381.73,
+   "width": 168.04,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 547.77,
+   "left": 381.73,
+   "width": 8.24,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.245,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "Residency-trained optometrists working in this",
+  "formattedData": "<span style=\"font-size: 8.245px; font-family: Minion3; color: #2c2e35\">Residency-trained optometrists working in this</span>",
+  "boundingBox": {
+   "top": 547.77,
+   "left": 381.73,
+   "width": 155.33,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.245,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 558.35,
+   "left": 381.73,
+   "width": 8.24,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.245,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "facility are expected to become the profession’s",
+  "formattedData": "<span style=\"font-size: 8.245px; font-family: Minion3; color: #2c2e35\">facility are expected to become the profession’s</span>",
+  "boundingBox": {
+   "top": 558.35,
+   "left": 381.73,
+   "width": 153.5,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.245,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 568.93,
+   "left": 381.73,
+   "width": 8.24,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.245,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "future leaders, leading advanced clinics in",
+  "formattedData": "<span style=\"font-size: 8.245px; font-family: Minion3; color: #2c2e35\">future leaders, leading advanced clinics in</span>",
+  "boundingBox": {
+   "top": 568.93,
+   "left": 381.73,
+   "width": 137.93,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.245,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 579.51,
+   "left": 381.73,
+   "width": 8.24,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.245,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "glaucoma, myopia control, and care of complex",
+  "formattedData": "<span style=\"font-size: 8.245px; font-family: Minion3; color: #2c2e35\">glaucoma, myopia control, and care of complex</span>",
+  "boundingBox": {
+   "top": 579.51,
+   "left": 381.73,
+   "width": 156.01,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.245,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 590.09,
+   "left": 381.73,
+   "width": 8.24,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.245,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "comorbidities, contributing to new models of care,",
+  "formattedData": "<span style=\"font-size: 8.245px; font-family: Minion3; color: #2c2e35\">comorbidities, contributing to new models of care,</span>",
+  "boundingBox": {
+   "top": 590.09,
+   "left": 381.73,
+   "width": 166.41,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.245,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 600.67,
+   "left": 381.73,
+   "width": 8.24,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.245,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "and advocating for overall better patient outcomes.",
+  "formattedData": "<span style=\"font-size: 8.245px; font-family: Minion3; color: #2c2e35\">and advocating for overall better patient outcomes.</span>",
+  "boundingBox": {
+   "top": 600.67,
+   "left": 381.73,
+   "width": 167.26,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.245,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 616.92,
+   "left": 381.73,
+   "width": 8.24,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.245,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "AN OPPORTUNITY TO",
+  "formattedData": "<span style=\"font-size: 8.245px; font-family: Avenir Lt Std; color: #23c4d9\">AN OPPORTUNITY TO</span>",
+  "boundingBox": {
+   "top": 616.92,
+   "left": 381.73,
+   "width": 88.02,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.245,
+   "fontFamily": "Avenir Lt Std"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 627.5,
+   "left": 381.73,
+   "width": 8.24,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.245,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "SHAPE THE FUTURE",
+  "formattedData": "<span style=\"font-size: 8.245px; font-family: Avenir Lt Std; color: #23c4d9\">SHAPE THE FUTURE</span>",
+  "boundingBox": {
+   "top": 627.5,
+   "left": 381.73,
+   "width": 80.31,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.245,
+   "fontFamily": "Avenir Lt Std"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 638.08,
+   "left": 381.73,
+   "width": 8.76,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "By supporting the UNSW fundraising for the",
+  "formattedData": "<span style=\"font-size: 8.755px; font-family: Minion3; color: #2c2e35\">By supporting the UNSW fundraising for the</span>",
+  "boundingBox": {
+   "top": 638.08,
+   "left": 381.73,
+   "width": 157.83,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 648.66,
+   "left": 381.73,
+   "width": 8.76,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "residency campaign, donors will help shape a",
+  "formattedData": "<span style=\"font-size: 8.755px; font-family: Minion3; color: #2c2e35\">residency campaign, donors will help shape a</span>",
+  "boundingBox": {
+   "top": 648.66,
+   "left": 381.73,
+   "width": 158.49,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 659.24,
+   "left": 381.73,
+   "width": 8.76,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "future where preventable blindness is reduced,",
+  "formattedData": "<span style=\"font-size: 8.755px; font-family: Minion3; color: #2c2e35\">future where preventable blindness is reduced,</span>",
+  "boundingBox": {
+   "top": 659.24,
+   "left": 381.73,
+   "width": 163.12,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 669.82,
+   "left": 381.73,
+   "width": 8.76,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "and patients receive world-class,",
+  "formattedData": "<span style=\"font-size: 8.755px; font-family: Minion3; color: #2c2e35\">and patients receive world-class,</span>",
+  "boundingBox": {
+   "top": 669.82,
+   "left": 381.73,
+   "width": 112.9,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 680.4,
+   "left": 381.73,
+   "width": 8.76,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "interdisciplinary care.",
+  "formattedData": "<span style=\"font-size: 8.755px; font-family: Minion3; color: #2c2e35\">interdisciplinary care.</span>",
+  "boundingBox": {
+   "top": 680.4,
+   "left": 381.73,
+   "width": 76.54,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.755,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 696.65,
+   "left": 381.73,
+   "width": 8.5,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "With increasing demand for optometrists",
+  "formattedData": "<span style=\"font-size: 8.5px; font-family: Minion3; color: #2c2e35\">With increasing demand for optometrists</span>",
+  "boundingBox": {
+   "top": 696.65,
+   "left": 381.73,
+   "width": 140.1,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 707.23,
+   "left": 381.73,
+   "width": 8.5,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "to take on enhanced",
+  "formattedData": "<span style=\"font-size: 8.5px; font-family: Minion3; color: #2c2e35\">to take on enhanced</span>",
+  "boundingBox": {
+   "top": 707.23,
+   "left": 381.73,
+   "width": 68.7,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 717.81,
+   "left": 381.73,
+   "width": 8.5,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "scope roles, every",
+  "formattedData": "<span style=\"font-size: 8.5px; font-family: Minion3; color: #2c2e35\">scope roles, every</span>",
+  "boundingBox": {
+   "top": 717.81,
+   "left": 381.73,
+   "width": 60.08,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 728.39,
+   "left": 381.73,
+   "width": 8.5,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "contribution will bring",
+  "formattedData": "<span style=\"font-size: 8.5px; font-family: Minion3; color: #2c2e35\">contribution will bring</span>",
+  "boundingBox": {
+   "top": 728.39,
+   "left": 381.73,
+   "width": 77.96,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 738.97,
+   "left": 381.73,
+   "width": 8.5,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "the university closer to",
+  "formattedData": "<span style=\"font-size: 8.5px; font-family: Minion3; color: #2c2e35\">the university closer to</span>",
+  "boundingBox": {
+   "top": 738.97,
+   "left": 381.73,
+   "width": 77.1,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 749.55,
+   "left": 381.73,
+   "width": 8.5,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "training leaders at the",
+  "formattedData": "<span style=\"font-size: 8.5px; font-family: Minion3; color: #2c2e35\">training leaders at the</span>",
+  "boundingBox": {
+   "top": 749.55,
+   "left": 381.73,
+   "width": 73.75,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 760.13,
+   "left": 381.73,
+   "width": 8.5,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "forefront of innovation.",
+  "formattedData": "<span style=\"font-size: 8.5px; font-family: Minion3; color: #2c2e35\">forefront of innovation.</span>",
+  "boundingBox": {
+   "top": 760.13,
+   "left": 381.73,
+   "width": 79.93,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 776.38,
+   "left": 381.73,
+   "width": 8.33,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.33,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "To donate or learn more,",
+  "formattedData": "<span style=\"font-size: 8.33px; font-family: Minion3; color: #2c2e35\">To donate or learn more,</span>",
+  "boundingBox": {
+   "top": 776.38,
+   "left": 381.73,
+   "width": 82.74,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.33,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 786.96,
+   "left": 381.73,
+   "width": 8.5,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "use the QR code.",
+  "formattedData": "<span style=\"font-size: 8.5px; font-family: Minion3; color: #2c2e35\">use the QR code.</span>",
+  "boundingBox": {
+   "top": 786.96,
+   "left": 381.73,
+   "width": 57.32,
+   "height": 8.5
+  },
+  "attributes": {
+   "fontSize": 8.5,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 719.09,
+   "left": 198.32,
+   "width": 13.26,
+   "height": 13
+  },
+  "attributes": {
+   "fontSize": 13.26,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "“Residency programs",
+  "formattedData": "<span style=\"font-size: 13.26px; font-family: Minion3; color: #2c2e35\">“Residency programs</span>",
+  "boundingBox": {
+   "top": 719.09,
+   "left": 198.32,
+   "width": 133.42,
+   "height": 13
+  },
+  "attributes": {
+   "fontSize": 13.26,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 741.09,
+   "left": 202.04,
+   "width": 13.26,
+   "height": 13
+  },
+  "attributes": {
+   "fontSize": 13.26,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "are where theory",
+  "formattedData": "<span style=\"font-size: 13.26px; font-family: Minion3; color: #2c2e35\">are where theory</span>",
+  "boundingBox": {
+   "top": 741.09,
+   "left": 202.04,
+   "width": 107.66,
+   "height": 13
+  },
+  "attributes": {
+   "fontSize": 13.26,
+   "fontFamily": "Minion3"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 763.09,
+   "left": 202.25,
+   "width": 13.26,
+   "height": 13
+  },
+  "attributes": {
+   "fontSize": 13.26,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "meets practice”",
+  "formattedData": "<span style=\"font-size: 13.26px; font-family: Avenir Lt Std Heavy; color: #4e5056\"><strong>meets practice”</strong></span>",
+  "boundingBox": {
+   "top": 763.09,
+   "left": 202.25,
+   "width": 98.9,
+   "height": 13
+  },
+  "attributes": {
+   "fontSize": 13.26,
+   "fontFamily": "Avenir Lt Std Heavy"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 282.05,
+   "left": 381.85,
+   "width": 5.97,
+   "height": 5.8
+  },
+  "attributes": {
+   "fontSize": 5.974,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "At the opening of the Health Translation Hub, from left:",
+  "formattedData": "<span style=\"font-size: 5.974px; font-family: Avenir Next; color: #2c2e35\">At the opening of the Health Translation Hub, from left:</span>",
+  "boundingBox": {
+   "top": 282.05,
+   "left": 381.85,
+   "width": 157.42,
+   "height": 5.8
+  },
+  "attributes": {
+   "fontSize": 5.974,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 290.05,
+   "left": 381.85,
+   "width": 5.97,
+   "height": 5.8
+  },
+  "attributes": {
+   "fontSize": 5.974,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "Professor Lisa Keay, Dr Tim Grant, Professor Padmaja",
+  "formattedData": "<span style=\"font-size: 5.974px; font-family: Avenir Next; color: #2c2e35\">Professor Lisa Keay, Dr Tim Grant, Professor Padmaja</span>",
+  "boundingBox": {
+   "top": 290.05,
+   "left": 381.85,
+   "width": 150.6,
+   "height": 5.8
+  },
+  "attributes": {
+   "fontSize": 5.974,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 298.05,
+   "left": 381.85,
+   "width": 5.97,
+   "height": 5.8
+  },
+  "attributes": {
+   "fontSize": 5.974,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "Sankaridurg, Jane Ross, Yvette Wadell, and Craig Stamp.",
+  "formattedData": "<span style=\"font-size: 5.974px; font-family: Avenir Next; color: #2c2e35\">Sankaridurg, Jane Ross, Yvette Wadell, and Craig Stamp.</span>",
+  "boundingBox": {
+   "top": 298.05,
+   "left": 381.85,
+   "width": 161.57,
+   "height": 5.8
+  },
+  "attributes": {
+   "fontSize": 5.974,
+   "fontFamily": "Avenir Next"
+  }
+ },
+ {
+  "type": "text",
+  "data": "",
+  "boundingBox": {
+   "top": 306.05,
+   "left": 381.85,
+   "width": 5.97,
+   "height": 5.8
+  },
+  "attributes": {
+   "fontSize": 5.974,
+   "fontFamily": "Open Sans"
+  }
+ },
+ {
+  "type": "text",
+  "data": "Photo by Cassandra Hannagan.",
+  "formattedData": "<span style=\"font-size: 5.974px; font-family: Avenir Next; color: #2c2e35\">Photo by Cassandra Hannagan.</span>",
+  "boundingBox": {
+   "top": 306.05,
+   "left": 381.85,
+   "width": 89.49,
+   "height": 5.8
+  },
+  "attributes": {
+   "fontSize": 5.974,
+   "fontFamily": "Avenir Next"
+  }
+ }
+]

@@ -427,20 +427,26 @@ export class PdfCleanComposer {
     }
 
     const bbox = normalizeBoundingBox(element.boundingBox)
-    
+
     // For large elements (images that might be full-page or covers), be more lenient
     const elementArea = bbox.width * bbox.height
     const contentAreaSize = contentArea.width * contentArea.height
     const largeElementThreshold = 0.3 // 30% of content area
     const isLargeElement = elementArea > (contentAreaSize * largeElementThreshold)
-    
-    if (isLargeElement) {
-      // For large elements, check if ANY part overlaps with content area (not just center)
+
+    // Images of ANY size get the overlap test too. The margin filter exists to
+    // strip page furniture, and furniture in margin bands is text (page
+    // numbers, running heads), not images: a small content image sitting near
+    // the edge (e.g. a QR code in a bottom corner) failed the center test at
+    // wider margins and was silently dropped, while an image with no overlap
+    // at all (fully inside the band) is still removed as decoration.
+    if (isLargeElement || isImageElement(element)) {
+      // Check if ANY part overlaps with content area (not just center)
       const overlapHorizontal = bbox.left < contentArea.right && (bbox.left + bbox.width) > contentArea.left
       const overlapVertical = bbox.top < contentArea.bottom && (bbox.top + bbox.height) > contentArea.top
       return overlapHorizontal && overlapVertical
     }
-    
+
     // For smaller elements, use center point detection (original logic)
     const centerX = bbox.left + (bbox.width / 2)
     const centerY = bbox.top + (bbox.height / 2)

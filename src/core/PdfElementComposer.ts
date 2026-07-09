@@ -640,13 +640,17 @@ export class PdfElementComposer {
       }]
     }
 
-    // Calculate average element width to identify spanning elements
-    const allWidths = composites.map(c => c.boundingBox.width)
-    const avgElementWidth = allWidths.reduce((a, b) => a + b, 0) / allWidths.length
-    
-    // Separate normal column elements from spanning elements
-    // Spanning elements are significantly wider (>1.3x average width or >50% page width)
-    const spanningThreshold = Math.min(avgElementWidth * 1.3, pageWidth * 0.5)
+    // Separate normal column elements from spanning elements.
+    // Spanning = wider than half the content width: such an element cannot be
+    // one column of a side-by-side layout, so it must not fill histogram bins
+    // across a column gap. The previous relative threshold (1.3x average
+    // width) broke on pages mixing a narrow sidebar rail with normal body
+    // columns: the many narrow rail fragments dragged the average down until
+    // ordinary body paragraphs were classified as "spanning", vacating the
+    // density histogram exactly where a real column stood. The histogram then
+    // read that column as a gap and its text was dropped wholesale (verified
+    // on mivision p28: the entire middle body column, -37% page text).
+    const spanningThreshold = pageWidth * 0.5
     const columnElements = composites.filter(c => c.boundingBox.width <= spanningThreshold)
     const spanningElements = composites.filter(c => c.boundingBox.width > spanningThreshold)
 
@@ -785,6 +789,42 @@ export class PdfElementComposer {
           rightBoundary: boundary.right,
           elements: allElements
         })
+      }
+    }
+
+    // Step 5b: PRESERVATION INVARIANT - reading order must be a permutation of
+    // the input, never a filter. The assignment above can strand composites:
+    // a center falling inside a detected gap, a spanning element whose left
+    // edge starts in a gap, or a boundary sliver narrower than 40pt that got
+    // skipped. runOrderCompositesAlgorithm concatenates only the columns'
+    // contents, so anything unassigned here used to be dropped silently
+    // (entire columns of text on real magazine pages). Attach every stranded
+    // composite to the horizontally nearest column instead; within-column
+    // top-sorting then slots it into reading order.
+    if (columns.length > 0) {
+      const assignedIds = new Set<string>()
+      for (const column of columns) {
+        for (const element of column.elements) {
+          assignedIds.add(element.id)
+        }
+      }
+      for (const composite of composites) {
+        if (assignedIds.has(composite.id)) continue
+        const center = (composite.boundingBox.left + composite.boundingBox.right) / 2
+        let nearest = columns[0]
+        let nearestDistance = Infinity
+        for (const column of columns) {
+          const distance = center < column.leftBoundary
+            ? column.leftBoundary - center
+            : center > column.rightBoundary
+              ? center - column.rightBoundary
+              : 0
+          if (distance < nearestDistance) {
+            nearestDistance = distance
+            nearest = column
+          }
+        }
+        nearest.elements.push(composite)
       }
     }
 
