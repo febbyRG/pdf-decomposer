@@ -14,7 +14,8 @@
   "files": [
     "dist",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "scripts/rebuild-canvas-dev.js"
   ],
   "engines": {
     "node": ">=16.0.0"
@@ -23,17 +24,24 @@
     "build": "tsc",
     "build:watch": "tsc --watch",
     "prepare": "npm run build",
+    "postinstall": "node scripts/rebuild-canvas-dev.js",
+    "ensure:canvas": "node scripts/rebuild-canvas-dev.js",
     "prepublishOnly": "npm run build && npm test && npm run lint",
     "preversion": "npm run lint && npm test",
     "version": "npm run build",
     "postversion": "git push && git push --tags",
     "test": "vitest run",
     "test:watch": "vitest",
+    "pretest:harness": "npm run ensure:canvas",
     "test:harness": "npx ts-node scripts/test.ts",
+    "pretest:screenshot": "npm run ensure:canvas",
     "test:screenshot": "npx ts-node scripts/test-screenshot.ts",
+    "pretest:data": "npm run ensure:canvas",
     "test:data": "npx ts-node scripts/test-pdf-data.ts",
     "test:slice": "npx ts-node scripts/test-slice.ts",
+    "pretest:details": "npm run ensure:canvas",
     "test:details": "node --max-old-space-size=8192 --expose-gc -r ts-node/register scripts/test-details.ts",
+    "pretest:puppeteer": "npm run ensure:canvas",
     "test:puppeteer": "node --max-old-space-size=8192 --expose-gc -r ts-node/register scripts/test-puppeteer.ts",
     "test:all": "npm run test:harness && npm run test:screenshot && npm run test:data && npm run test:slice",
     "lint": "eslint .",
