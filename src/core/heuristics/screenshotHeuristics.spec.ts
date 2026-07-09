@@ -110,3 +110,35 @@ describe('decideScreenshot', () => {
     expect(result).toEqual({ convert: false, reason: 'no-elements' })
   })
 })
+
+describe('legal fine print exclusion (mivision-feb p103 Alcon ad)', () => {
+  const finePrint = '* Trademarks are the property of their respective owners. ' + 'Based on in-vitro studies wherein wettability was measured in seconds using a system. '.repeat(12)
+  const adBase = () => [
+    makeImageElement({ top: -15, left: -10, width: PAGE_W + 30, height: PAGE_H + 30 }),
+    makeTextElement({ data: 'REIMAGINING THE LENS DESIGN WHERE IT MATTERS MOST.', fontSize: 18, top: 250 }),
+    makeTextElement({ data: 'AT THE SURFACE.', type: 'header', fontSize: 28, top: 290 }),
+    makeTextElement({ data: 'WITH UP TO 2X LONGER LENS SURFACE MOISTURE THAN OTHER LEADING BRANDS.', fontSize: 18, top: 520 })
+  ]
+
+  it('a full-page ad with a 1,000+ char tiny-font legal disclaimer still converts', () => {
+    const elements = [...adBase(), makeTextElement({ data: finePrint, fontSize: 8, top: 600 })]
+    const decision = decideScreenshot({ pageWidth: PAGE_W, pageHeight: PAGE_H, elements })
+    expect(decision.convert).toBe(true)
+    expect(decision.reason).toContain('single-large-image')
+  })
+
+  it('the same long block at body font size keeps the page as content', () => {
+    const elements = [...adBase(), makeTextElement({ data: finePrint, fontSize: 10, top: 600 })]
+    const decision = decideScreenshot({ pageWidth: PAGE_W, pageHeight: PAGE_H, elements })
+    expect(decision.convert).toBe(false)
+    expect(decision.reason).toContain('significant-text-content')
+  })
+
+  it('a tiny-font long block WITHOUT legal markers keeps the page as content', () => {
+    const editorialSmall = 'The community garden project has been growing steadily for a decade now. '.repeat(8)
+    const elements = [...adBase(), makeTextElement({ data: editorialSmall, fontSize: 8, top: 600 })]
+    const decision = decideScreenshot({ pageWidth: PAGE_W, pageHeight: PAGE_H, elements })
+    expect(decision.convert).toBe(false)
+    expect(decision.reason).toContain('significant-text-content')
+  })
+})

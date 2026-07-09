@@ -43,6 +43,28 @@ export const DEFAULT_SCREENSHOT_THRESHOLDS: ScreenshotThresholds = {
 const MIN_IMAGE_COUNT = 3
 const MIN_DISTRIBUTION_SCORE = 0.4
 
+// Legal fine print: the tiny-font trademark/disclaimer line at the foot of an
+// ad. Editorial body copy runs ~9-12pt; legal lines run smaller.
+const FINE_PRINT_MAX_FONT = 8.5
+
+/**
+ * Legal fine print is neither article substance the editorial guard should
+ * protect nor promo copy: a 1,000+ char disclaimer on a full-page ad would
+ * otherwise read as an "editorial paragraph" and keep the ad decomposed
+ * (double-render downstream). Requires BOTH a tiny font AND legal markers, so
+ * a genuine small-font body paragraph is never excluded.
+ */
+function isLegalFinePrint(element: PdfElement): boolean {
+  const fontSize = element.attributes?.fontSize || 0
+  if (fontSize <= 0 || fontSize > FINE_PRINT_MAX_FONT) return false
+  const text = stripHtml(element.data || '')
+  // Footnote/legal lead-in symbol.
+  if (/^[\s"'']*[*†‡§©®]/.test(text)) return true
+  // Trademark/legal symbol density.
+  if ((text.match(/[®™©†‡§]/g) || []).length >= 2) return true
+  return /\b(trademarks? (are|is) the property|all rights reserved|registered trademarks?)\b/i.test(text)
+}
+
 export interface ScreenshotInput {
   pageWidth: number
   pageHeight: number
@@ -85,7 +107,8 @@ export function decideScreenshot(
   const aggregateImageCoverage = pageArea > 0 ? Math.min(totalImageArea / pageArea, 1) : 0
 
   // Text signals: the longest single block is the editorial discriminator.
-  const textElements = elements.filter(isTextElement)
+  // Legal fine print is excluded from every text signal (see isLegalFinePrint).
+  const textElements = elements.filter(isTextElement).filter(element => !isLegalFinePrint(element))
   let totalTextChars = 0
   let longestTextBlockChars = 0
   for (const element of textElements) {

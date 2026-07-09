@@ -35,6 +35,23 @@ const HUGE_TITLE_FONT = 40
 const SECTION_HEADING_FONT = 18
 // Minimum length for an element to count as a real body paragraph.
 const MIN_BODY_PARAGRAPH = 40
+// Where article titles live. An opening heading only counts as a new-article
+// title when it sits in the left/center region (a right-column panel heading of
+// a sidebar box, e.g. "The Act", is page furniture, not a title), and a huge
+// display title only counts within the top half of the page.
+const TITLE_REGION_WIDTH_RATIO = 0.45
+const TITLE_REGION_HEIGHT_RATIO = 0.5
+
+// A resource trailer closes an article ("More information ...", "Sources: ...").
+// It is not body prose: its tail routinely ends on a bare URL/word and must not
+// read as a hanging sentence gluing the page onto an unrelated neighbour.
+const RESOURCE_TRAILER = /^(more information|for more information|further information|sources?[\s:]|references?[\s:]|see also\b)/i
+
+// Discourse connectives that open a CONTINUATION paragraph. A page whose first
+// body paragraph starts with one of these continues the previous page's story
+// even when the previous page ended on a sentence boundary. Conservative list:
+// fresh article ledes practically never open with these.
+const CONTINUATION_CONNECTIVE = /^(Meanwhile|However|Nevertheless|Furthermore|Moreover|Similarly, |Likewise, |Instead, |Even so|At the same time|On the other hand|As a result|Consequently|By contrast)[,\s]/
 
 export type ContentType = 'cover' | 'image' | 'article' | 'mixed'
 
@@ -84,6 +101,8 @@ function mainBodyLastParagraph(page: PdfPageContent): string | null {
     const element = elements[i]
     if (isBodyParagraph(element)) {
       const text = getCleanText(element)
+      // A resource trailer is an article's closing furniture, not its body.
+      if (RESOURCE_TRAILER.test(text)) continue
       if (text.length >= MIN_BODY_PARAGRAPH) return text
     }
   }
@@ -117,23 +136,67 @@ export function nextStartsMidSentence(page: PdfPageContent): boolean {
 
 /** The page opens a new section/article (large display title or a section-marker word). */
 export function startsNewSection(page: PdfPageContent): boolean {
-  const first = (page.elements || []).find(isAnyTextElement)
+  const elements = page.elements || []
+
+  // A large display title in the top half marks a new section wherever it sits
+  // in reading order: a small hero-image caption can legitimately precede the
+  // title (e.g. a caption laid over the opening photo), so checking only the
+  // FIRST text element misses the actual title and glues the new article onto
+  // the previous page.
+  const pageHeight = page.height || 0
+  for (const element of elements) {
+    if (!isAnyTextElement(element)) continue
+    if ((element.attributes?.fontSize || 0) >= HUGE_TITLE_FONT) {
+      const top = normalizeBoundingBox(element.boundingBox).top
+      if (pageHeight <= 0 || top <= pageHeight * TITLE_REGION_HEIGHT_RATIO) return true
+    }
+  }
+
+  const first = elements.find(isAnyTextElement)
   if (!first) return false
   const text = getCleanText(first)
   const fontSize = first.attributes?.fontSize || 0
 
-  // A large display title anywhere at the top marks a new section.
-  if (fontSize >= HUGE_TITLE_FONT) return true
   // Explicit section-marker words.
   if (/^(FEATURE|SECTION|CHAPTER)\b/i.test(text)) return true
+
+  // Mid-size opening headings only count in the title region: a right-column
+  // panel heading (a sidebar box like "The Act" on a continuation page) is at
+  // heading size too, but it is page furniture, not an article title.
+  const left = normalizeBoundingBox(first.boundingBox).left
+  const inTitleRegion = !page.width || left < page.width * TITLE_REGION_WIDTH_RATIO
   // A page that opens with a heading element sized clearly above body text is a
   // new section/article title (e.g. "THE FUTURE, NOW"). A continuation page opens
   // with running body text, not a display heading; and a small inline subheading
   // (e.g. "SHOPPING CENTRE UPDATE" at body size) stays below this threshold.
-  if (isHeaderElement(first) && fontSize >= SECTION_HEADING_FONT) return true
+  if (isHeaderElement(first) && fontSize >= SECTION_HEADING_FONT && inTitleRegion) return true
   // All-caps banner headline (punctuation allowed) sized above body.
-  if (/^[A-Z][A-Z\s.,:'&()!?-]{10,}$/.test(text) && text.length < 80 && fontSize > 15) return true
+  if (/^[A-Z][A-Z\s.,:'&()!?-]{10,}$/.test(text) && text.length < 80 && fontSize > 15 && inTitleRegion) return true
   return false
+}
+
+/**
+ * The next page's first body paragraph opens with a discourse connective
+ * ("Meanwhile, ..."): continuation evidence even when the previous page ended
+ * on a sentence boundary.
+ */
+export function nextStartsWithConnective(page: PdfPageContent): boolean {
+  const first = (page.elements || []).find(isAnyTextElement)
+  if (!first || isHeaderElement(first)) return false
+  return CONTINUATION_CONNECTIVE.test(getCleanText(first))
+}
+
+/**
+ * Distinct normalized tokens of the page's running head / kicker (stashed by
+ * the clean composer in metadata.runningHeadText before the margin filter
+ * discards those elements). "BUSINESS stable fly" -> [business, stable, fly].
+ */
+export function runningHeadTokens(page: PdfPageContent): string[] {
+  const metadata = page.metadata as Record<string, any> | undefined
+  const text = String(metadata?.runningHeadText || '')
+  if (!text) return []
+  const tokens = text.toLowerCase().match(/[a-z]{3,}/g) || []
+  return Array.from(new Set(tokens))
 }
 
 /**
@@ -211,8 +274,14 @@ export function analyzeContentType(page: PdfPageContent): ContentType {
 
 /**
  * Decide whether content flows continuously from currentPage into nextPage.
+ *
+ * `sharedRunningHead` is document-level evidence the caller computes (see
+ * PdfPageComposer): both pages carry the same RARE running-head kicker (an
+ * article subject line such as "stable fly", not a section label). It covers
+ * continuations whose pages each end on a clean sentence boundary, which the
+ * text-flow signals below cannot see.
  */
-export function hasContentContinuity(currentPage: PdfPageContent, nextPage: PdfPageContent): boolean {
+export function hasContentContinuity(currentPage: PdfPageContent, nextPage: PdfPageContent, sharedRunningHead = false): boolean {
   // Ads / screenshots are standalone and never merge.
   if (isScreenshotPage(currentPage) || isScreenshotPage(nextPage)) return false
 
@@ -231,5 +300,6 @@ export function hasContentContinuity(currentPage: PdfPageContent, nextPage: PdfP
   // Continuation evidence from either side (a marker on either side also counts,
   // covering renumbered slices where the printed page number no longer matches).
   const markerFlow = currentMarkers.toPage !== null || nextMarkers.fromPage !== null
-  return mainBodyEndsHanging(currentPage) || nextStartsMidSentence(nextPage) || markerFlow
+  return mainBodyEndsHanging(currentPage) || nextStartsMidSentence(nextPage)
+    || nextStartsWithConnective(nextPage) || sharedRunningHead || markerFlow
 }

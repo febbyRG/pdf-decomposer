@@ -7,6 +7,7 @@ import {
   mainBodyEndsHanging,
   nextStartsMidSentence,
   parseContinuationMarkers,
+  runningHeadTokens,
   startsNewSection
 } from './pageContinuity.js'
 
@@ -182,5 +183,109 @@ describe('analyzeContentType (de-hardcoded)', () => {
   it('classifies a long page by structure, not by document-specific keywords', () => {
     const page = articlePage(1, long('mohammad alawi discussed the red sea project.'))
     expect(analyzeContentType(page)).toBe('article')
+  })
+})
+
+describe('resource trailers, sidebar headings, late titles, connectives (wa.pdf regression set)', () => {
+  it('a "More information" trailer ending on a URL does not read as a hanging body', () => {
+    // wa p60: the article's last real paragraph ends with a full stop; a
+    // resource trailer ("More information For more information see
+    // dpird.wa.gov.au/stablefly") follows it and used to read as hanging,
+    // gluing the page onto the UNRELATED next article.
+    const page = makePage({
+      elements: [
+        para(long('community collaboration reduces outbreaks, Mr Shepherd said.')),
+        para('More information For more information see dpird.wa.gov')
+      ]
+    })
+    expect(mainBodyEndsHanging(page)).toBe(false)
+  })
+
+  it('a right-column panel heading does not open a new section', () => {
+    // wa p60: the sidebar box "The Act" (fs19, right column) is first in
+    // reading order on a CONTINUATION page; it must not block the merge.
+    const page = makePage({
+      elements: [
+        makeTextElement({ data: 'The Act', type: 'header', fontSize: 19, left: 308, top: 121 }),
+        para(long('the biosecurity act obliges growers to control breeding sites.'))
+      ]
+    })
+    expect(startsNewSection(page)).toBe(false)
+  })
+
+  it('a left-region opening heading still opens a new section', () => {
+    const page = makePage({
+      elements: [
+        makeTextElement({ data: 'THE FUTURE, NOW', type: 'header', fontSize: 26, left: 40, top: 90 }),
+        para(long('a brand new feature article begins on this page.'))
+      ]
+    })
+    expect(startsNewSection(page)).toBe(true)
+  })
+
+  it('a huge display title counts even when a small hero caption precedes it', () => {
+    // wa p61: the "WHEN AI" article opens with a photo whose small caption is
+    // first in reading order; the fs58 title must still mark a new section.
+    const page = makePage({
+      elements: [
+        makeTextElement({ data: 'AI appears to have the capability to provide what looks to be a solution.', fontSize: 9, top: 120, left: 71 }),
+        makeTextElement({ data: 'WHEN AI', type: 'header', fontSize: 58, top: 292, left: 74 })
+      ]
+    })
+    expect(startsNewSection(page)).toBe(true)
+  })
+
+  it('a huge pull-quote in the bottom half does not open a new section', () => {
+    const page = makePage({
+      elements: [
+        para(long('this is a continuation page with running body text on it and')),
+        makeTextElement({ data: 'I DUG INTO THE NUMBERS', type: 'header', fontSize: 44, top: 700, left: 300 })
+      ]
+    })
+    expect(startsNewSection(page)).toBe(false)
+  })
+
+  it('a first paragraph opening with a discourse connective continues the previous page', () => {
+    // wa p14 -> p15: p14 ends on a sentence boundary, p15 begins
+    // "Meanwhile, his own farming enterprise..." — same article.
+    const current = makePage({ pageNumber: 14, elements: [para(long('the products are matched to their needs, he says.'))] })
+    const next = makePage({
+      pageNumber: 15,
+      elements: [para('Meanwhile, his own farming enterprise was taking shape and taking off. ' + long('he produced his own seedlings.'))]
+    })
+    expect(hasContentContinuity(current, next)).toBe(true)
+  })
+
+  it('a capitalized non-connective start is still not continuation evidence', () => {
+    const current = makePage({ pageNumber: 20, elements: [para(long('the first article ends cleanly right here.'))] })
+    const next = makePage({ pageNumber: 21, elements: [para('The council announced a new program. ' + long('details follow below.'))] })
+    expect(hasContentContinuity(current, next)).toBe(false)
+  })
+})
+
+describe('running-head continuity (wa.pdf spreads with sentence-boundary page breaks)', () => {
+  it('extracts normalized rare tokens from the stashed running head', () => {
+    const page = makePage({ elements: [para(long('.'))], metadata: { runningHeadText: 'BUSINESS stable fly 58' } })
+    expect(runningHeadTokens(page).sort()).toEqual(['business', 'fly', 'stable'])
+  })
+
+  it('returns no tokens without stashed metadata', () => {
+    expect(runningHeadTokens(makePage({ elements: [para(long('.'))] }))).toEqual([])
+  })
+
+  it('sharedRunningHead evidence merges pages that both end on sentence boundaries', () => {
+    const current = makePage({ pageNumber: 59, elements: [para(long('good management is more effective, he said.'))] })
+    const next = makePage({ pageNumber: 60, elements: [para(long('the rapid lifecycle means waste vegetable material produces a surge.'))] })
+    expect(hasContentContinuity(current, next)).toBe(false)
+    expect(hasContentContinuity(current, next, true)).toBe(true)
+  })
+
+  it('a new-section title still blocks a shared running head', () => {
+    const current = makePage({ pageNumber: 60, elements: [para(long('the article ends cleanly here.'))] })
+    const next = makePage({
+      pageNumber: 61,
+      elements: [makeTextElement({ data: 'WHEN AI', type: 'header', fontSize: 58, top: 292, left: 74 }), para(long('a new article begins.'))]
+    })
+    expect(hasContentContinuity(current, next, true)).toBe(false)
   })
 })

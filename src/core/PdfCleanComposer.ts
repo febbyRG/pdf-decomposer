@@ -325,12 +325,18 @@ export class PdfCleanComposer {
       }
     }
 
+    // Preserve the text removed from the TOP margin band (running heads /
+    // section kickers like "BUSINESS stable fly"): PdfPageComposer uses it as
+    // continuity evidence binding consecutive pages of the same article.
+    const runningHeadText = this.extractRunningHeadText(cleaningResult.removed, contentArea)
+
     // Return normally cleaned page
     return {
       ...page,
       elements: cleaningResult.kept,
       metadata: {
         ...page.metadata,
+        ...(runningHeadText ? { runningHeadText } : {}),
         cleaning: {
           contentArea,
           originalElementCount: page.elements?.length || 0,
@@ -340,6 +346,26 @@ export class PdfCleanComposer {
         }
       }
     }
+  }
+
+  /**
+   * Join the text of elements the margin filter removed from the top band.
+   * These are the page's running heads / kickers: furniture for the OUTPUT,
+   * but the strongest available continuity signal between pages.
+   */
+  private static extractRunningHeadText(removed: PdfElement[], contentArea: ContentArea): string {
+    const parts: string[] = []
+    for (const element of removed) {
+      if (isImageElement(element)) continue
+      if (element.removalReason !== 'outside_content_area') continue
+      const bbox = normalizeBoundingBox(element.boundingBox)
+      const centerY = bbox.top + bbox.height / 2
+      if (centerY < contentArea.top) {
+        const text = String(element.data || '').replace(/<[^>]*>/g, ' ').trim()
+        if (text) parts.push(text)
+      }
+    }
+    return parts.join(' ').trim()
   }
 
   /**
