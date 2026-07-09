@@ -14,8 +14,7 @@
   "files": [
     "dist",
     "README.md",
-    "LICENSE",
-    "scripts/rebuild-canvas-dev.js"
+    "LICENSE"
   ],
   "engines": {
     "node": ">=16.0.0"
@@ -23,8 +22,7 @@
   "scripts": {
     "build": "tsc",
     "build:watch": "tsc --watch",
-    "prepare": "npm run build",
-    "postinstall": "node scripts/rebuild-canvas-dev.js",
+    "prepare": "npm run build && npm run ensure:canvas",
     "ensure:canvas": "node scripts/rebuild-canvas-dev.js",
     "prepublishOnly": "npm run build && npm test && npm run lint",
     "preversion": "npm run lint && npm test",

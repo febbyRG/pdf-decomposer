@@ -11,10 +11,11 @@
  * ERR_DLOPEN_FAILED / NODE_MODULE_VERSION mismatch.
  *
  * Hooked in two places:
- *  - `postinstall`. Because this package is PUBLISHED, postinstall also runs
- *    on every consumer install, so this file ships in the tarball (see
- *    package.json `files`) and the dev-checkout guard below makes it an
- *    instant no-op outside this repo.
+ *  - `prepare` (runs on local installs in this repo, never on consumers
+ *    installing the published tarball, which ships dist/ only). Do NOT move
+ *    this to `postinstall`: that lifecycle also executes on every consumer
+ *    install of this published package, where the script does not exist in
+ *    the tarball, which fails their install outright.
  *  - `pre<harness>` hooks, so a run under a different Node than the last
  *    install self-heals by rebuilding for the Node actually running.
  *
@@ -22,16 +23,8 @@
  */
 
 const { execSync } = require('child_process')
-const { existsSync } = require('fs')
-const { join } = require('path')
 
 const log = (msg) => console.log(`[rebuild-canvas-dev] ${msg}`)
-
-// Consumer install of the published tarball: dist/ only, no src/. Only act
-// inside the dev checkout, never on a consumer's machine.
-if (!existsSync(join(__dirname, '..', 'src'))) {
-  process.exit(0)
-}
 
 // canvas may be absent (fresh clone mid-install edge cases).
 try {
