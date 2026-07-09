@@ -285,10 +285,13 @@ export class PuppeteerRenderer implements PdfPageRenderer {
       res.end(scaffoldBuffer)
     })
 
+    // Local binding: TS cannot narrow `this.server` (assigned just above)
+    // inside the promise executor's closures.
+    const server = this.server
     await new Promise<void>((resolve, reject) => {
-      this.server!.once('error', reject)
-      this.server!.listen(0, '127.0.0.1', () => {
-        const address = this.server!.address() as AddressInfo
+      server.once('error', reject)
+      server.listen(0, '127.0.0.1', () => {
+        const address = server.address() as AddressInfo
         this.serverUrl = `http://127.0.0.1:${address.port}`
         resolve()
       })

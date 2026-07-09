@@ -31,6 +31,8 @@ async function getZlib(): Promise<typeof import('zlib') | null> {
 
 import type { ExtractedImage } from '../types/image.types.js'
 import { logger } from '../utils/Logger.js'
+import type { PdfJsPage } from '../types/pdfjs.types.js'
+import type { PdfPage } from './PdfPage.js'
 
 export class PdfImageExtractor {
   /**
@@ -111,15 +113,16 @@ export class PdfImageExtractor {
    * @param page The PDF page to extract images from
    * @returns Array of extracted images as base64 strings
    */
-  async extractImagesFromPage(page: any): Promise<ExtractedImage[]> {
+  async extractImagesFromPage(page: PdfPage | PdfJsPage): Promise<ExtractedImage[]> {
     const images: ExtractedImage[] = []
 
     try {
-      // Handle both PdfPage wrapper and direct PDFPageProxy
-      const pdfPageProxy = page.proxy || page
+      // Handle both the PdfPage wrapper (whose pdf.js proxy is private) and a
+      // direct PDFPageProxy. The unwrap predates the typed seam.
+      const pdfPageProxy = ((page as unknown as { proxy?: PdfJsPage }).proxy || page) as PdfJsPage
 
       // Get actual page number from the page proxy
-      const pageNumber = pdfPageProxy._pageIndex + 1 // _pageIndex is 0-based
+      const pageNumber = (pdfPageProxy._pageIndex ?? 0) + 1 // _pageIndex is 0-based
 
       // Method 1: Check operator list for image operations (MAIN METHOD - like editor)
       const operatorImages = await this.extractFromOperatorList(pdfPageProxy, pageNumber)
@@ -154,7 +157,7 @@ export class PdfImageExtractor {
    * Extract images by analyzing PDF operator list
    * This detects inline images and Do (XObject) operations
    */
-  private async extractFromOperatorList(page: any, pageNumber: number): Promise<ExtractedImage[]> {
+  private async extractFromOperatorList(page: PdfJsPage, pageNumber: number): Promise<ExtractedImage[]> {
     const images: ExtractedImage[] = []
 
     try {
@@ -308,9 +311,10 @@ export class PdfImageExtractor {
   }
 
   /**
-   * Check if an object is an image based on PDF.js patterns
+   * Check if an object is an image based on PDF.js patterns. Type predicate:
+   * callers read width/height and probe bitmap/data afterwards.
    */
-  private static isImageObject(obj: any): boolean {
+  private static isImageObject(obj: unknown): obj is { width: number, height: number, bitmap?: unknown, data?: unknown, getImageData?: unknown } {
     if (!obj) return false
 
     // Check for Canvas element (browser)
@@ -329,9 +333,9 @@ export class PdfImageExtractor {
     }
 
     // Check for object with image-like properties
-    if (typeof obj === 'object' && obj.width && obj.height) {
-      // Check for bitmap property (PDF.js pattern)
-      if (obj.bitmap || obj.data || obj.getImageData) {
+    if (typeof obj === 'object') {
+      const candidate = obj as { width?: unknown, height?: unknown, bitmap?: unknown, data?: unknown, getImageData?: unknown }
+      if (candidate.width && candidate.height && (candidate.bitmap || candidate.data || candidate.getImageData)) {
         return true
       }
     }

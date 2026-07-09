@@ -395,8 +395,13 @@ export interface PdfDecomposerTextAttributes {
   fontFamily?: string
   fontSize?: number
   textColor?: string
-  fontWeight?: 'normal' | 'bold'
-  fontStyle?: 'normal' | 'italic'
+  // Sourced from font-name parsing / PdfTextEvaluator: values like 'regular',
+  // 'bold', 'normal', 'italic' occur in production, so this is a plain string.
+  fontWeight?: string
+  fontStyle?: string
+  // PDF-internal font id, included only when the real font name could not be
+  // resolved and the internal mapping was used instead.
+  originalFont?: string
 }
 
 /**
@@ -426,6 +431,19 @@ export interface PdfDecomposerLinkAttributes {
 /**
  * Bounding box interface
  */
+/**
+ * One page as returned by PdfDecomposerPage.decompose(): raw extracted
+ * elements plus page geometry, before composition/cleaning/minification.
+ */
+export interface PdfDecomposerDecomposedPage {
+  pageIndex: number
+  pageNumber: number
+  width: number
+  height: number
+  title: string
+  elements: PdfDecomposerExtractedElement[]
+}
+
 export interface PdfDecomposerBoundingBox {
   top: number
   left: number

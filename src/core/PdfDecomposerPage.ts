@@ -10,9 +10,12 @@ import type {
   PdfDecomposerExtractedTextElement,
   PdfDecomposerExtractedImageElement,
   PdfDecomposerExtractedLinkElement,
-  PdfDecomposerColorAwareElement
+  PdfDecomposerColorAwareElement,
+  PdfDecomposerDecomposedPage
 } from '../types/decomposer.types.js'
 import { logger } from '../utils/Logger.js'
+import type { PdfPage } from './PdfPage.js'
+import type { PdfJsTextItem } from '../types/pdfjs.types.js'
 
 export class PdfDecomposerPage {
   constructor(
@@ -24,7 +27,7 @@ export class PdfDecomposerPage {
     private extractLinks: boolean = false  // Add extractLinks parameter
   ) { }
 
-  async decompose(): Promise<any> {
+  async decompose(): Promise<PdfDecomposerDecomposedPage> {
     try {
       const pdfPage = await this.decomposer.pdfDoc.getPage(this.pageIndex)
       const viewport = pdfPage.getViewport({ scale: 1 })
@@ -88,7 +91,7 @@ export class PdfDecomposerPage {
   }
 
   // Use universal image extraction (works in both Node.js and Browser)
-  private async extractImageElements(pdfPage: any, pageIndex: number, outputDir?: string): Promise<PdfDecomposerExtractedImageElement[]> {
+  private async extractImageElements(pdfPage: PdfPage, pageIndex: number, outputDir?: string): Promise<PdfDecomposerExtractedImageElement[]> {
     if (this.skipParser) { return [] }
 
     try {
@@ -125,7 +128,7 @@ export class PdfDecomposerPage {
           }
 
           // Calculate proper bounding box from position and size
-          let boundingBox: any
+          let boundingBox: PdfDecomposerBoundingBox
           
           if (img.x !== undefined && img.y !== undefined) {
             // Use actual position from PDF transform
@@ -204,7 +207,11 @@ export class PdfDecomposerPage {
               fs.writeFileSync(filePath, buffer)
             }
             
-            const attributes = { type: 'legacy' }
+            const attributes = {
+              type: 'legacy' as const,
+              width: boundingBox?.width ?? 0,
+              height: boundingBox?.height ?? 0
+            }
             
             // Always use original boundingBox format - minify happens centrally in PdfDecompose.ts
             const formattedBoundingBox = boundingBox
@@ -212,7 +219,7 @@ export class PdfDecomposerPage {
             return {
               id: uuidv4(),
               pageIndex,
-              type: 'image',
+              type: 'image' as const,
               boundingBox: formattedBoundingBox,
               data: outputDir ? fileName : `data:image/png;base64,${buffer.toString('base64')}`,
               attributes
@@ -229,7 +236,7 @@ export class PdfDecomposerPage {
   }
 
   // Extract links and annotations from PDF content
-  private async extractLinkElements(pdfPage: any, pageIndex: number): Promise<PdfDecomposerExtractedLinkElement[]> {
+  private async extractLinkElements(pdfPage: PdfPage, pageIndex: number): Promise<PdfDecomposerExtractedLinkElement[]> {
     if (this.skipParser) { return [] }
 
     const linkElements: PdfDecomposerExtractedLinkElement[] = []
@@ -340,7 +347,7 @@ export class PdfDecomposerPage {
   }
 
   // Real text extraction using PDF.js getTextContent with color-aware enhancement
-  private async extractTextElements(pdfPage: any, pageIndex: number): Promise<PdfDecomposerExtractedTextElement[]> {
+  private async extractTextElements(pdfPage: PdfPage, pageIndex: number): Promise<PdfDecomposerExtractedTextElement[]> {
     try {
       const textContent = await pdfPage.getTextContent()
       const viewport = pdfPage.getViewport({ scale: 1 })
@@ -361,7 +368,7 @@ export class PdfDecomposerPage {
     const urlPattern = /(?:https?:\/\/[^\s<>"'()[\]{}]+|[a-zA-Z0-9.-]+\.(?:com|org|edu|net|gov|co|io|ly)(?:\/[^\s<>"'()[\]{}]*)?)/gi
     const emailPattern = /[\w._%+-]+@[\w.-]+\.[A-Z]{2,}/gi
 
-    return textContent.items.map((item: any, _: number) => {
+    return textContent.items.map((item, _: number) => {
       const text = item.str || ''
       
       // Skip text elements that contain URLs or emails - they'll be handled as link elements
@@ -392,7 +399,7 @@ export class PdfDecomposerPage {
         fallbackToMapping = !resolvedFontInfo.isMapping
       }
 
-      const attributes: any = {
+      const attributes: PdfDecomposerTextAttributes = {
         fontFamily: fontFamily, // Use real font name when available
         fontWeight: fontWeight,
         fontStyle: fontStyle,
@@ -420,7 +427,7 @@ export class PdfDecomposerPage {
         formattedData: formattedData, // HTML formatted text
         attributes
       }
-    }).filter((item: any) => item !== null) // Filter out null items (URLs/emails handled as links)
+    }).filter((item): item is PdfDecomposerExtractedTextElement => item !== null) // Filter out null items (URLs/emails handled as links)
     } catch (error) {
       logger.error(`Error extracting text elements from page ${pageIndex}:`, error)
       return [] // Return empty array on error
@@ -428,7 +435,7 @@ export class PdfDecomposerPage {
   }
 
   // Helper method to find matching color-aware element for a text item
-  private findMatchingColorElement(item: any, bbox: PdfDecomposerBoundingBox, colorAwareElements: PdfDecomposerColorAwareElement[]): PdfDecomposerColorAwareElement | null {
+  private findMatchingColorElement(item: PdfJsTextItem, bbox: PdfDecomposerBoundingBox, colorAwareElements: PdfDecomposerColorAwareElement[]): PdfDecomposerColorAwareElement | null {
     const itemText = item.str?.trim() || ''
     
     // Skip empty or very short text fragments (likely spacing)
@@ -489,7 +496,7 @@ export class PdfDecomposerPage {
   }
 
   // Helper to get bounding box from PDF.js text item
-  private getTextBoundingBox(item: any, pageHeight: number): PdfDecomposerBoundingBox {
+  private getTextBoundingBox(item: PdfJsTextItem, pageHeight: number): PdfDecomposerBoundingBox {
     // PDF.js text item transform: [scaleX, skewX, skewY, scaleY, transX, transY]
     // PDF coordinate system has origin at bottom-left, we need to convert to top-left
     const [a, , , d, e, f] = item.transform
