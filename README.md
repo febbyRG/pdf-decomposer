@@ -62,21 +62,24 @@ Extract structured text with positioning and formatting:
 - Content consolidation for multiple heading tags
 - Preserves reading order and text flow
 - Smart font and spacing analysis
+- Preservation invariant: reading order is a permutation of the input, never a filter. Every meaningful text run reaches the output, whatever the column layout
+- Implemented as pure, unit-tested modules under `src/core/composer/` (overlap merge, reading order, text types, drop caps, column detection)
 
 #### Page Composer
 
 - Merges continuous content across consecutive pages
-- Document-agnostic continuity: a page pair merges only when there is real evidence (the current page's main body ends mid-sentence, the next page begins mid-sentence, or a "continued on/from page N" marker links them)
-- Detects article boundaries and section breaks (a new display heading or section-marker word starts a new article)
+- Document-agnostic continuity: a page pair merges only when there is real evidence (the current page's main body ends mid-sentence, the next page begins mid-sentence or opens with a discourse connective, both pages carry the same rare running-head kicker, or a "continued on/from page N" marker links them)
+- Resource trailers ("More information ...") and page furniture never count as continuation evidence
+- Detects article boundaries and section breaks (a display heading in the title region or a section-marker word starts a new article, even when a small hero caption precedes the title in reading order)
 - Never merges a cover, advertisement, or full-page screenshot into a neighbour
 
 #### Clean Composer
 
-- Filters out headers, footers, and page numbers
-- Content area detection with configurable margins
+- Filters out headers, footers, and page numbers (the removed running-head text is preserved in `metadata.runningHeadText` for the page composer's continuity signal)
+- Content area detection with configurable margins. Images of any size survive when they overlap the content area (a QR code in a corner is content, not furniture)
 - Image size validation and filtering
 - Control character removal
-- Collapses covers and full-page advertisements to a single screenshot, while keeping text-heavy pages (including articles over a full-bleed background image) decomposed
+- Collapses covers and full-page advertisements to a single screenshot, while keeping text-heavy pages (including articles over a full-bleed background image) decomposed. Legal fine print (tiny-font trademark/disclaimer lines) does not count as article substance, so ads with long disclaimers still collapse
 
 #### Image Extraction
 
@@ -102,6 +105,14 @@ Extract structured text with positioning and formatting:
 - Progress Callbacks - Real-time operation tracking
 - Background Processing - Non-blocking operations
 - Batch Processing - Efficient multi-page handling
+
+### Logging
+
+The library logs through a level-gated logger and stays quiet by default (warnings and errors only). Raise the level when diagnosing:
+
+```bash
+LOG_LEVEL=info node your-script.js    # or LOG_LEVEL=debug
+```
 
 ## Installation
 
@@ -538,7 +549,7 @@ interface SliceResult {
 ### Run Tests
 
 ```bash
-npm test                    # Unit tests (Vitest) for the ad / merge heuristics
+npm test                    # Unit tests (Vitest): composer modules + ad / merge heuristics (77 tests)
 npm run test:watch          # Vitest in watch mode
 npm run test:harness        # End-to-end decompose harness over a sample PDF
 npm run test:screenshot     # Screenshot generation tests
@@ -619,7 +630,7 @@ for (let start = 1; start <= totalPages; start += batchSize) {
 
 ### Pluggable Renderer (Node.js, large PDFs)
 
-The default Node.js screenshot path uses `node-canvas`. For very large PDFs (100+ pages, hundreds of MB) the underlying `Context2d::GetImageData` can hit `v8::ArrayBuffer::New` OOM regardless of `--max-old-space-size` — this is a documented limitation of the node-canvas + pdf.js + V8 ArrayBuffer allocator interaction. See [docs/NODE_CANVAS_OOM_VS_PUPPETEER.md](docs/NODE_CANVAS_OOM_VS_PUPPETEER.md) for the full write-up.
+The default Node.js screenshot path uses `node-canvas`. For very large PDFs (100+ pages, hundreds of MB) the underlying `Context2d::GetImageData` can hit `v8::ArrayBuffer::New` OOM regardless of `--max-old-space-size`. This is a documented limitation of the node-canvas + pdf.js + V8 ArrayBuffer allocator interaction. See [docs/NODE_CANVAS_OOM_VS_PUPPETEER.md](docs/NODE_CANVAS_OOM_VS_PUPPETEER.md) for the full write-up.
 
 The library exposes an optional `renderer` constructor option that swaps the per-page rasterization path without changing any other behavior. Browser usage is unaffected. Text/image/link extraction still runs on the Node-side pdf.js. Every page→image step follows the renderer: `screenshot()`, the page images `data()` produces, and the cover/page-screenshot conversion that `cleanComposer` performs on full-page-image pages. When no renderer is set, all of these fall back to node-canvas. This consistency matters for large CMYK-heavy PDFs, where the `cleanComposer` cover/page conversion would otherwise still hit the node-canvas OOM even when a renderer was configured (fixed in 1.1.1).
 
@@ -643,14 +654,14 @@ await pdf.dispose()
 
 `PuppeteerRenderer` renders pages inside a headless Chromium browser using the same `document.createElement('canvas')` + pdf.js pipeline that the in-browser path uses. Chromium handles canvas memory natively, so the OOM at `Context2d::GetImageData` is bypassed entirely.
 
-How PDF bytes reach Chromium: the renderer spawns a tiny localhost HTTP server (bound to `127.0.0.1` on a random ephemeral port) that serves the PDF and pdf.js worker. Chromium fetches them via standard browser XHR — no CDP-bound binary blobs, no JSON serialization of 100+ MB payloads. The server lifecycle is tied to `initialize()` / `dispose()`.
+How PDF bytes reach Chromium: the renderer spawns a tiny localhost HTTP server (bound to `127.0.0.1` on a random ephemeral port) that serves the PDF and pdf.js worker. Chromium fetches them via standard browser XHR: no CDP-bound binary blobs, no JSON serialization of 100+ MB payloads. The server lifecycle is tied to `initialize()` / `dispose()`.
 
 #### Trade-offs
 
 - Cold-start adds ~1500–2500 ms per `PdfDecomposer` lifetime (one-time, not per page).
 - Requires Chromium on disk (~300 MB), already present in environments that use Puppeteer for other tasks (e.g. cloud-run-jobs).
 - Text/image extraction still runs on the Node-side pdf.js. Only page rasterization (screenshots and the `cleanComposer` cover/page conversion) uses the renderer.
-- `dispose()` becomes mandatory — without it, the Chromium subprocess and HTTP server leak.
+- `dispose()` becomes mandatory: without it, the Chromium subprocess and HTTP server leak.
 
 #### When to use
 
@@ -660,14 +671,14 @@ How PDF bytes reach Chromium: the renderer spawns a tiny localhost HTTP server (
 
 #### When **not** to use
 
-- Small PDFs where the default node-canvas path comfortably fits in memory — cold-start overhead isn't worth it.
-- Browser environments — the browser already gives the same memory model.
+- Small PDFs where the default node-canvas path comfortably fits in memory (cold-start overhead isn't worth it).
+- Browser environments (the browser already gives the same memory model).
 - Disk-constrained images that can't afford the extra ~300 MB Chromium.
 
 #### Reference
 
-- [docs/NODE_CANVAS_OOM_VS_PUPPETEER.md](docs/NODE_CANVAS_OOM_VS_PUPPETEER.md) — root cause, design rationale, references to upstream issues.
-- [`PdfPageRenderer`](src/types/renderer.types.ts) — interface for writing custom renderers.
+- [docs/NODE_CANVAS_OOM_VS_PUPPETEER.md](docs/NODE_CANVAS_OOM_VS_PUPPETEER.md): root cause, design rationale, references to upstream issues.
+- [`PdfPageRenderer`](src/types/renderer.types.ts): interface for writing custom renderers.
 
 ### Error Handling
 
