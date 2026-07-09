@@ -36,6 +36,7 @@ import { promises as fsp } from 'fs'
 import * as http from 'http'
 import type { AddressInfo } from 'net'
 import type { PdfPageRenderResult, PdfPageRenderOptions, PdfPageRenderer } from '../types/renderer.types.js'
+import { logger } from './Logger.js'
 
 export interface PuppeteerRendererOptions {
   /**
@@ -106,8 +107,8 @@ export class PuppeteerRenderer implements PdfPageRenderer {
     this.page = await this.browser.newPage()
 
     if (this.options.debug) {
-      this.page.on('console', (msg: any) => console.log(`[puppeteer/console] ${msg.text()}`))
-      this.page.on('pageerror', (err: any) => console.warn(`[puppeteer/pageerror] ${err}`))
+      this.page.on('console', (msg: any) => logger.info(`[puppeteer/console] ${msg.text()}`))
+      this.page.on('pageerror', (err: any) => logger.warn(`[puppeteer/pageerror] ${err}`))
     }
 
     if (!this.serverUrl) {

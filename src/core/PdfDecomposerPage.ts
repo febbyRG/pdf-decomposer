@@ -2,9 +2,9 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { v4 as uuidv4 } from 'uuid'
 import { PdfImageExtractor } from './PdfImageExtractor.js'
-import type { 
-  PdfDecomposerPageData, 
-  PdfDecomposerBoundingBox, 
+import type {
+  PdfDecomposerPageData,
+  PdfDecomposerBoundingBox,
   PdfDecomposerTextAttributes,
   PdfDecomposerExtractedElement,
   PdfDecomposerExtractedTextElement,
@@ -12,6 +12,7 @@ import type {
   PdfDecomposerExtractedLinkElement,
   PdfDecomposerColorAwareElement
 } from '../types/decomposer.types.js'
+import { logger } from '../utils/Logger.js'
 
 export class PdfDecomposerPage {
   constructor(
@@ -42,14 +43,14 @@ export class PdfDecomposerPage {
       try {
         elements.push(...await this.extractTextElements(pdfPage, pageIndex))
       } catch (textError) {
-        console.error(`Error extracting text elements from page ${pageNumber}:`, textError)
+        logger.error(`Error extracting text elements from page ${pageNumber}:`, textError)
       }
       
       if (this.extractImages) {
         try {
           elements.push(...await this.extractImageElements(pdfPage, pageIndex, outputDir))
         } catch (imageError) {
-          console.error(`Error extracting image elements from page ${pageNumber}:`, imageError)
+          logger.error(`Error extracting image elements from page ${pageNumber}:`, imageError)
         }
       }
       
@@ -57,7 +58,7 @@ export class PdfDecomposerPage {
         try {
           elements.push(...await this.extractLinkElements(pdfPage, pageIndex))
         } catch (linkError) {
-          console.error(`Error extracting link elements from page ${pageNumber}:`, linkError)
+          logger.error(`Error extracting link elements from page ${pageNumber}:`, linkError)
         }
       }
 
@@ -73,7 +74,7 @@ export class PdfDecomposerPage {
 
       return result
     } catch (error) {
-      console.error(`Critical error processing page ${this.pageIndex}:`, error)
+      logger.error(`Critical error processing page ${this.pageIndex}:`, error)
       // Return minimal page structure with empty elements on critical error
       return {
         pageIndex: this.pageIndex - 1,
@@ -115,7 +116,7 @@ export class PdfDecomposerPage {
                 dataReference = fileName
               }
             } catch (saveError) {
-              console.warn(`Failed to save image ${img.id} to file, keeping as data URL:`, saveError)
+              logger.warn(`Failed to save image ${img.id} to file, keeping as data URL:`, saveError)
               // Keep as data URL if file save fails
               dataReference = img.data
             }
@@ -173,13 +174,13 @@ export class PdfDecomposerPage {
             }
           })
         } catch (processError) {
-          console.warn(`Failed to process image ${img.id}:`, processError)
+          logger.warn(`Failed to process image ${img.id}:`, processError)
         }
       }
 
       return imageElements
     } catch (error) {
-      console.warn(`Universal image extraction failed for page ${pageIndex + 1}:`, error)
+      logger.warn(`Universal image extraction failed for page ${pageIndex + 1}:`, error)
 
       // Fallback to legacy extraction (Node.js only)
       if (typeof process !== 'undefined' && process.versions && process.versions.node) {
@@ -218,7 +219,7 @@ export class PdfDecomposerPage {
             }
           }))
         } catch (legacyError) {
-          console.warn('Legacy extraction also failed:', legacyError)
+          logger.warn('Legacy extraction also failed:', legacyError)
           return []
         }
       }
@@ -312,7 +313,7 @@ export class PdfDecomposerPage {
       }
 
     } catch (error) {
-      console.warn(`Failed to extract links from page ${pageIndex + 1}:`, error)
+      logger.warn(`Failed to extract links from page ${pageIndex + 1}:`, error)
     }
 
     return linkElements
@@ -352,7 +353,7 @@ export class PdfDecomposerPage {
       try {
         colorAwareElements = await pdfPage.extractText()
       } catch (fontExtractionError) {
-        console.warn(`Font extraction failed for page ${pageIndex}:`, fontExtractionError)
+        logger.warn(`Font extraction failed for page ${pageIndex}:`, fontExtractionError)
         // Continue with empty array - will fallback to PDF internal ID resolution
       }
 
@@ -421,7 +422,7 @@ export class PdfDecomposerPage {
       }
     }).filter((item: any) => item !== null) // Filter out null items (URLs/emails handled as links)
     } catch (error) {
-      console.error(`Error extracting text elements from page ${pageIndex}:`, error)
+      logger.error(`Error extracting text elements from page ${pageIndex}:`, error)
       return [] // Return empty array on error
     }
   }
@@ -564,7 +565,7 @@ export class PdfDecomposerPage {
 
       return html
     } catch (error) {
-      console.warn('Error generating formatted text:', error)
+      logger.warn('Error generating formatted text:', error)
       return text // Return original text on error
     }
   }
@@ -784,7 +785,7 @@ export class PdfDecomposerPage {
       // Default fallback for unrecognized fonts - mark as not mapped
       return { fontFamily: 'Open Sans', isMapping: false }
     } catch (error) {
-      console.warn('Error resolving font family:', error)
+      logger.warn('Error resolving font family:', error)
       return { fontFamily: 'Open Sans', isMapping: false }
     }
   }
@@ -819,7 +820,7 @@ export class PdfDecomposerPage {
       // Return cleaned name if no specific mapping found
       return cleanName || 'Open Sans'
     } catch (error) {
-      console.warn('Error mapping extracted font name:', error)
+      logger.warn('Error mapping extracted font name:', error)
       return 'Open Sans'
     }
   }

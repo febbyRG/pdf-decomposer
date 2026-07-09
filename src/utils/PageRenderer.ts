@@ -1,3 +1,4 @@
+import { logger } from './Logger.js'
 export interface PageRenderOptions {
   width?: number
   quality?: number
@@ -208,7 +209,7 @@ export class PageRenderer {
           return result
 
         } catch (canvasError) {
-          console.error('❌ Node.js Canvas rendering failed:', canvasError)
+          logger.error('❌ Node.js Canvas rendering failed:', canvasError)
           throw new Error(`Node.js rendering failed: ${canvasError}`)
         } finally {
           // Release the Cairo surface backing this canvas. Setting width=0
@@ -229,7 +230,7 @@ export class PageRenderer {
       }
 
     } catch (error) {
-      console.error('❌ Rendering failed:', error)
+      logger.error('❌ Rendering failed:', error)
       return {
         width: 800,
         height: 600,
@@ -269,7 +270,7 @@ export class PageRenderer {
 
       return filePath
     } catch (error) {
-      console.error('❌ Failed to write base64 to file:', error)
+      logger.error('❌ Failed to write base64 to file:', error)
       throw error
     }
   }

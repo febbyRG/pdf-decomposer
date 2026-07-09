@@ -1,6 +1,7 @@
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.js'
 import { InvalidPdfError } from '../types/pdf.types.js'
 import { PdfWorkerConfig } from './PdfWorkerConfig.js'
+import { logger } from '../utils/Logger.js'
 
 /**
  * Centralized PDF document loading utilities
@@ -108,7 +109,7 @@ export class PdfLoader {
           }
         }
       } catch (factoryError) {
-        console.warn('⚠️ Node.js factory setup failed, using default setup:', factoryError)
+        logger.warn('⚠️ Node.js factory setup failed, using default setup:', factoryError)
       }
 
       // PDF.js document loading - it will automatically set up appropriate factories
@@ -119,7 +120,7 @@ export class PdfLoader {
       return pdfDoc
 
     } catch (error) {
-      console.warn('❌ Failed to load PDF:', error)
+      logger.warn('❌ Failed to load PDF:', error)
       
       if (error instanceof Error) {
         if (error.message.includes('Invalid PDF')) {

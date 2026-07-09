@@ -9,6 +9,7 @@ import { MemoryManager } from '../utils/MemoryManager.js'
 import { InvalidPdfError, PdfProcessingError } from '../types/pdf.types.js'
 import type { ScreenshotOptions, ScreenshotPageResult, ScreenshotResult } from '../types/screenshot.types.js'
 import type { PdfDecomposerState, PdfDecomposerError } from '../types/decomposer.types.js'
+import { logger } from '../utils/Logger.js'
 
 /**
  * Generate screenshots for PDF pages using pre-loaded PdfDocument
@@ -107,7 +108,7 @@ export async function pdfScreenshot(
           try {
             await pdfPage.getTextContent()
           } catch (textError) {
-            console.warn(`⚠️ Could not get text content for page ${pageNum}:`, textError)
+            logger.warn(`⚠️ Could not get text content for page ${pageNum}:`, textError)
           }
         }
 
@@ -158,7 +159,7 @@ export async function pdfScreenshot(
                 pageResult.screenshot = '' // Clear to free memory
               }
             } catch (fileError) {
-              console.warn(`⚠️ Failed to write file for page ${pageNum}: ${(fileError as Error).message}`)
+              logger.warn(`⚠️ Failed to write file for page ${pageNum}: ${(fileError as Error).message}`)
               // Don't fail the entire operation if file writing fails
             }
           }
@@ -189,7 +190,7 @@ export async function pdfScreenshot(
 
         } catch (renderError) {
           const errorMessage = `Failed to render page ${pageNum}: ${(renderError as Error).message}`
-          console.error(`❌ ${errorMessage}`)
+          logger.error(`❌ ${errorMessage}`)
           
           // Notify error callback
           notifyError(errorMessage, pageIndex)
@@ -207,7 +208,7 @@ export async function pdfScreenshot(
 
       } catch (pageError) {
         const errorMessage = `Failed to load page ${pageNum}: ${(pageError as Error).message}`
-        console.error(`❌ ${errorMessage}`)
+        logger.error(`❌ ${errorMessage}`)
         
         // Notify error callback
         notifyError(errorMessage, pageIndex)
@@ -233,7 +234,7 @@ export async function pdfScreenshot(
     try {
       await pdfDocument.releaseAll()
     } catch (releaseError) {
-      console.warn('Failed to release pdf.js pages after screenshot:', releaseError)
+      logger.warn('Failed to release pdf.js pages after screenshot:', releaseError)
     }
 
     updateProgress(100, `Screenshot generation completed: ${successCount}/${screenshots.length} pages successful`)
@@ -244,7 +245,7 @@ export async function pdfScreenshot(
     }
 
   } catch (error) {
-    console.error('❌ PDF screenshot generation failed:', error)
+    logger.error('❌ PDF screenshot generation failed:', error)
 
     if (error instanceof InvalidPdfError || error instanceof PdfProcessingError) {
       throw error

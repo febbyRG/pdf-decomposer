@@ -1,3 +1,4 @@
+import { logger } from './Logger.js'
 /**
  * Memory Management Utility
  * Provides memory monitoring, garbage collection triggering, and memory pressure handling
@@ -164,7 +165,7 @@ export class MemoryManager {
       const afterStats = MemoryManager.getMemoryStats()
 
       if (afterStats.used > beforeStats.used + 50) { // More than 50MB increase
-        console.warn(`⚠️  Memory increase detected: ${beforeStats.used}MB → ${afterStats.used}MB`)
+        logger.warn(`⚠️  Memory increase detected: ${beforeStats.used}MB → ${afterStats.used}MB`)
       }
     }
   }

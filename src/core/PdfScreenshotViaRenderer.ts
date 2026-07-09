@@ -20,6 +20,7 @@ import type { PdfDecomposerError, PdfDecomposerState } from '../types/decomposer
 import { InvalidPdfError, PdfProcessingError } from '../types/pdf.types.js'
 import { promises as fsp } from 'fs'
 import * as path from 'path'
+import { logger } from '../utils/Logger.js'
 
 /**
  * Run a screenshot pass through the provided renderer.
@@ -116,7 +117,7 @@ export async function pdfScreenshotViaRenderer(
               pageResult.screenshot = ''
             }
           } catch (writeErr) {
-            console.warn(`⚠️ Failed to write screenshot for page ${pageNum}: ${(writeErr as Error).message}`)
+            logger.warn(`⚠️ Failed to write screenshot for page ${pageNum}: ${(writeErr as Error).message}`)
           }
         }
 
@@ -128,7 +129,7 @@ export async function pdfScreenshotViaRenderer(
         await pdfDocument.releasePage(pageNum).catch(() => undefined)
       } catch (renderError) {
         const errorMessage = `Failed to render page ${pageNum}: ${(renderError as Error).message}`
-        console.error(`❌ ${errorMessage}`)
+        logger.error(`❌ ${errorMessage}`)
         notifyError(errorMessage, pageIndex)
         screenshots.push({
           pageNumber: pageNum,

@@ -17,6 +17,7 @@ import { PdfCleanComposer } from './PdfCleanComposer.js'
 import type { PdfPageRenderer } from '../types/renderer.types.js'
 import { MemoryManager } from '../utils/MemoryManager.js'
 import { MemoryPackageDir } from '../utils/MemoryPackageDir.js'
+import { logger } from '../utils/Logger.js'
 
 /**
  * Apply format options to control data field output
@@ -303,7 +304,7 @@ export async function pdfDecompose(
 
       } catch (error) {
         const errorMessage = `Error processing page ${actualPageNumber}: ${(error as Error).message}`
-        console.error(`❌ ${errorMessage}`)
+        logger.error(`❌ ${errorMessage}`)
         
         // Notify error callback
         notifyError(errorMessage, pageIndex)
@@ -382,7 +383,7 @@ export async function pdfDecompose(
     try {
       await pdfDocument.releaseAll()
     } catch (releaseError) {
-      console.warn('Failed to release pdf.js pages after decompose:', releaseError)
+      logger.warn('Failed to release pdf.js pages after decompose:', releaseError)
     }
 
     updateProgress(100, 'Completed')
@@ -391,7 +392,7 @@ export async function pdfDecompose(
     }
 
   } catch (error) {
-    console.error('❌ PDF decomposition failed:', error)
+    logger.error('❌ PDF decomposition failed:', error)
     
     if (error instanceof Error) {
       if (error.message.includes('Invalid PDF') || error.message.includes('PDF')) {

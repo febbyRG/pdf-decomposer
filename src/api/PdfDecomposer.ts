@@ -15,6 +15,7 @@ import '../utils/DOMMatrixPolyfill.js'
 
 // Import types only from core modules
 import type { ScreenshotOptions, ScreenshotResult } from '../types/screenshot.types.js'
+import { logger } from '../utils/Logger.js'
 
 /**
  * Construction options for PdfDecomposer.
@@ -391,7 +392,7 @@ export class PdfDecomposer {
       try {
         await this.pdfDocument.destroy()
       } catch (error) {
-        console.warn('Failed to destroy PdfDocument during dispose:', error)
+        logger.warn('Failed to destroy PdfDocument during dispose:', error)
       }
       this.pdfDocument = null
     }
@@ -399,7 +400,7 @@ export class PdfDecomposer {
       try {
         await this.renderer.dispose()
       } catch (error) {
-        console.warn('Failed to dispose custom renderer:', error)
+        logger.warn('Failed to dispose custom renderer:', error)
       }
     }
     this.observable.length = 0

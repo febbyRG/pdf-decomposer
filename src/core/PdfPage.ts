@@ -17,6 +17,7 @@ import { PdfOperatorList } from './PdfOperatorList.js'
 import { PdfOperatorSelectionFn } from './PdfOperatorSelection.js'
 import { Operators } from './PdfOperatorTransforms.js'
 import { PdfTextEvaluator } from './PdfTextEvaluator.js'
+import { logger } from '../utils/Logger.js'
 
 const { Util } = (pdfjs as any)
 
@@ -67,7 +68,7 @@ export class PdfPage {
       }
       return []
     } catch (error) {
-      console.warn('Failed to get annotations:', error)
+      logger.warn('Failed to get annotations:', error)
       return []
     }
   }
@@ -117,7 +118,7 @@ export class PdfPage {
       }))
     } catch (error) {
       const processingError = error as PdfProcessingError
-      console.error('Failed to extract images:', processingError.message)
+      logger.error('Failed to extract images:', processingError.message)
       return []
     }
   }
@@ -182,7 +183,7 @@ export class PdfPage {
     ValidationUtils.validateObjectId(objectId)
     
     // Canvas-free implementation: return empty buffer with warning
-    console.warn(`⚠️ imageToBlob method disabled in Canvas-free mode (objectId: ${objectId})`)
+    logger.warn(`⚠️ imageToBlob method disabled in Canvas-free mode (objectId: ${objectId})`)
     return Buffer.alloc(0)
   }
 
@@ -190,7 +191,7 @@ export class PdfPage {
     ValidationUtils.validateRenderOptions(options)
     
     // Canvas-free implementation: return empty buffer with warning  
-    console.warn('⚠️ renderBlob method disabled in Canvas-free mode')
+    logger.warn('⚠️ renderBlob method disabled in Canvas-free mode')
     return Buffer.alloc(0)
   }
 

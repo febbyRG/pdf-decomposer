@@ -1,4 +1,5 @@
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.js'
+import { logger } from '../utils/Logger.js'
 
 /**
  * Shared PDF.js worker configuration (based on original implementation)
@@ -45,7 +46,7 @@ export class PdfWorkerConfig {
       try {
         configureWorker()
       } catch (error) {
-        console.error('❌ Failed to configure PDF.js worker:', error)
+        logger.error('❌ Failed to configure PDF.js worker:', error)
         throw error
       }
     } else {

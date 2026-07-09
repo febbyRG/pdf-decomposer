@@ -30,6 +30,7 @@ async function getZlib(): Promise<typeof import('zlib') | null> {
 }
 
 import type { ExtractedImage } from '../types/image.types.js'
+import { logger } from '../utils/Logger.js'
 
 export class PdfImageExtractor {
   /**
@@ -144,7 +145,7 @@ export class PdfImageExtractor {
 
       return uniqueImages
     } catch (error) {
-      console.error('❌ Error extracting images:', error)
+      logger.error('❌ Error extracting images:', error)
       return []
     }
   }
@@ -177,7 +178,7 @@ export class PdfImageExtractor {
       for (let i = 0; i < operatorList.fnArray.length; i++) {
         // Early exit if we've reached the image limit
         if (imageCount >= PdfImageExtractor.MAX_IMAGES_PER_PAGE) {
-          console.log(`⚠️ Reached max images limit (${PdfImageExtractor.MAX_IMAGES_PER_PAGE}) for page ${pageNumber}`)
+          logger.info(`⚠️ Reached max images limit (${PdfImageExtractor.MAX_IMAGES_PER_PAGE}) for page ${pageNumber}`)
           break
         }
         
@@ -430,7 +431,7 @@ export class PdfImageExtractor {
       return result
 
     } catch (error) {
-      console.error('❌ Error extracting image data with transform:', error)
+      logger.error('❌ Error extracting image data with transform:', error)
       return null
     }
   }
@@ -519,7 +520,7 @@ export class PdfImageExtractor {
         try {
           dataUrl = await this.imageToBlob(processedData, safeWidth, safeHeight, isRGBA)
         } catch (canvasError) {
-          console.warn('Canvas API failed, falling back to manual PNG:', canvasError)
+          logger.warn('Canvas API failed, falling back to manual PNG:', canvasError)
           dataUrl = await this.createSimpleDataUrl(processedData, safeWidth, safeHeight, isRGBA)
         }
       } else {
@@ -546,7 +547,7 @@ export class PdfImageExtractor {
       }
 
     } catch (error) {
-      console.error('❌ Error creating image data from pixel data:', error)
+      logger.error('❌ Error creating image data from pixel data:', error)
       return null
     }
   }
@@ -716,7 +717,7 @@ export class PdfImageExtractor {
         const base64 = this.uint8ArrayToBase64(pngBuffer)
         return `data:image/png;base64,${base64}`
       } catch (error) {
-        console.warn('Compressed PNG creation failed, falling back to uncompressed:', error)
+        logger.warn('Compressed PNG creation failed, falling back to uncompressed:', error)
       }
     }
 

@@ -65,5 +65,6 @@ export const ENV_CONFIG = {
   preferWebP: typeof process !== 'undefined' ? process.env?.PREFER_WEBP === 'true' : false,
 
   // Logging level
-  logLevel: typeof process !== 'undefined' ? (process.env?.LOG_LEVEL || 'info') : 'info'
+  // Library default is quiet (warn+error). Raise with LOG_LEVEL=info|debug.
+  logLevel: typeof process !== 'undefined' ? (process.env?.LOG_LEVEL || 'warn') : 'warn'
 } as const

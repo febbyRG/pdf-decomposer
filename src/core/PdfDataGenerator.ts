@@ -7,6 +7,7 @@ import type {
 } from '../types/decomposer.types.js'
 import type { DataOptions, DataResult, PdfData, PdfArea, PdfDataGeneratorOptions } from '../types/data.types.js'
 import type { PdfPageRenderer } from '../types/renderer.types.js'
+import { logger } from '../utils/Logger.js'
 
 /**
  * Generates pdfData structure compatible with pwa-admin from pdf-decomposer output
@@ -429,7 +430,7 @@ export async function pdfData(
     }
     
   } catch (error) {
-    console.error('❌ PDF data generation failed:', error)
+    logger.error('❌ PDF data generation failed:', error)
     throw error
   }
 }

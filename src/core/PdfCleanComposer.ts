@@ -12,11 +12,13 @@
  * - Validate and clean image elements
  */
 
+import type { PdfElement } from '../models/PdfElement.js'
 import type { PdfPageContent } from '../models/PdfPageContent.js'
 import type { PdfDocument } from './PdfDocument.js'
 import type { PdfPageRenderer } from '../types/renderer.types.js'
 import { computeImageDistribution, isImageElement, isTextElement, normalizeBoundingBox } from './heuristics/elementUtils.js'
 import { DEFAULT_SCREENSHOT_THRESHOLDS, decideScreenshot, type ScreenshotThresholds } from './heuristics/screenshotHeuristics.js'
+import { logger } from '../utils/Logger.js'
 
 // Environment detection
 const isNodeJS = typeof process !== 'undefined' && process.versions && process.versions.node
@@ -33,7 +35,7 @@ const getNodeModules = () => {
     const path = eval('require')('path')
     return { fs, path }
   } catch (error) {
-    console.warn('Failed to import Node.js modules:', error)
+    logger.warn('Failed to import Node.js modules:', error)
     return { fs: null, path: null }
   }
 }
@@ -199,9 +201,9 @@ interface ContentArea {
  * Element cleaning result
  */
 interface CleaningResult {
-  kept: any[]
-  removed: any[]
-  cleaned: any[]
+  kept: PdfElement[]
+  removed: PdfElement[]
+  cleaned: PdfElement[]
 }
 
 export class PdfCleanComposer {
@@ -364,7 +366,7 @@ export class PdfCleanComposer {
    * Clean and filter elements based on content area and quality
    */
   private static cleanElements(
-    elements: any[], 
+    elements: PdfElement[],
     contentArea: ContentArea, 
     options: PdfCleanComposerOptions
   ): CleaningResult {
@@ -421,7 +423,7 @@ export class PdfCleanComposer {
   /**
    * Check if element is within content area boundaries
    */
-  private static isElementInContentArea(element: any, contentArea: ContentArea): boolean {
+  private static isElementInContentArea(element: PdfElement, contentArea: ContentArea): boolean {
     if (!element.boundingBox) {
       return true // Keep elements without bounding box
     }
@@ -461,7 +463,7 @@ export class PdfCleanComposer {
   /**
    * Clean individual element based on its type
    */
-  private static cleanElement(element: any, options: PdfCleanComposerOptions): any | null {
+  private static cleanElement(element: PdfElement, options: PdfCleanComposerOptions): PdfElement | null {
     const cleanedElement = { ...element }
 
     // Clean based on element type
@@ -478,7 +480,7 @@ export class PdfCleanComposer {
   /**
    * Clean text element content and validate dimensions
    */
-  private static cleanTextElement(element: any, options: PdfCleanComposerOptions): any | null {
+  private static cleanTextElement(element: PdfElement, options: PdfCleanComposerOptions): PdfElement | null {
     if (!element.data || typeof element.data !== 'string') {
       return null
     }
@@ -518,7 +520,7 @@ export class PdfCleanComposer {
   /**
    * Clean image element and validate dimensions
    */
-  private static cleanImageElement(element: any, options: PdfCleanComposerOptions): any | null {
+  private static cleanImageElement(element: PdfElement, options: PdfCleanComposerOptions): PdfElement | null {
     // Basic image validation - can be expanded
     if (!element.data) {
       return null
@@ -591,7 +593,7 @@ export class PdfCleanComposer {
   /**
    * Validate text element dimensions
    */
-  private static validateTextElementDimensions(element: any, options: PdfCleanComposerOptions): boolean {
+  private static validateTextElementDimensions(element: PdfElement, options: PdfCleanComposerOptions): boolean {
     if (!element.boundingBox) {
       return true // Keep elements without bounding box
     }
@@ -608,7 +610,7 @@ export class PdfCleanComposer {
   /**
    * Check if element was modified during cleaning
    */
-  private static isElementModified(original: any, cleaned: any): boolean {
+  private static isElementModified(original: PdfElement, cleaned: PdfElement): boolean {
     return original.data !== cleaned.data
   }
 
@@ -616,7 +618,7 @@ export class PdfCleanComposer {
    * Remove image file from output directory when element is filtered out
    * Only works in Node.js environment - gracefully degrades in browser
    */
-  private static removeImageFile(element: any, outputDir: string): void {
+  private static removeImageFile(element: PdfElement, outputDir: string): void {
     // Early return if not in Node.js environment
     if (!isNodeJS) {
       return
@@ -626,7 +628,7 @@ export class PdfCleanComposer {
     
     // Early return if Node.js modules are not available
     if (!fs || !path) {
-      console.warn('⚠️  Node.js filesystem modules not available - skipping file removal')
+      logger.warn('⚠️  Node.js filesystem modules not available - skipping file removal')
       return
     }
 
@@ -665,7 +667,7 @@ export class PdfCleanComposer {
         fs.unlinkSync(imagePath)
       }
     } catch (error) {
-      console.warn('⚠️  Failed to remove image file for element:', error)
+      logger.warn('⚠️  Failed to remove image file for element:', error)
     }
   }
 
@@ -760,7 +762,7 @@ export class PdfCleanComposer {
       
       return null
     } catch (error) {
-      console.warn(`⚠️  Cover page detection failed for page ${page.pageIndex + 1}:`, error)
+      logger.warn(`⚠️  Cover page detection failed for page ${page.pageIndex + 1}:`, error)
       return null
     }
   }
@@ -773,7 +775,7 @@ export class PdfCleanComposer {
    */
   private static async shouldConvertToScreenshot(
     page: PdfPageContent,
-    cleanedElements: any[],
+    cleanedElements: PdfElement[],
     options: PdfCleanComposerOptions
   ): Promise<{ convert: boolean, reason: string }> {
     const thresholds: ScreenshotThresholds = {
@@ -872,7 +874,7 @@ export class PdfCleanComposer {
           // Return filename like other image elements
           screenshotData = screenshotFilename
         } catch (fileError) {
-          console.warn('⚠️ Failed to save cover screenshot file, using base64:', fileError)
+          logger.warn('⚠️ Failed to save cover screenshot file, using base64:', fileError)
           screenshotData = dataUrl
         }
       } else {
@@ -903,7 +905,7 @@ export class PdfCleanComposer {
       
       return screenshotElement
     } catch (error) {
-      console.error(`❌ Failed to generate cover page screenshot for page ${page.pageIndex + 1}:`, error)
+      logger.error(`❌ Failed to generate cover page screenshot for page ${page.pageIndex + 1}:`, error)
       return null
     }
   }

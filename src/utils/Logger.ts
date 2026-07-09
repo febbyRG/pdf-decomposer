@@ -39,34 +39,45 @@ export class Logger {
     return level <= this.logLevel
   }
 
-  private formatMessage(level: string, message: string, context?: Record<string, any>): string {
+  // Accepts anything a call site has on hand (an Error from a catch, a plain
+  // object, a scalar) and normalizes it to a loggable context, so callers never
+  // need boilerplate around `unknown` catch variables.
+  private normalizeContext(context: unknown): Record<string, any> | undefined {
+    if (context === undefined || context === null) return undefined
+    if (context instanceof Error) {
+      return { error: { name: context.name, message: context.message, stack: context.stack } }
+    }
+    if (typeof context === 'object') return context as Record<string, any>
+    return { value: String(context) }
+  }
+
+  private formatMessage(level: string, message: string, context?: unknown): string {
     const timestamp = new Date().toISOString()
-    const contextStr = context ? ` | ${JSON.stringify(context)}` : ''
+    const normalized = this.normalizeContext(context)
+    const contextStr = normalized ? ` | ${JSON.stringify(normalized)}` : ''
     return `[${timestamp}] ${level}: ${message}${contextStr}`
   }
 
-  error(message: string, error?: Error, context?: Record<string, any>): void {
+  error(message: string, error?: unknown, context?: Record<string, any>): void {
     if (!this.shouldLog(LogLevel.ERROR)) return
 
-    const errorContext = error ? {
-      ...context,
-      error: { name: error.name, message: error.message, stack: error.stack }
-    } : context
+    const normalizedError = this.normalizeContext(error)
+    const errorContext = normalizedError ? { ...context, ...normalizedError } : context
 
     console.error(this.formatMessage('ERROR', message, errorContext))
   }
 
-  warn(message: string, context?: Record<string, any>): void {
+  warn(message: string, context?: unknown): void {
     if (!this.shouldLog(LogLevel.WARN)) return
     console.warn(this.formatMessage('WARN', message, context))
   }
 
-  info(message: string, context?: Record<string, any>): void {
+  info(message: string, context?: unknown): void {
     if (!this.shouldLog(LogLevel.INFO)) return
     console.info(this.formatMessage('INFO', message, context))
   }
 
-  debug(message: string, context?: Record<string, any>): void {
+  debug(message: string, context?: unknown): void {
     if (!this.shouldLog(LogLevel.DEBUG)) return
     console.debug(this.formatMessage('DEBUG', message, context))
   }

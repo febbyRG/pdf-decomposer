@@ -2,6 +2,7 @@
 export type PDFDocumentProxy = any
 import { PdfOperatorList } from './PdfOperatorList.js'
 import { PdfPage } from './PdfPage.js'
+import { logger } from '../utils/Logger.js'
 
 /**
  * Wraps a PDF.js document. Pages are built lazily on first access and can be
@@ -56,7 +57,7 @@ export class PdfDocument {
     try {
       await cached.cleanup()
     } catch (error) {
-      console.warn(`Failed to cleanup page ${pageNumber}:`, error)
+      logger.warn(`Failed to cleanup page ${pageNumber}:`, error)
     }
   }
 
@@ -73,7 +74,7 @@ export class PdfDocument {
       try {
         await page.cleanup()
       } catch (error) {
-        console.warn('Failed to cleanup page during releaseAll:', error)
+        logger.warn('Failed to cleanup page during releaseAll:', error)
       }
     }
     await this.cleanupCaches()
@@ -88,7 +89,7 @@ export class PdfDocument {
     try {
       await this.proxy.cleanup?.()
     } catch (error) {
-      console.warn('Failed to cleanup pdf.js document caches:', error)
+      logger.warn('Failed to cleanup pdf.js document caches:', error)
     }
   }
 
@@ -103,7 +104,7 @@ export class PdfDocument {
     try {
       await this.proxy.destroy?.()
     } catch (error) {
-      console.warn('Failed to destroy PDF.js document:', error)
+      logger.warn('Failed to destroy PDF.js document:', error)
     }
   }
 
