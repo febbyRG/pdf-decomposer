@@ -78,6 +78,14 @@ export interface DataOptions {
    * When true, page images will use placeholder filenames instead of actual screenshots
    */
   skipScreenshots?: boolean
+  /**
+   * Forwarded to decompose(): split two-page-spread PDFs into logical pages
+   * before generating pdfData (index/areas then describe logical pages).
+   * NOTE: combine with skipScreenshots=true. The internal screenshot pass is
+   * per PHYSICAL page and cannot be positionally matched to logical pages, so
+   * page images fall back to placeholder URLs when splitting is active.
+   */
+  spreadHandling?: import('../core/spread/types.js').SpreadHandling
 }
 
 /**

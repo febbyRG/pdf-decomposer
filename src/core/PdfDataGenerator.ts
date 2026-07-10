@@ -343,7 +343,8 @@ export async function pdfData(
         extractImages: options.extractImages,
         elementComposer: options.elementComposer ?? true,
         cleanComposer: options.cleanComposer,
-        cleanComposerOptions: options.cleanComposerOptions
+        cleanComposerOptions: options.cleanComposerOptions,
+        spreadHandling: options.spreadHandling
       },
       (state) => {
         // Forward decompose progress (10-80%)
@@ -358,8 +359,17 @@ export async function pdfData(
     
     // Screenshot generation - can be skipped for memory-constrained environments
     let screenshotResult: any = null
-    
-    if (!options.skipScreenshots) {
+
+    // The screenshot pass below is per PHYSICAL page and is matched to pages
+    // by array position; after spread splitting the positions no longer line
+    // up. Callers wanting real page images with spreads generate them
+    // per-logical-page via screenshot({ half }) instead.
+    const spreadSplitActive = !!options.spreadHandling && options.spreadHandling !== 'off'
+    if (spreadSplitActive && !options.skipScreenshots) {
+      logger.warn('data(): skipping internal screenshot pass, spreadHandling is active (page images fall back to placeholders; use screenshot({ half }) per logical page)')
+    }
+
+    if (!options.skipScreenshots && !spreadSplitActive) {
       updateProgress(80, 'Generating page screenshots...')
       
       // Generate page screenshots for each page
