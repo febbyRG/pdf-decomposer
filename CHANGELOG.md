@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.1] - 2026-07-10
+
+### ✨ Added
+- **Minified elements carry `pageIndex`.** Composed multi-page articles merge elements from several logical pages, and consumers need member attribution (which logical page an element came from) to police page-screenshot usage per member: a member whose text is rendered must not also appear as its page screenshot, while a single-image member's element image and page screenshot are the same picture and must appear once. `minify: true` previously dropped `element.pageIndex`, making that attribution impossible downstream. Additive field, existing consumers unaffected.
+
 ## [1.5.0] - 2026-07-10
 
 ### 🐛 Fixed

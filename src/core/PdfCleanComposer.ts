@@ -927,7 +927,10 @@ export class PdfCleanComposer {
       // Create screenshot element with consistent structure
       const screenshotElement = {
         type: 'image',
-        id: page.pageIndex === 0 
+        // Member attribution must survive page composition (consumers group
+        // elements by pageIndex to police screenshot usage per member).
+        pageIndex: page.pageIndex,
+        id: page.pageIndex === 0
           ? `cover_screenshot_p${page.pageIndex}_1`
           : `page_screenshot_p${page.pageIndex}_1`,
         data: screenshotData,

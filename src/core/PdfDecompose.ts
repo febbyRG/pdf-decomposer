@@ -57,6 +57,13 @@ function minifyPagesData(pages: PdfPageContent[], includeElementAttributes = fal
           data: element.data
         }
 
+        // Member attribution for composed pages: consumers need to know which
+        // logical page each element came from (e.g. to tell a text member from
+        // a single-image member when policing page-screenshot usage).
+        if (typeof element.pageIndex === 'number') {
+          minifiedElement.pageIndex = element.pageIndex
+        }
+
         // Simplify boundingBox format
         if (element.boundingBox) {
           if (Array.isArray(element.boundingBox)) {
