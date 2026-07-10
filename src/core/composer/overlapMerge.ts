@@ -23,6 +23,17 @@ const SAME_LINE_OVERLAP_MAX_LEFT_DIFF_FONT_FACTOR = 3
 const SAME_LINE_OVERLAP_MAX_LEFT_DIFF_PT = 40
 const SAME_LINE_GAP_MAX_LEFT_DIFF_FONT_FACTOR = 1.5
 const SAME_LINE_GAP_MAX_LEFT_DIFF_PT = 15
+// A gap at or under this share of the font size is WORD SPACING inside one
+// printed line, not a column gutter (real gutters run 20pt+; word spacing is
+// a few points). A mid-line font switch (an italic ship name, a bold term)
+// splits extraction runs, and in a wide column the continuation run sits
+// hundreds of points from the line start, so the left-diff column guard must
+// not apply to word-gap continuations.
+const SAME_LINE_WORD_GAP_FONT_FACTOR = 0.6
+// Italic overhang makes the NEXT run's box start a point or two inside the
+// italic run's box: a tiny same-line overlap is the same continuation case,
+// not the garbage-artifact overlap the strict left-diff cap protects against.
+const SAME_LINE_TINY_OVERLAP_FONT_FACTOR = 0.25
 // Vertically-stacked merge discipline.
 const STACKED_MAX_LEFT_DIFF_PT = 30
 const STACKED_MIN_OVERLAP_WIDTH_RATIO = 0.3
@@ -103,11 +114,19 @@ export function mergeOverlappingComposites(composites: Composite[]): Composite[]
       for (const candidate of composites) {
         if (processed.has(candidate.id)) continue
 
-        // If multi-column layout detected, only merge within the same column
+        // If multi-column layout detected, only merge within the same column.
+        // EXCEPTION: a word-gap same-line continuation of a cluster member is
+        // DIRECT evidence of one printed line (a mid-line font switch splits
+        // extraction runs), which outranks the statistical column binning:
+        // mid-line runs start deep into a column and routinely land in the
+        // wrong bin.
         if (hasMultiColumnLayout) {
           const candidateColumn = compositeToColumn.get(candidate.id) ?? -1
           if (candidateColumn !== compositeColumn && compositeColumn !== -1 && candidateColumn !== -1) {
-            continue
+            const continuesAClusterLine = cluster.some(member => isSameLineWordGapContinuation(member, candidate))
+            if (!continuesAClusterLine) {
+              continue
+            }
           }
         }
 
@@ -128,6 +147,31 @@ export function mergeOverlappingComposites(composites: Composite[]): Composite[]
   }
 
   return result
+}
+
+/**
+ * One printed line split by a mid-line font switch: same visual line, a
+ * word-spacing-sized horizontal gap, compatible font size. Direct evidence
+ * two runs are one sentence, used to override the statistical column binning.
+ */
+function isSameLineWordGapContinuation(compA: Composite, compB: Composite): boolean {
+  const relativeFontDiff = Math.abs(compA.attributes.fontSize / compB.attributes.fontSize - 1)
+  if (relativeFontDiff > MAX_RELATIVE_FONT_DIFF) return false
+
+  const verticalOverlap = getVerticalOverlap(compA.boundingBox, compB.boundingBox)
+  const avgHeight = (compA.boundingBox.height + compB.boundingBox.height) / 2
+  if (verticalOverlap <= avgHeight * SAME_LINE_VERTICAL_OVERLAP_RATIO) return false
+
+  const avgFontSize = (compA.attributes.fontSize + compB.attributes.fontSize) / 2
+  const hasHorizontalOverlap = !(compA.boundingBox.right < compB.boundingBox.left ||
+    compB.boundingBox.right < compA.boundingBox.left)
+
+  if (hasHorizontalOverlap) {
+    // Tiny overlap = italic kerning overhang between adjacent runs.
+    return getHorizontalOverlap(compA.boundingBox, compB.boundingBox) <= avgFontSize * SAME_LINE_TINY_OVERLAP_FONT_FACTOR
+  }
+
+  return getHorizontalGap(compA.boundingBox, compB.boundingBox) <= avgFontSize * SAME_LINE_WORD_GAP_FONT_FACTOR
 }
 
 /**
@@ -169,14 +213,20 @@ function shouldMergeComposites(compA: Composite, compB: Composite, pageStats: Co
     // Left positions shouldn't be too far apart either. When there is a
     // horizontal gap (no x-overlap), be MUCH stricter: gap + large left diff
     // means different columns or garbage artifacts bridging content.
-    const hasHorizontalOverlap = !(compA.boundingBox.right < compB.boundingBox.left ||
-      compB.boundingBox.right < compA.boundingBox.left)
-    const maxLeftDiff = hasHorizontalOverlap
-      ? Math.max(avgFontSize * SAME_LINE_OVERLAP_MAX_LEFT_DIFF_FONT_FACTOR, SAME_LINE_OVERLAP_MAX_LEFT_DIFF_PT)
-      : Math.max(avgFontSize * SAME_LINE_GAP_MAX_LEFT_DIFF_FONT_FACTOR, SAME_LINE_GAP_MAX_LEFT_DIFF_PT)
+    // EXCEPTION: a word-gap (or tiny-overlap) same-line continuation is one
+    // printed line split by a mid-line font switch, never a column gutter,
+    // so the left-diff guard does not apply however deep into the column the
+    // continuation starts.
+    if (!isSameLineWordGapContinuation(compA, compB)) {
+      const hasHorizontalOverlap = !(compA.boundingBox.right < compB.boundingBox.left ||
+        compB.boundingBox.right < compA.boundingBox.left)
+      const maxLeftDiff = hasHorizontalOverlap
+        ? Math.max(avgFontSize * SAME_LINE_OVERLAP_MAX_LEFT_DIFF_FONT_FACTOR, SAME_LINE_OVERLAP_MAX_LEFT_DIFF_PT)
+        : Math.max(avgFontSize * SAME_LINE_GAP_MAX_LEFT_DIFF_FONT_FACTOR, SAME_LINE_GAP_MAX_LEFT_DIFF_PT)
 
-    if (leftPosDiff > maxLeftDiff) {
-      return false
+      if (leftPosDiff > maxLeftDiff) {
+        return false
+      }
     }
 
     return true
