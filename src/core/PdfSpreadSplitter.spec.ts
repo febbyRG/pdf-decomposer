@@ -29,6 +29,11 @@ describe('PdfSpreadSplitter.splitPages', () => {
     expect(result).toBe(portrait)
   })
 
+  it('treats an unrecognized mode (e.g. an env typo) as off, never as forced split', () => {
+    const result = PdfSpreadSplitter.splitPages(opusPages, 'Auto' as never)
+    expect(result).toBe(opusPages)
+  })
+
   it('mode \'split\' forces splitting without detection evidence', () => {
     // Cover-only document: auto would find no evidence, split still cuts it.
     const coverOnly = [opusPages[0]]

@@ -36,6 +36,13 @@ export class PdfSpreadSplitter {
       return pages
     }
 
+    // Mode often arrives from an environment variable: an unrecognized value
+    // must fail SAFE (no splitting), never fall through to forced splitting.
+    if (mode !== 'auto' && mode !== 'split') {
+      logger.warn(`Spread handling: unknown mode '${String(mode)}', treating as 'off'`)
+      return pages
+    }
+
     if (mode === 'auto') {
       const detection = detectSpreadDocument(pages)
       if (!detection.isSpreadDocument) {
