@@ -26,6 +26,7 @@ Extract structured text with positioning and formatting:
 - Smart element composition with `elementComposer`
 - Content area cleaning with `cleanComposer`
 - Page-level composition with `pageComposer`
+- Two-page-spread splitting with `spreadHandling` (see Spread Splitting below)
 - Image extraction from embedded PDF objects
 - Link extraction from PDF annotations and text patterns
 - Smart URL detection with comprehensive email and domain pattern matching
@@ -36,6 +37,7 @@ Extract structured text with positioning and formatting:
 - Configurable resolution and quality
 - Batch processing with progress tracking
 - File output or base64 data URLs
+- `half: 'left' | 'right'` renders one half of a physical page (spread documents, Node only)
 
 #### 3. PDF Data Generation (`data()`)
 
@@ -44,6 +46,7 @@ Extract structured text with positioning and formatting:
 - Widget ID generation following epub conventions
 - Article relationship management
 - `skipScreenshots` option for memory-constrained environments
+- `spreadHandling` forwards to decompose: entries then describe logical pages (combine with `skipScreenshots: true`, see Spread Splitting)
 
 #### 4. PDF Slicing (`slice()`)
 
@@ -88,6 +91,7 @@ For PDFs exported as two-page spreads (each physical page holds two magazine pag
 - `'auto'` (recommended for pipelines): decides once per document from content evidence, then splits every landscape page into two logical pages. Evidence = an empty vertical gutter (elements do not cross the page midline) plus adjacent folio pairs (e.g. 736|737 printed on the two halves). Aspect ratio alone is deliberately NOT trusted: an A4 spread and a single A4 landscape page look identical geometrically. Portrait documents pass through untouched.
 - `'split'`: skips detection and splits every landscape page (escape hatch when auto misjudges a document).
 - `'off'` (default): current behaviour, no splitting.
+- Any other value is treated as `'off'` with a warning (fail-safe for values arriving from environment variables).
 
 When splitting is active:
 

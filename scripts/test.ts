@@ -50,7 +50,7 @@ class ComprehensiveTest {
   private results: TestResult[] = []
   private baseOutputDir: string
   private pdfPath: string
-  private pdfFile = 'mivision-february-2026.pdf'
+  private pdfFile = 'opus.pdf'
   private decomposer!: PdfDecomposer
 
   constructor(customPdfPath?: string) {
@@ -134,17 +134,18 @@ class ComprehensiveTest {
       // Test without cleanComposer for comparison
       const decomposeResult = await this.decomposer.decompose({
         outputDir,
-        startPage: 28,
-        endPage: 28,
+        startPage: 3,
+        endPage: 10,
         extractImages: true,
         extractLinks: true,
         elementComposer: true,
         pageComposer: true,
         cleanComposer: true,
+        spreadHandling: 'auto',        // opus.pdf is a spread doc: each landscape page splits into 2 logical pages
         cleanComposerOptions: {
           topMarginPercent: 0.05,      // 5% top margin (instead of default 10%)
           bottomMarginPercent: 0.05,   // 5% bottom margin (instead of default 10%)
-          sideMarginPercent: 0.15,     // 5% side margin (keeps default 5%)
+          sideMarginPercent: 0.15,     // production consumer side margin
         },
         minify: true,
         minifyOptions: {
