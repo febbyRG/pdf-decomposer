@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### ✨ Added
+- **Two-page-spread PDFs can now be split into logical single pages** (`decompose({ spreadHandling: 'auto' | 'split' | 'off' })`, default `'off'`). Magazines exported as spreads (each physical page = two magazine pages side by side, e.g. a 2551x1276pt page carrying folios 736|737) previously went through the pipeline as one wide page: the percentage side margins scaled with the spread width and silently removed 34-41% of the text per page (measured on a real 14-page spread document), and downstream consumers received unusably wide articles. With spread handling active, a new `PdfSpreadSplitter` stage runs after raw extraction and before element composition: every landscape page is partitioned at the vertical midline, right-half coordinates are re-based onto their own page origin, and pages are renumbered into a logical sequence. Each logical page carries `metadata.spread` (`sourcePageIndex`, `sourcePageNumber`, `half: 'left' | 'right' | 'full'`) so physical-page consumers can resolve identity.
+  - `'auto'` decides once per document from content evidence, not aspect ratio alone (an A4 spread and a single A4 landscape page share the same aspect): pages vote via an empty-gutter test (elements crossing the midline) plus adjacent folio-pair detection, and evidence-free pages like full-bleed covers abstain and follow the document verdict. Portrait documents are untouched (verified structurally identical off-vs-auto through the full pipeline on two portrait corpus documents).
+  - Screenshot rasterization (cleanComposer cover/ad collapse) resolves the physical page through `metadata.spread` and crops the rendered half (rendered at double width so halves keep the target width).
+  - `screenshot()` accepts `half: 'left' | 'right'` to rasterize one half of a physical page, for consumers generating per-logical-page screenshots.
+  - Elements genuinely spanning the gutter (panoramic photos) are assigned to the half holding the larger share, with their box clamped to the page bounds (documented v1 trade-off, the underlying image stays intact).
+  - 33 new tests incl. a real spread fixture (`opus-spread-raw-pages.json`). Zero-loss verified end-to-end: split output preserves 99.9% of the generous-margin text baseline at production margins that previously lost 34-41%.
+
 ## [1.4.0] - 2026-07-09
 
 ### 🐛 Fixed (follow-up: heuristics recalibrated for the honest post-fix data. Validated by full-pipeline snapshot diffs on wa.pdf + mivision-february-2026.pdf, every composition change visually verified)

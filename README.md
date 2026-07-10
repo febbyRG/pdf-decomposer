@@ -81,6 +81,22 @@ Extract structured text with positioning and formatting:
 - Control character removal
 - Collapses covers and full-page advertisements to a single screenshot, while keeping text-heavy pages (including articles over a full-bleed background image) decomposed. Legal fine print (tiny-font trademark/disclaimer lines) does not count as article substance, so ads with long disclaimers still collapse
 
+#### Spread Splitting (`spreadHandling: 'auto' | 'split' | 'off'`)
+
+For PDFs exported as two-page spreads (each physical page holds two magazine pages side by side):
+
+- `'auto'` (recommended for pipelines): decides once per document from content evidence, then splits every landscape page into two logical pages. Evidence = an empty vertical gutter (elements do not cross the page midline) plus adjacent folio pairs (e.g. 736|737 printed on the two halves). Aspect ratio alone is deliberately NOT trusted: an A4 spread and a single A4 landscape page look identical geometrically. Portrait documents pass through untouched.
+- `'split'`: skips detection and splits every landscape page (escape hatch when auto misjudges a document).
+- `'off'` (default): current behaviour, no splitting.
+
+When splitting is active:
+
+- Runs after raw extraction and before element composition, so every downstream stage (composers, cleaning, consumers) sees normal single-page geometry, and per-page percentage margins apply to the logical page instead of the double-width spread
+- Output pages are renumbered into a logical reading sequence (`pageIndex`/`pageNumber` no longer map 1:1 to PDF pages) and each carries `metadata.spread = { sourcePageIndex, sourcePageNumber, half }` with its physical identity
+- Cover/ad screenshot collapse renders the physical page and crops the correct half automatically
+- `screenshot({ half: 'left' | 'right' })` rasterizes one half of a physical page, for generating per-logical-page screenshots (Node only)
+- Elements spanning the gutter (panoramic photos) go to the half holding the larger share of their width, with the bounding box clamped to the page bounds
+
 #### Image Extraction
 
 - Universal browser-compatible processing

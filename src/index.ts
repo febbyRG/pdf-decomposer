@@ -34,6 +34,11 @@ export type { ExtractedImage } from './types/image.types.js'
 export type { PdfElement } from './models/PdfElement.js'
 export type { PdfPageContent } from './models/PdfPageContent.js'
 
+// Spread handling (two-page-spread PDFs split into logical pages)
+export type {
+  SpreadHandling, SpreadHalf, SpreadSourceInfo, SpreadDetectionResult, SpreadPageEvidence
+} from './core/spread/types.js'
+
 // Pluggable page renderers (e.g. swapping node-canvas with Puppeteer)
 export { PuppeteerRenderer } from './utils/PuppeteerRenderer.js'
 export type { PuppeteerRendererOptions } from './utils/PuppeteerRenderer.js'

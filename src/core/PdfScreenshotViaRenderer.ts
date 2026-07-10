@@ -90,10 +90,16 @@ export async function pdfScreenshotViaRenderer(
       updateProgress(progress, `Rendering page ${pageNum}/${endPage} via custom renderer...`)
 
       try {
-        const renderResult = await renderer.renderPage(pageNum, {
-          width: imageWidth,
+        let renderResult = await renderer.renderPage(pageNum, {
+          // Halves render at double width so the crop keeps imageWidth.
+          width: options.half ? imageWidth * 2 : imageWidth,
           quality: qualityFraction
         })
+
+        if (options.half) {
+          const { cropImageHalf } = await import('../utils/ImageCrop.js')
+          renderResult = await cropImageHalf(renderResult.base64, options.half)
+        }
 
         const pageResult: ScreenshotPageResult = {
           pageNumber: pageNum,

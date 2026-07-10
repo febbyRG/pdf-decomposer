@@ -18,6 +18,7 @@ import type { PdfDocument } from './PdfDocument.js'
 import type { PdfPageRenderer } from '../types/renderer.types.js'
 import { computeImageDistribution, isImageElement, isTextElement, normalizeBoundingBox } from './heuristics/elementUtils.js'
 import { DEFAULT_SCREENSHOT_THRESHOLDS, decideScreenshot, type ScreenshotThresholds } from './heuristics/screenshotHeuristics.js'
+import type { SpreadSourceInfo } from './spread/types.js'
 import { logger } from '../utils/Logger.js'
 
 // Environment detection
@@ -829,6 +830,13 @@ export class PdfCleanComposer {
     try {
       const rawQuality = options.coverPageScreenshotQuality ?? 85
 
+      // Spread-split logical pages carry a LOGICAL pageIndex; the physical
+      // PDF page must be resolved through metadata.spread. Half pages are
+      // rendered from the full physical page and cropped afterwards.
+      const spread = page.metadata?.spread as SpreadSourceInfo | undefined
+      const physicalPageNumber = spread?.sourcePageNumber ?? page.pageIndex + 1
+      const cropHalf = spread?.half === 'left' || spread?.half === 'right' ? spread.half : null
+
       let screenshotResult: { width: number; height: number; base64: string }
 
       if (options.renderer) {
@@ -840,14 +848,17 @@ export class PdfCleanComposer {
         // renderPage normalizes its own page state, so the Node-side pdf.js page
         // is intentionally NOT materialized on this path.
         const quality = rawQuality > 1 ? rawQuality / 100 : rawQuality
-        screenshotResult = await options.renderer.renderPage(page.pageIndex + 1, {
-          width: options.coverPageScreenshotWidth ?? 1024,
+        const targetWidth = options.coverPageScreenshotWidth ?? 1024
+        screenshotResult = await options.renderer.renderPage(physicalPageNumber, {
+          // When a half is cropped afterwards, render the physical page at
+          // double width so the half comes out at the requested width.
+          width: cropHalf ? targetWidth * 2 : targetWidth,
           quality
         })
       } else {
         // No renderer: default node-canvas path (unchanged behaviour).
         // Get PDF page
-        const pdfPage = await pdfDocument.getPage(page.pageIndex + 1)
+        const pdfPage = await pdfDocument.getPage(physicalPageNumber)
 
         // Import PageRenderer dynamically for universal screenshot support
         const { PageRenderer } = await import('../utils/PageRenderer.js')
@@ -859,7 +870,12 @@ export class PdfCleanComposer {
           scale: 1.0
         })
       }
-      
+
+      if (cropHalf) {
+        const { cropImageHalf } = await import('../utils/ImageCrop.js')
+        screenshotResult = await cropImageHalf(screenshotResult.base64, cropHalf)
+      }
+
       // Infer extension from the returned data URL. PageRenderer returns
       // JPEG in Node mode (since v1.0.6) and PNG in browser; the previous
       // hard-coded `.png` filename + `^data:image/png;base64,` strip

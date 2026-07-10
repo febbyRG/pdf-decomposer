@@ -115,11 +115,14 @@ export async function pdfScreenshot(
         try {
           // Generate page screenshot as base64
           // Use lower scale for large documents to reduce memory
-          const effectiveScale = isLargeDocument 
-            ? Math.min(imageWidth / viewport.width, 1.0) // Cap at 1.0 for large docs
-            : imageWidth / viewport.width
+          // When a half is cropped afterwards, render at double width so the
+          // half keeps the requested imageWidth.
+          const targetWidth = options.half ? imageWidth * 2 : imageWidth
+          const effectiveScale = isLargeDocument
+            ? Math.min(targetWidth / viewport.width, 1.0) // Cap at 1.0 for large docs
+            : targetWidth / viewport.width
 
-          const screenshotResult = await PageRenderer.renderPageToBase64(
+          let screenshotResult = await PageRenderer.renderPageToBase64(
             pdfPage.rawProxy,
             pdfDocument.rawProxy,
             {
@@ -127,6 +130,11 @@ export async function pdfScreenshot(
               scale: effectiveScale
             }
           )
+
+          if (options.half) {
+            const { cropImageHalf } = await import('../utils/ImageCrop.js')
+            screenshotResult = await cropImageHalf(screenshotResult.base64, options.half)
+          }
 
           const pageResult: ScreenshotPageResult = {
             pageNumber: pageNum,

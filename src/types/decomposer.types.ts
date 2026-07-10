@@ -159,6 +159,15 @@ export interface PdfDecomposerOptions {
   minify?: boolean // When true, use compact bounding box format [x, y, width, height]
   cleanComposer?: boolean // When true, clean content to include only main content area
   cleanComposerOptions?: PdfCleanComposerOptions // Options for content cleaning
+  /**
+   * How to treat two-page-spread PDFs (each physical page = two magazine
+   * pages side by side). 'auto' detects document-level spread evidence and
+   * splits each spread into two logical pages, 'split' forces splitting of
+   * every landscape page, 'off' (default) leaves pages untouched.
+   * NOTE: when splitting occurs, pageIndex/pageNumber in the result become a
+   * logical sequence; the physical source page lives in page.metadata.spread.
+   */
+  spreadHandling?: import('../core/spread/types.js').SpreadHandling
   minifyOptions?: {
     format?: 'plain' | 'html' // Controls data field output format: plain (default) = data field, html = formattedData field
     elementAttributes?: boolean // When true, include slim element attributes (fontFamily, textColor) in minified result
@@ -442,6 +451,15 @@ export interface PdfDecomposerDecomposedPage {
   height: number
   title: string
   elements: PdfDecomposerExtractedElement[]
+  /**
+   * Populated by PdfSpreadSplitter when spread handling is active: `spread`
+   * carries the physical source identity of a logical page. Open-ended so
+   * downstream stages (cleanComposer, pageComposer) can keep annotating.
+   */
+  metadata?: {
+    spread?: import('../core/spread/types.js').SpreadSourceInfo
+    [key: string]: unknown
+  }
 }
 
 export interface PdfDecomposerBoundingBox {

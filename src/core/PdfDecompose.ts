@@ -11,6 +11,7 @@ import type {
 import type { DecomposeResult } from '../types/decompose.types.js'
 import { PdfDocument } from './PdfDocument.js'
 import { PdfDecomposerPage } from './PdfDecomposerPage.js'
+import { PdfSpreadSplitter } from './PdfSpreadSplitter.js'
 import { PdfElementComposer } from './PdfElementComposer.js'
 import { PdfPageComposer } from './PdfPageComposer.js'
 import { PdfCleanComposer } from './PdfCleanComposer.js'
@@ -318,6 +319,15 @@ export async function pdfDecompose(
 
     updateProgress(85, 'Saving your Package')
     pkg.pages = pkg.pages.filter((page) => page != null)
+
+    // Split two-page spreads into logical pages BEFORE any composition so all
+    // downstream stages operate on single-page geometry. After this point,
+    // pageIndex is a logical sequence; physical identity lives in
+    // page.metadata.spread (screenshot rasterization resolves through it).
+    if (options.spreadHandling && options.spreadHandling !== 'off') {
+      updateProgress(86, 'Detecting page spreads')
+      pkg.pages = PdfSpreadSplitter.splitPages(pkg.pages, options.spreadHandling)
+    }
 
     // Apply element composition if requested
     if (finalOptions.elementComposer) {
