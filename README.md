@@ -71,6 +71,7 @@ Extract structured text with positioning and formatting:
 #### Page Composer
 
 - Merges continuous content across consecutive pages
+- Spread-mate attachment: the two halves of one physical spread page merge into one article when one half is the article text and the other its full-page artwork (caption-level text only, no display title, never an ad). Composed groups keep every member's physical identity in `metadata.composedFromSpreads`
 - Document-agnostic continuity: a page pair merges only when there is real evidence (the current page's main body ends mid-sentence, the next page begins mid-sentence or opens with a discourse connective, both pages carry the same rare running-head kicker, or a "continued on/from page N" marker links them)
 - Resource trailers ("More information ...") and page furniture never count as continuation evidence
 - Detects article boundaries and section breaks (a display heading in the title region or a section-marker word starts a new article, even when a small hero caption precedes the title in reading order)
