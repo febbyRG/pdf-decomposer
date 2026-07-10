@@ -53,6 +53,20 @@ const RESOURCE_TRAILER = /^(more information|for more information|further inform
 // fresh article ledes practically never open with these.
 const CONTINUATION_CONNECTIVE = /^(Meanwhile|However|Nevertheless|Furthermore|Moreover|Similarly, |Likewise, |Instead, |Even so|At the same time|On the other hand|As a result|Consequently|By contrast)[,\s]/
 
+// ── Spread-mate attachment (two logical halves of one physical spread page) ──
+// In spread publications the two halves are routinely ONE editorial unit:
+// article text on one half, its full-page artwork/photography on the other.
+// An artwork half may carry captions but never real body copy, and ads betray
+// themselves by scattering promo text across many boxes (the 5+ fragment
+// pattern established by the ad heuristics), so a low fragment count separates
+// editorial artwork from advertising.
+const SPREAD_ARTWORK_MAX_OWN_TEXT = 200
+const SPREAD_ARTWORK_MAX_TEXT_FRAGMENTS = 3
+// The text side must carry real article substance for the pair to be one unit.
+const SPREAD_ARTICLE_MIN_TEXT = 500
+// Screenshot-collapse reason class that must never attach (advertisement).
+const AD_CONVERSION_REASON = /^hero-image-ad/
+
 export type ContentType = 'cover' | 'image' | 'article' | 'mixed'
 
 export interface ContinuationMarkers {
@@ -214,6 +228,69 @@ export function parseContinuationMarkers(page: PdfPageContent): ContinuationMark
   }
 }
 
+function getSpreadInfo(page: PdfPageContent): { sourcePageNumber: number, half: string } | null {
+  const spread = (page.metadata as Record<string, any> | undefined)?.spread
+  if (!spread || typeof spread.sourcePageNumber !== 'number') return null
+  return spread
+}
+
+/**
+ * The two pages are the left and right halves of the SAME physical spread page
+ * (adjacent by construction: the splitter emits left then right).
+ */
+export function isSpreadMatePair(currentPage: PdfPageContent, nextPage: PdfPageContent): boolean {
+  const current = getSpreadInfo(currentPage)
+  const next = getSpreadInfo(nextPage)
+  return current !== null && next !== null
+    && current.sourcePageNumber === next.sourcePageNumber
+    && current.half === 'left' && next.half === 'right'
+}
+
+/**
+ * An "artwork half": a spread half whose content is imagery belonging to its
+ * mate's article, not an article of its own. Evidence: it has image content,
+ * no article opening of its own, and at most caption-level text in few boxes
+ * (ads scatter promo copy across 5+ boxes; editorial artwork carries 0-3).
+ * For halves already collapsed to a screenshot, the collapse reason separates
+ * editorial artwork (single-large-image / tiled-images / cover) from ads.
+ */
+export function isSpreadArtworkHalf(page: PdfPageContent): boolean {
+  if (getSpreadInfo(page) === null) return false
+  if (startsNewSection(page)) return false
+
+  const metadata = page.metadata as Record<string, any> | undefined
+  if (metadata?.convertedToScreenshot || metadata?.processedAsScreenshot || metadata?.coverPage) {
+    const reason = String(metadata.conversionReason || metadata.detectionMethod || '')
+    return !AD_CONVERSION_REASON.test(reason)
+  }
+
+  const elements = page.elements || []
+  if (!elements.some(isImageElement)) return false
+
+  const textElements = getTextElements(page)
+  const totalText = textElements.reduce((sum, el) => sum + getCleanText(el).length, 0)
+  return totalText < SPREAD_ARTWORK_MAX_OWN_TEXT
+    && textElements.length <= SPREAD_ARTWORK_MAX_TEXT_FRAGMENTS
+}
+
+/**
+ * Spread-mate attachment: exactly one half is artwork and the other carries
+ * the article text. Direction-agnostic (artwork may sit left or right).
+ * Evaluated BEFORE the screenshot guard in hasContentContinuity: within a
+ * spread, a full-page editorial image belongs to its mate's article, unlike a
+ * portrait document where an image-only page is a standalone ad/insert.
+ */
+export function spreadMateContinuity(currentPage: PdfPageContent, nextPage: PdfPageContent): boolean {
+  if (!isSpreadMatePair(currentPage, nextPage)) return false
+
+  const currentIsArtwork = isSpreadArtworkHalf(currentPage)
+  const nextIsArtwork = isSpreadArtworkHalf(nextPage)
+  if (currentIsArtwork === nextIsArtwork) return false
+
+  const textSide = currentIsArtwork ? nextPage : currentPage
+  return getCleanPageText(textSide).length >= SPREAD_ARTICLE_MIN_TEXT
+}
+
 /**
  * A page that has been (or should be) collapsed to a single full-page screenshot
  * is standalone and must never merge with a neighbour. Primary signal is the
@@ -282,6 +359,11 @@ export function analyzeContentType(page: PdfPageContent): ContentType {
  * text-flow signals below cannot see.
  */
 export function hasContentContinuity(currentPage: PdfPageContent, nextPage: PdfPageContent, sharedRunningHead = false): boolean {
+  // Two halves of one physical spread page forming one editorial unit
+  // (article + its artwork) merge BEFORE the screenshot guard below: within
+  // a spread, a full-page editorial image belongs to its mate's article.
+  if (spreadMateContinuity(currentPage, nextPage)) return true
+
   // Ads / screenshots are standalone and never merge.
   if (isScreenshotPage(currentPage) || isScreenshotPage(nextPage)) return false
 

@@ -134,8 +134,8 @@ class ComprehensiveTest {
       // Test without cleanComposer for comparison
       const decomposeResult = await this.decomposer.decompose({
         outputDir,
-        startPage: 3,
-        endPage: 10,
+        startPage: 2,
+        endPage: 6,
         extractImages: true,
         extractLinks: true,
         elementComposer: true,

@@ -4,10 +4,13 @@ import {
   analyzeContentType,
   hasContentContinuity,
   isScreenshotPage,
+  isSpreadArtworkHalf,
+  isSpreadMatePair,
   mainBodyEndsHanging,
   nextStartsMidSentence,
   parseContinuationMarkers,
   runningHeadTokens,
+  spreadMateContinuity,
   startsNewSection
 } from './pageContinuity.js'
 
@@ -287,5 +290,107 @@ describe('running-head continuity (wa.pdf spreads with sentence-boundary page br
       elements: [makeTextElement({ data: 'WHEN AI', type: 'header', fontSize: 58, top: 292, left: 74 }), para(long('a new article begins.'))]
     })
     expect(hasContentContinuity(current, next, true)).toBe(false)
+  })
+})
+
+describe('spread-mate attachment', () => {
+  const spreadMeta = (sourcePageNumber: number, half: 'left' | 'right') =>
+    ({ spread: { sourcePageIndex: sourcePageNumber - 1, sourcePageNumber, half } })
+
+  const textHalf = (sourcePage: number, half: 'left' | 'right') => makePage({
+    pageIndex: half === 'left' ? (sourcePage - 1) * 2 : (sourcePage - 1) * 2 + 1,
+    elements: [para(long('a proper article body that clearly exceeds the substance threshold.'))],
+    metadata: spreadMeta(sourcePage, half)
+  })
+
+  const artworkHalf = (sourcePage: number, half: 'left' | 'right', extra: Record<string, unknown> = {}) => makePage({
+    pageIndex: half === 'left' ? (sourcePage - 1) * 2 : (sourcePage - 1) * 2 + 1,
+    elements: [makeImageElement({ width: PAGE_W, height: PAGE_H })],
+    metadata: { ...spreadMeta(sourcePage, half), ...extra }
+  })
+
+  it('detects a left/right pair of the same physical page', () => {
+    expect(isSpreadMatePair(textHalf(2, 'left'), artworkHalf(2, 'right'))).toBe(true)
+  })
+
+  it('rejects halves of different physical pages', () => {
+    expect(isSpreadMatePair(artworkHalf(2, 'right'), textHalf(3, 'left'))).toBe(false)
+  })
+
+  it('rejects pages without spread metadata (portrait documents)', () => {
+    const portrait = makePage({ elements: [makeImageElement({ width: PAGE_W, height: PAGE_H })] })
+    expect(isSpreadMatePair(portrait, textHalf(2, 'right'))).toBe(false)
+    expect(isSpreadArtworkHalf(portrait)).toBe(false)
+  })
+
+  it('classifies an image-only half as artwork, incl. with a short caption', () => {
+    expect(isSpreadArtworkHalf(artworkHalf(2, 'right'))).toBe(true)
+    const withCaption = makePage({
+      elements: [makeImageElement({ width: PAGE_W, height: PAGE_H }), para('The Santa Maria, oil on canvas, 19th century.')],
+      metadata: spreadMeta(2, 'right')
+    })
+    expect(isSpreadArtworkHalf(withCaption)).toBe(true)
+  })
+
+  it('a screenshot-collapsed half is artwork unless the reason is an ad', () => {
+    expect(isSpreadArtworkHalf(artworkHalf(5, 'right', {
+      convertedToScreenshot: true, conversionReason: 'single-large-image (100.0% coverage)'
+    }))).toBe(true)
+    expect(isSpreadArtworkHalf(artworkHalf(5, 'right', {
+      convertedToScreenshot: true, conversionReason: 'hero-image-ad (85.0% hero, 420 text chars)'
+    }))).toBe(false)
+  })
+
+  it('a half opening with its own display title is not artwork (independent article)', () => {
+    const titled = makePage({
+      elements: [
+        makeTextElement({ data: 'A NEW CHAPTER', type: 'h1', fontSize: 47, top: 100, left: 60 }),
+        makeImageElement({ width: PAGE_W, height: Math.round(PAGE_H * 0.7) })
+      ],
+      metadata: spreadMeta(4, 'right')
+    })
+    expect(isSpreadArtworkHalf(titled)).toBe(false)
+  })
+
+  it('merges text-left + artwork-right (the opus Treasures pattern)', () => {
+    expect(spreadMateContinuity(textHalf(2, 'left'), artworkHalf(2, 'right'))).toBe(true)
+    expect(hasContentContinuity(textHalf(2, 'left'), artworkHalf(2, 'right'))).toBe(true)
+  })
+
+  it('merges artwork-left + text-right (reversed direction)', () => {
+    expect(spreadMateContinuity(artworkHalf(6, 'left'), textHalf(6, 'right'))).toBe(true)
+    expect(hasContentContinuity(artworkHalf(6, 'left'), textHalf(6, 'right'))).toBe(true)
+  })
+
+  it('overrides the screenshot guard for a collapsed artwork mate', () => {
+    const collapsed = artworkHalf(5, 'right', {
+      convertedToScreenshot: true, conversionReason: 'single-large-image (100.0% coverage)'
+    })
+    expect(hasContentContinuity(textHalf(5, 'left'), collapsed)).toBe(true)
+  })
+
+  it('never attaches an ad half, even within a spread', () => {
+    const ad = artworkHalf(7, 'right', {
+      convertedToScreenshot: true, conversionReason: 'hero-image-ad (85.0% hero, 420 text chars)'
+    })
+    expect(hasContentContinuity(textHalf(7, 'left'), ad)).toBe(false)
+  })
+
+  it('does not merge two text halves via this rule (normal evidence still applies)', () => {
+    const left = textHalf(3, 'left')
+    const right = textHalf(3, 'right')
+    expect(spreadMateContinuity(left, right)).toBe(false)
+  })
+
+  it('does not merge two artwork halves', () => {
+    expect(spreadMateContinuity(artworkHalf(3, 'left'), artworkHalf(3, 'right'))).toBe(false)
+  })
+
+  it('requires article substance on the text side', () => {
+    const thinText = makePage({
+      elements: [para('Just a short caption here.')],
+      metadata: spreadMeta(2, 'left')
+    })
+    expect(spreadMateContinuity(thinText, artworkHalf(2, 'right'))).toBe(false)
   })
 })

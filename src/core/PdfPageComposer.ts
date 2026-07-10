@@ -115,6 +115,12 @@ export class PdfPageComposer {
     // Collect page indexes for metadata (0-based for consistency)
     const composedFromPages = pages.map(page => page.pageIndex)
 
+    // Preserve each member's physical spread identity (aligned with
+    // composedFromPages). Spreading firstPage.metadata below would otherwise
+    // keep only the FIRST half's identity, and consumers rendering per-page
+    // screenshots need the source page + half of every absorbed member.
+    const composedFromSpreads = pages.map(page => (page.metadata as Record<string, unknown> | undefined)?.spread ?? null)
+
     return {
       ...firstPage,
       title: `${firstPage.title} - ${lastPage.title}`,
@@ -123,6 +129,7 @@ export class PdfPageComposer {
       pageIndex: firstPage.pageIndex,
       metadata: {
         composedFromPages,
+        ...(composedFromSpreads.some(spread => spread !== null) ? { composedFromSpreads } : {}),
         originalHeight: totalOriginalHeight,
         isComposed: true,
         ...(firstPage.metadata || {}) // Preserve any existing metadata
