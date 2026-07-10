@@ -35,6 +35,7 @@ export type { PdfElement } from './models/PdfElement.js'
 export type { PdfPageContent } from './models/PdfPageContent.js'
 
 // Spread handling (two-page-spread PDFs split into logical pages)
+export { spreadCropHalf } from './core/spread/types.js'
 export type {
   SpreadHandling, SpreadHalf, SpreadSourceInfo, SpreadDetectionResult, SpreadPageEvidence
 } from './core/spread/types.js'

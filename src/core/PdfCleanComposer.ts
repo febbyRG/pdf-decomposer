@@ -18,7 +18,7 @@ import type { PdfDocument } from './PdfDocument.js'
 import type { PdfPageRenderer } from '../types/renderer.types.js'
 import { computeImageDistribution, isImageElement, isTextElement, normalizeBoundingBox } from './heuristics/elementUtils.js'
 import { DEFAULT_SCREENSHOT_THRESHOLDS, decideScreenshot, type ScreenshotThresholds } from './heuristics/screenshotHeuristics.js'
-import type { SpreadSourceInfo } from './spread/types.js'
+import { spreadCropHalf, type SpreadSourceInfo } from './spread/types.js'
 import { logger } from '../utils/Logger.js'
 
 // Environment detection
@@ -835,7 +835,7 @@ export class PdfCleanComposer {
       // rendered from the full physical page and cropped afterwards.
       const spread = page.metadata?.spread as SpreadSourceInfo | undefined
       const physicalPageNumber = spread?.sourcePageNumber ?? page.pageIndex + 1
-      const cropHalf = spread?.half === 'left' || spread?.half === 'right' ? spread.half : null
+      const cropHalf = spreadCropHalf(spread)
 
       let screenshotResult: { width: number; height: number; base64: string }
 

@@ -35,6 +35,15 @@ export interface SpreadSourceInfo {
   half: SpreadHalf
 }
 
+/**
+ * The half to crop when rasterizing this logical page from its physical
+ * source page, or null when the page renders whole ('full' pages and
+ * non-spread pages). Single source of truth for every rasterization site.
+ */
+export function spreadCropHalf(spread: SpreadSourceInfo | null | undefined): 'left' | 'right' | null {
+  return spread && (spread.half === 'left' || spread.half === 'right') ? spread.half : null
+}
+
 /** Minimal structural shape the detection/partition logic needs from a page. */
 export interface SpreadCandidatePage {
   pageIndex: number

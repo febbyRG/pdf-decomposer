@@ -1,5 +1,6 @@
 import type { PdfElement } from '../../models/PdfElement.js'
 import type { PdfPageContent } from '../../models/PdfPageContent.js'
+import type { SpreadSourceInfo } from '../spread/types.js'
 import { isImageElement, normalizeBoundingBox } from './elementUtils.js'
 import { getCleanPageText, getCleanText, getTextElements } from './textUtils.js'
 
@@ -228,10 +229,10 @@ export function parseContinuationMarkers(page: PdfPageContent): ContinuationMark
   }
 }
 
-function getSpreadInfo(page: PdfPageContent): { sourcePageNumber: number, half: string } | null {
+function getSpreadInfo(page: PdfPageContent): SpreadSourceInfo | null {
   const spread = (page.metadata as Record<string, any> | undefined)?.spread
   if (!spread || typeof spread.sourcePageNumber !== 'number') return null
-  return spread
+  return spread as SpreadSourceInfo
 }
 
 /**

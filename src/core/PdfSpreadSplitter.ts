@@ -15,7 +15,7 @@ import type { PdfDecomposerDecomposedPage, PdfDecomposerExtractedElement } from 
 import { logger } from '../utils/Logger.js'
 import { detectSpreadDocument, isLandscapePage } from './spread/spreadDetection.js'
 import { partitionElements, rebaseElementBox } from './spread/spreadPartition.js'
-import type { SpreadHalf, SpreadHandling } from './spread/types.js'
+import type { SpreadHalf, SpreadHandling, SpreadSourceInfo } from './spread/types.js'
 
 export class PdfSpreadSplitter {
   /**
@@ -104,7 +104,7 @@ export class PdfSpreadSplitter {
     }
   }
 
-  private static sourceInfo(source: PdfDecomposerDecomposedPage, half: SpreadHalf) {
+  private static sourceInfo(source: PdfDecomposerDecomposedPage, half: SpreadHalf): SpreadSourceInfo {
     return {
       sourcePageIndex: source.pageIndex,
       sourcePageNumber: source.pageNumber,
