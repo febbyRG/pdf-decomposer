@@ -154,7 +154,7 @@ describe('PdfCleanComposer numeric-label exemption', () => {
   it('keeps a gutter entry number just below the furniture strip (davisart p8 "3 Editor\'s Letter" at 8.6%)', () => {
     const elements: TestElement[] = [
       { type: 'text', data: '3', boundingBox: { top: 67, left: 105, width: 8, height: 10 } },
-      { type: 'text', data: "Editor's Letter", boundingBox: { top: 67, left: 125, width: 66, height: 10 } }
+      { type: 'text', data: 'Editor\'s Letter', boundingBox: { top: 67, left: 125, width: 66, height: 10 } }
     ]
     expect(cleanedTexts(elements, 783)).toContain('3')
   })
