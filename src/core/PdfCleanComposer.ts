@@ -406,12 +406,13 @@ export class PdfCleanComposer {
    * them (davisart p7-8), leaving the model to guess the numbers from vision.
    * Real folios are NOT protected by this exemption: they sit in the margin
    * bands and are removed by the content-area crop before these filters run.
-   * A token qualifies only when it labels something: another text element
-   * starts on the same visual row nearby (gutter number -> entry title), or
-   * the token sits on an image, allowing a small pad (thumbnail tag). A lone
-   * stray digit in whitespace matches neither and is still dropped, and the
-   * token must be set at reading size (minTextHeight): superscript citation
-   * markers (~5pt, seen on mivision p5) stay excluded.
+   * A token qualifies only when it labels KEPT content: another kept text
+   * element starts on the same visual row nearby (gutter number -> entry
+   * title), or the token sits on a kept image, allowing a small pad
+   * (thumbnail tag / photo overlay number). A lone stray digit in whitespace
+   * matches neither and is still dropped, and the token must be set at
+   * reading size (minTextHeight): superscript citation markers (~5pt, seen
+   * on mivision p5) stay excluded.
    *
    * The same-row rule ignores rows in the TOP furniture strip: a folio beside
    * its running head ("8 micontents", mivision p10 at 5.7% of page height)
@@ -420,8 +421,19 @@ export class PdfCleanComposer {
    * entry: 8.6%), so the strip is cut between them. On-image qualification is
    * NOT restricted: a thumbnail tag near the top of a preview rail sits on
    * its image (davisart "17" at 9.2%), which furniture never does.
+   *
+   * On-image labels additionally survive the content-area crop itself
+   * (`cropRescue`): a page number printed over a photo near the page edge
+   * (mivision TOC overlays "40"/"110", left margin band) belongs to its kept
+   * image the same way the QR-code image precedent keeps content-overlapping
+   * images. A number on a REMOVED image gets no rescue.
    */
-  private static collectNumericLabelElements(elements: PdfElement[], options: PdfCleanComposerOptions, pageHeight: number): Set<PdfElement> {
+  private static collectNumericLabelElements(
+    elements: PdfElement[],
+    options: PdfCleanComposerOptions,
+    pageHeight: number,
+    areaKept: Set<PdfElement>
+  ): { floorExempt: Set<PdfElement>; cropRescue: Set<PdfElement> } {
     // Same-row horizontal gap allowed between a gutter number and its entry
     // text (measured on davisart: 5-44pt), and the pad around an image within
     // which a tag number still counts as sitting on that image.
@@ -430,17 +442,19 @@ export class PdfCleanComposer {
     // Rows above this fraction of the page height are running-head territory.
     const TOP_FURNITURE_STRIP = 0.08
 
-    const exempt = new Set<PdfElement>()
+    const floorExempt = new Set<PdfElement>()
+    const cropRescue = new Set<PdfElement>()
     const labelCandidates = elements.filter((element) => isTextElement(element) && this.isNumericToken(element.data))
-    if (labelCandidates.length === 0) { return exempt }
-    const texts = elements.filter((element) => isTextElement(element) && !this.isNumericToken(element.data))
-    const images = elements.filter((element) => isImageElement(element))
+    if (labelCandidates.length === 0) { return { floorExempt, cropRescue } }
+    const texts = elements.filter((element) =>
+      isTextElement(element) && !this.isNumericToken(element.data) && areaKept.has(element))
+    const images = elements.filter((element) => isImageElement(element) && areaKept.has(element))
 
     for (const candidate of labelCandidates) {
       const box = normalizeBoundingBox(candidate.boundingBox)
       if (box.height < (options.minTextHeight || 8)) { continue }
       const inTopFurnitureStrip = pageHeight > 0 && box.top < pageHeight * TOP_FURNITURE_STRIP
-      const sameRowText = !inTopFurnitureStrip && texts.some((other) => {
+      const sameRowText = !inTopFurnitureStrip && areaKept.has(candidate) && texts.some((other) => {
         const otherBox = normalizeBoundingBox(other.boundingBox)
         if (Math.abs(otherBox.top - box.top) > Math.max(box.height, otherBox.height) * 1.5) { return false }
         const gap = otherBox.left >= box.left
@@ -455,9 +469,10 @@ export class PdfCleanComposer {
         return centerX >= imageBox.left - IMAGE_PAD && centerX <= imageBox.left + imageBox.width + IMAGE_PAD
           && centerY >= imageBox.top - IMAGE_PAD && centerY <= imageBox.top + imageBox.height + IMAGE_PAD
       })
-      if (sameRowText || onImage) { exempt.add(candidate) }
+      if (sameRowText || onImage) { floorExempt.add(candidate) }
+      if (onImage) { cropRescue.add(candidate) }
     }
-    return exempt
+    return { floorExempt, cropRescue }
   }
 
   /**
@@ -475,11 +490,13 @@ export class PdfCleanComposer {
       cleaned: []
     }
 
-    const numericLabels = this.collectNumericLabelElements(elements, options, pageHeight)
+    const areaKept = new Set(elements.filter((element) => this.isElementInContentArea(element, contentArea)))
+    const { floorExempt, cropRescue } = this.collectNumericLabelElements(elements, options, pageHeight, areaKept)
 
     for (const element of elements) {
-      // Check if element is within content area
-      if (!this.isElementInContentArea(element, contentArea)) {
+      // Check if element is within content area (on-image numeric labels ride
+      // with their kept image even when the label itself sits in a margin band)
+      if (!areaKept.has(element) && !cropRescue.has(element)) {
         result.removed.push({
           ...element,
           removalReason: 'outside_content_area'
@@ -494,7 +511,7 @@ export class PdfCleanComposer {
       }
 
       // Clean the element based on its type
-      const cleanedElement = this.cleanElement(element, options, numericLabels.has(element))
+      const cleanedElement = this.cleanElement(element, options, floorExempt.has(element) || cropRescue.has(element))
 
       if (cleanedElement === null) {
         result.removed.push({

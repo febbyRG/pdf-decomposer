@@ -75,12 +75,22 @@ const cleaningOptions = {
 function cleanedTexts(elements: TestElement[], pageHeight = 783): string[] {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const composer = PdfCleanComposer as any
-  const labels: Set<TestElement> = composer.collectNumericLabelElements(elements, cleaningOptions, pageHeight)
+  // Everything in these fixtures sits inside the content area.
+  const areaKept = new Set(elements)
+  const labels = composer.collectNumericLabelElements(elements, cleaningOptions, pageHeight, areaKept)
   return elements
     .filter((element) => element.type === 'text')
-    .map((element) => composer.cleanTextElement({ ...element }, cleaningOptions, labels.has(element)))
+    .map((element) => composer.cleanTextElement({ ...element }, cleaningOptions, labels.floorExempt.has(element) || labels.cropRescue.has(element)))
     .filter((cleaned) => cleaned !== null)
     .map((cleaned) => cleaned.data)
+}
+
+// Full cleanElements flow (content-area crop + floors) on the standard
+// 595x842 page with the consumer's 15%/5% margins (contentArea above).
+function keptTexts(elements: TestElement[]): string[] {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const result = (PdfCleanComposer as any).cleanElements(elements, contentArea, cleaningOptions, 842)
+  return result.kept.filter((element: TestElement) => element.type === 'text').map((element: { data?: string }) => element.data)
 }
 
 describe('PdfCleanComposer numeric-label exemption', () => {
@@ -155,5 +165,31 @@ describe('PdfCleanComposer numeric-label exemption', () => {
       { type: 'image', data: 'x', boundingBox: { top: -40, left: 466, width: 158, height: 128 } }
     ]
     expect(cleanedTexts(elements, 783)).toContain('17')
+  })
+
+  it('rescues a photo overlay number in the side margin band when its image is kept (mivision TOC "40")', () => {
+    // The overlay sits at the photo's bottom-left, center x ~75 < the 89.3
+    // content bound; the photo itself overlaps the content area and is kept.
+    const elements: TestElement[] = [
+      { type: 'text', data: '40', boundingBox: { top: 460, left: 46, width: 59, height: 40 } },
+      { type: 'image', data: 'photo', boundingBox: { top: 121, left: 44, width: 265, height: 382 } }
+    ]
+    expect(keptTexts(elements)).toContain('40')
+  })
+
+  it('gives no rescue to a number on a removed margin-band decoration image', () => {
+    const elements: TestElement[] = [
+      { type: 'text', data: '40', boundingBox: { top: 300, left: 545, width: 20, height: 12 } },
+      { type: 'image', data: 'decoration', boundingBox: { top: 290, left: 540, width: 40, height: 40 } }
+    ]
+    expect(keptTexts(elements)).not.toContain('40')
+  })
+
+  it('gives no rescue to a bottom folio beside footer text (both in the bottom margin band)', () => {
+    const elements: TestElement[] = [
+      { type: 'text', data: '25', boundingBox: { top: 812, left: 280, width: 14, height: 10 } },
+      { type: 'text', data: 'mivision.com.au', boundingBox: { top: 812, left: 310, width: 90, height: 10 } }
+    ]
+    expect(keptTexts(elements)).not.toContain('25')
   })
 })
