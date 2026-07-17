@@ -390,11 +390,71 @@ export class PdfCleanComposer {
   }
 
   /**
+   * A standalone 1-3 digit token: a TOC entry's page number printed in the
+   * gutter beside its title, or the page tag printed on a preview thumbnail.
+   */
+  private static isNumericToken(data: unknown): boolean {
+    return typeof data === 'string' && /^\s*\d{1,3}\s*$/.test(data)
+  }
+
+  /**
+   * Pure-numeric tokens that LABEL adjacent content are exempt from the
+   * minimum length/width filters (those filters target stray glyph noise).
+   * A stylized table of contents prints each entry's page number as a short
+   * isolated token in a gutter beside the title, and tags its preview
+   * thumbnails with page numbers; the minimum filters silently strip all of
+   * them (davisart p7-8), leaving the model to guess the numbers from vision.
+   * Real folios are NOT protected by this exemption: they sit in the margin
+   * bands and are removed by the content-area crop before these filters run.
+   * A token qualifies only when it labels something: another text element
+   * starts on the same visual row nearby (gutter number -> entry title), or
+   * the token sits on an image, allowing a small pad (thumbnail tag). A lone
+   * stray digit in whitespace matches neither and is still dropped, and the
+   * token must be set at reading size (minTextHeight): superscript citation
+   * markers (~5pt, seen on mivision p5) stay excluded.
+   */
+  private static collectNumericLabelElements(elements: PdfElement[], options: PdfCleanComposerOptions): Set<PdfElement> {
+    // Same-row horizontal gap allowed between a gutter number and its entry
+    // text (measured on davisart: 5-44pt), and the pad around an image within
+    // which a tag number still counts as sitting on that image.
+    const MAX_ROW_GAP = 60
+    const IMAGE_PAD = 20
+
+    const exempt = new Set<PdfElement>()
+    const labelCandidates = elements.filter((element) => isTextElement(element) && this.isNumericToken(element.data))
+    if (labelCandidates.length === 0) { return exempt }
+    const texts = elements.filter((element) => isTextElement(element) && !this.isNumericToken(element.data))
+    const images = elements.filter((element) => isImageElement(element))
+
+    for (const candidate of labelCandidates) {
+      const box = normalizeBoundingBox(candidate.boundingBox)
+      if (box.height < (options.minTextHeight || 8)) { continue }
+      const sameRowText = texts.some((other) => {
+        const otherBox = normalizeBoundingBox(other.boundingBox)
+        if (Math.abs(otherBox.top - box.top) > Math.max(box.height, otherBox.height) * 1.5) { return false }
+        const gap = otherBox.left >= box.left
+          ? otherBox.left - (box.left + box.width)
+          : box.left - (otherBox.left + otherBox.width)
+        return gap <= MAX_ROW_GAP
+      })
+      const onImage = images.some((image) => {
+        const imageBox = normalizeBoundingBox(image.boundingBox)
+        const centerX = box.left + box.width / 2
+        const centerY = box.top + box.height / 2
+        return centerX >= imageBox.left - IMAGE_PAD && centerX <= imageBox.left + imageBox.width + IMAGE_PAD
+          && centerY >= imageBox.top - IMAGE_PAD && centerY <= imageBox.top + imageBox.height + IMAGE_PAD
+      })
+      if (sameRowText || onImage) { exempt.add(candidate) }
+    }
+    return exempt
+  }
+
+  /**
    * Clean and filter elements based on content area and quality
    */
   private static cleanElements(
     elements: PdfElement[],
-    contentArea: ContentArea, 
+    contentArea: ContentArea,
     options: PdfCleanComposerOptions
   ): CleaningResult {
     const result: CleaningResult = {
@@ -402,6 +462,8 @@ export class PdfCleanComposer {
       removed: [],
       cleaned: []
     }
+
+    const numericLabels = this.collectNumericLabelElements(elements, options)
 
     for (const element of elements) {
       // Check if element is within content area
@@ -420,8 +482,8 @@ export class PdfCleanComposer {
       }
 
       // Clean the element based on its type
-      const cleanedElement = this.cleanElement(element, options)
-      
+      const cleanedElement = this.cleanElement(element, options, numericLabels.has(element))
+
       if (cleanedElement === null) {
         result.removed.push({
           ...element,
@@ -490,12 +552,12 @@ export class PdfCleanComposer {
   /**
    * Clean individual element based on its type
    */
-  private static cleanElement(element: PdfElement, options: PdfCleanComposerOptions): PdfElement | null {
+  private static cleanElement(element: PdfElement, options: PdfCleanComposerOptions, numericLabelExempt = false): PdfElement | null {
     const cleanedElement = { ...element }
 
     // Clean based on element type
     if (isTextElement(element)) {
-      return this.cleanTextElement(cleanedElement, options)
+      return this.cleanTextElement(cleanedElement, options, numericLabelExempt)
     } else if (isImageElement(element)) {
       return this.cleanImageElement(cleanedElement, options)
     }
@@ -507,7 +569,7 @@ export class PdfCleanComposer {
   /**
    * Clean text element content and validate dimensions
    */
-  private static cleanTextElement(element: PdfElement, options: PdfCleanComposerOptions): PdfElement | null {
+  private static cleanTextElement(element: PdfElement, options: PdfCleanComposerOptions, numericLabelExempt = false): PdfElement | null {
     if (!element.data || typeof element.data !== 'string') {
       return null
     }
@@ -522,19 +584,24 @@ export class PdfCleanComposer {
     // Fix excessive spacing
     cleanedText = this.fixTextSpacing(cleanedText, options.maxWordSpacingRatio || 3.0)
 
-    // Check minimum text length
-    if (cleanedText.trim().length < (options.minTextLength || 3)) {
-      return null
-    }
+    // The length/isolation/dimension floors target stray glyph noise; a
+    // numeric label (TOC gutter number, thumbnail page tag) legitimately
+    // fails all three, see collectNumericLabelElements.
+    if (!numericLabelExempt) {
+      // Check minimum text length
+      if (cleanedText.trim().length < (options.minTextLength || 3)) {
+        return null
+      }
 
-    // Remove isolated characters if enabled
-    if (options.removeIsolatedCharacters && this.isIsolatedCharacter(cleanedText)) {
-      return null
-    }
+      // Remove isolated characters if enabled
+      if (options.removeIsolatedCharacters && this.isIsolatedCharacter(cleanedText)) {
+        return null
+      }
 
-    // Check element dimensions
-    if (!this.validateTextElementDimensions(element, options)) {
-      return null
+      // Check element dimensions
+      if (!this.validateTextElementDimensions(element, options)) {
+        return null
+      }
     }
 
     // Return cleaned element

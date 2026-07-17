@@ -1,3 +1,4 @@
+import { dropDuplicateRuns } from './composer/duplicateRuns.js'
 import { mergeDropCaps } from './composer/dropCaps.js'
 import { convertToComposites, mergeOverlappingComposites } from './composer/overlapMerge.js'
 import { orderComposites } from './composer/readingOrder.js'
@@ -34,8 +35,12 @@ export class PdfElementComposer {
    * Compose elements for a single page.
    */
   private static composePageElements(elements: PdfElement[]): PdfElement[] {
-    // Separate text and non-text elements
-    const textElements = elements.filter(el => el.type === 'text' && isMeaningfulText(el.formattedData || el.data))
+    // Separate text and non-text elements. Overprint duplicates (the same run
+    // drawn twice at the same position) are dropped first, or the overlap
+    // merge would concatenate both copies into stuttered text.
+    const textElements = dropDuplicateRuns(
+      elements.filter(el => el.type === 'text' && isMeaningfulText(el.formattedData || el.data))
+    )
     const nonTextElements = elements.filter(el => el.type !== 'text')
 
     if (textElements.length === 0) return elements

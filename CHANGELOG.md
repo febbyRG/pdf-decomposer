@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### 🐛 Fixed
+- **TOC gutter numbers and thumbnail page tags survive cleaning.** A stylized table of contents prints each entry's page number as a short isolated token beside the title, and tags its preview thumbnails with page numbers. The clean composer's minimum length/width floors (stray-glyph noise filters) silently removed every one of them (all 18 on the davisart TOC spread), leaving downstream AI conversion to guess the numbers from the page screenshot. Pure-numeric 1-3 digit tokens at reading size are now exempt from those floors when they label something: another text element on the same visual row nearby, or an image they sit on. Lone stray digits and sub-reading-size superscript markers are still dropped, and real folios remain covered by the margin-band crop. Verified byte-identical element output on the portrait and spread regression corpora (mivision, opus).
+- **Overprint duplicate text runs no longer stutter.** Designed PDFs sometimes draw a display line twice at the same position (overprint/registration artifact). The overlap merge concatenated both copies, producing stuttered text like "CONTEMPORARY CONTEMPORARY ART ART IN IN CONTEXT" (davisart TOC section label). Exact duplicates (same text, same box within 0.5pt) are now dropped before composition; the same text at a different position is genuine repetition and is kept.
+
 ## [1.5.1] - 2026-07-10
 
 ### ✨ Added

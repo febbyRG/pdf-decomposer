@@ -53,3 +53,82 @@ describe('PdfCleanComposer.isElementInContentArea', () => {
     expect(inContentArea(cover)).toBe(true)
   })
 })
+
+/**
+ * Numeric-label exemption (collectNumericLabelElements + cleanTextElement):
+ * a stylized TOC prints entry page numbers as short isolated tokens in a
+ * gutter beside each title and tags preview thumbnails with page numbers.
+ * The minimum length/width floors (stray-glyph noise filters) silently
+ * removed all of them (davisart p7-8). Coordinates below mirror the real
+ * davisart elements.
+ */
+type TestElement = { type: string, data?: string, boundingBox: { top: number, left: number, width: number, height: number } }
+
+const cleaningOptions = {
+  removeControlCharacters: true,
+  minTextLength: 3,
+  removeIsolatedCharacters: true,
+  minTextWidth: 10,
+  minTextHeight: 8
+}
+
+function cleanedTexts(elements: TestElement[]): string[] {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const composer = PdfCleanComposer as any
+  const labels: Set<TestElement> = composer.collectNumericLabelElements(elements, cleaningOptions)
+  return elements
+    .filter((element) => element.type === 'text')
+    .map((element) => composer.cleanTextElement({ ...element }, cleaningOptions, labels.has(element)))
+    .filter((cleaned) => cleaned !== null)
+    .map((cleaned) => cleaned.data)
+}
+
+describe('PdfCleanComposer numeric-label exemption', () => {
+  it('keeps a TOC gutter number beside its entry title (davisart "22 TAB from the Heart")', () => {
+    const elements: TestElement[] = [
+      { type: 'text', data: '22', boundingBox: { top: 96, left: 110, width: 9, height: 8 } },
+      { type: 'text', data: 'TAB from the Heart', boundingBox: { top: 95, left: 139, width: 120, height: 10 } }
+    ]
+    expect(cleanedTexts(elements)).toContain('22')
+  })
+
+  it('keeps a page tag sitting on a preview thumbnail (davisart rail)', () => {
+    const elements: TestElement[] = [
+      { type: 'text', data: '17', boundingBox: { top: 72, left: 473, width: 8, height: 8 } },
+      { type: 'image', data: 'x', boundingBox: { top: -40, left: 466, width: 158, height: 128 } }
+    ]
+    expect(cleanedTexts(elements)).toContain('17')
+  })
+
+  it('still drops a lone stray digit far from any content', () => {
+    const elements: TestElement[] = [
+      { type: 'text', data: '7', boundingBox: { top: 400, left: 300, width: 5, height: 8 } },
+      { type: 'text', data: 'Body text far away', boundingBox: { top: 700, left: 139, width: 150, height: 10 } }
+    ]
+    expect(cleanedTexts(elements)).not.toContain('7')
+  })
+
+  it('still drops short non-numeric junk beside text', () => {
+    const elements: TestElement[] = [
+      { type: 'text', data: 'ab', boundingBox: { top: 96, left: 110, width: 9, height: 8 } },
+      { type: 'text', data: 'TAB from the Heart', boundingBox: { top: 95, left: 139, width: 120, height: 10 } }
+    ]
+    expect(cleanedTexts(elements)).not.toContain('ab')
+  })
+
+  it('does not exempt 4+ digit numbers (years, prices keep the normal floors)', () => {
+    const elements: TestElement[] = [
+      { type: 'text', data: '2024', boundingBox: { top: 96, left: 110, width: 9, height: 4 } },
+      { type: 'text', data: 'TAB from the Heart', boundingBox: { top: 95, left: 139, width: 120, height: 10 } }
+    ]
+    expect(cleanedTexts(elements)).not.toContain('2024')
+  })
+
+  it('does not exempt a superscript citation marker below reading size (mivision "2", 3x5pt)', () => {
+    const elements: TestElement[] = [
+      { type: 'text', data: '2', boundingBox: { top: 515, left: 243, width: 3, height: 5 } },
+      { type: 'text', data: 'Residency-trained optometrists working in this facility', boundingBox: { top: 515, left: 250, width: 160, height: 10 } }
+    ]
+    expect(cleanedTexts(elements)).not.toContain('2')
+  })
+})
