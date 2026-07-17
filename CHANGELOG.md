@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.5.3] - 2026-07-17
 
 ### 🐛 Fixed
 - **The numeric-label exemption no longer rescues folios.** The same-row rule matched a folio printed beside its running head ("8 micontents"), which is exactly the page furniture the filters exist to remove; same-row qualification now ignores rows in the top 8% of the page. Content rows start lower (davisart's topmost gutter entry: 8.6% of page height) and on-image thumbnail tags are unaffected. Both label rules now also only qualify against KEPT companions, so a number beside margin-cropped footer text gets no exemption.
