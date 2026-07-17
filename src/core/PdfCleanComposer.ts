@@ -294,7 +294,7 @@ export class PdfCleanComposer {
     const contentArea = this.calculateContentArea(page, options)
 
     // Filter and clean elements
-    const cleaningResult = this.cleanElements(page.elements || [], contentArea, options)
+    const cleaningResult = this.cleanElements(page.elements || [], contentArea, options, page.height)
 
     // Check if page should be converted to screenshot (large image detection for any page)
     // Skip screenshot conversion if limit reached
@@ -412,13 +412,23 @@ export class PdfCleanComposer {
    * stray digit in whitespace matches neither and is still dropped, and the
    * token must be set at reading size (minTextHeight): superscript citation
    * markers (~5pt, seen on mivision p5) stay excluded.
+   *
+   * The same-row rule ignores rows in the TOP furniture strip: a folio beside
+   * its running head ("8 micontents", mivision p10 at 5.7% of page height)
+   * matches the rule's shape exactly but IS the page furniture these filters
+   * exist to remove. Content rows start lower (davisart's topmost gutter
+   * entry: 8.6%), so the strip is cut between them. On-image qualification is
+   * NOT restricted: a thumbnail tag near the top of a preview rail sits on
+   * its image (davisart "17" at 9.2%), which furniture never does.
    */
-  private static collectNumericLabelElements(elements: PdfElement[], options: PdfCleanComposerOptions): Set<PdfElement> {
+  private static collectNumericLabelElements(elements: PdfElement[], options: PdfCleanComposerOptions, pageHeight: number): Set<PdfElement> {
     // Same-row horizontal gap allowed between a gutter number and its entry
     // text (measured on davisart: 5-44pt), and the pad around an image within
     // which a tag number still counts as sitting on that image.
     const MAX_ROW_GAP = 60
     const IMAGE_PAD = 20
+    // Rows above this fraction of the page height are running-head territory.
+    const TOP_FURNITURE_STRIP = 0.08
 
     const exempt = new Set<PdfElement>()
     const labelCandidates = elements.filter((element) => isTextElement(element) && this.isNumericToken(element.data))
@@ -429,7 +439,8 @@ export class PdfCleanComposer {
     for (const candidate of labelCandidates) {
       const box = normalizeBoundingBox(candidate.boundingBox)
       if (box.height < (options.minTextHeight || 8)) { continue }
-      const sameRowText = texts.some((other) => {
+      const inTopFurnitureStrip = pageHeight > 0 && box.top < pageHeight * TOP_FURNITURE_STRIP
+      const sameRowText = !inTopFurnitureStrip && texts.some((other) => {
         const otherBox = normalizeBoundingBox(other.boundingBox)
         if (Math.abs(otherBox.top - box.top) > Math.max(box.height, otherBox.height) * 1.5) { return false }
         const gap = otherBox.left >= box.left
@@ -455,7 +466,8 @@ export class PdfCleanComposer {
   private static cleanElements(
     elements: PdfElement[],
     contentArea: ContentArea,
-    options: PdfCleanComposerOptions
+    options: PdfCleanComposerOptions,
+    pageHeight = 0
   ): CleaningResult {
     const result: CleaningResult = {
       kept: [],
@@ -463,7 +475,7 @@ export class PdfCleanComposer {
       cleaned: []
     }
 
-    const numericLabels = this.collectNumericLabelElements(elements, options)
+    const numericLabels = this.collectNumericLabelElements(elements, options, pageHeight)
 
     for (const element of elements) {
       // Check if element is within content area

@@ -72,10 +72,10 @@ const cleaningOptions = {
   minTextHeight: 8
 }
 
-function cleanedTexts(elements: TestElement[]): string[] {
+function cleanedTexts(elements: TestElement[], pageHeight = 783): string[] {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const composer = PdfCleanComposer as any
-  const labels: Set<TestElement> = composer.collectNumericLabelElements(elements, cleaningOptions)
+  const labels: Set<TestElement> = composer.collectNumericLabelElements(elements, cleaningOptions, pageHeight)
   return elements
     .filter((element) => element.type === 'text')
     .map((element) => composer.cleanTextElement({ ...element }, cleaningOptions, labels.has(element)))
@@ -130,5 +130,30 @@ describe('PdfCleanComposer numeric-label exemption', () => {
       { type: 'text', data: 'Residency-trained optometrists working in this facility', boundingBox: { top: 515, left: 250, width: 160, height: 10 } }
     ]
     expect(cleanedTexts(elements)).not.toContain('2')
+  })
+
+  it('does not exempt a folio beside its running head in the top furniture strip (mivision "8 micontents")', () => {
+    // t48 on an 842pt page = 5.7% of page height: running-head territory.
+    const elements: TestElement[] = [
+      { type: 'text', data: '8', boundingBox: { top: 48, left: 68, width: 10, height: 10 } },
+      { type: 'text', data: 'micontents', boundingBox: { top: 46, left: 100, width: 110, height: 14 } }
+    ]
+    expect(cleanedTexts(elements, 842)).not.toContain('8')
+  })
+
+  it('keeps a gutter entry number just below the furniture strip (davisart p8 "3 Editor\'s Letter" at 8.6%)', () => {
+    const elements: TestElement[] = [
+      { type: 'text', data: '3', boundingBox: { top: 67, left: 105, width: 8, height: 10 } },
+      { type: 'text', data: "Editor's Letter", boundingBox: { top: 67, left: 125, width: 66, height: 10 } }
+    ]
+    expect(cleanedTexts(elements, 783)).toContain('3')
+  })
+
+  it('still exempts an on-image thumbnail tag even high on the page (davisart "17" at 9.2%)', () => {
+    const elements: TestElement[] = [
+      { type: 'text', data: '17', boundingBox: { top: 72, left: 473, width: 8, height: 8 } },
+      { type: 'image', data: 'x', boundingBox: { top: -40, left: 466, width: 158, height: 128 } }
+    ]
+    expect(cleanedTexts(elements, 783)).toContain('17')
   })
 })
