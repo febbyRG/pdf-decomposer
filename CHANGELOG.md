@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### 🐛 Fixed
+- **Text lines containing an inline URL or email are no longer dropped wholesale.** Extraction skipped every text run matching a URL/email pattern ("handled as link elements"), but the link element only carries the URL, so a masthead credit line like "Nicole Brisco, Pleasant Grove High School, Texarkana, TX, nbrisco@pgisd.net" vanished entirely (davisart credits, reported by the user as missing content). A run is now skipped only when the link IS the run (matched link characters ≥ 80% of the text); mixed lines keep their text alongside the link element.
+- **A full phrase set in small type survives the noise floors.** The text dimension floors (min width/height, stray-glyph filters) also killed 7pt masthead lines whenever they could not merge into a taller paragraph (the bare email line between credits breaks merge continuity, and the solitary 7pt line then failed the 8pt height floor). Text with real word structure (≥ 12 characters) now bypasses the dimension floors; genuine stray glyphs remain filtered. Combined effect on davisart 7-8: all previously-lost credit lines extract (composed elements 143 → 156); regression corpora: opus byte-identical, mivision-test +7 small real-text elements recovered.
+
 ## [1.6.1] - 2026-07-21
 
 ### 🐛 Fixed

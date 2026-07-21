@@ -387,9 +387,16 @@ export class PdfDecomposerPage {
 
     return textContent.items.map((item, _: number) => {
       const text = item.str || ''
-      
-      // Skip text elements that contain URLs or emails - they'll be handled as link elements
-      if (text.match(urlPattern) || text.match(emailPattern)) {
+
+      // Skip a run only when it IS the link (a bare URL/email line): the link
+      // element covers it, and keeping it would double-render. A run that
+      // merely CONTAINS a link keeps its text — dropping it wholesale lost
+      // every masthead line ending in an email ("Nicole Brisco, Pleasant
+      // Grove High School, Texarkana, TX, nbrisco@pgisd.net" vanished from
+      // extraction, davisart credits), leaving the content vision-only.
+      const linkChars = [...(text.match(urlPattern) ?? []), ...(text.match(emailPattern) ?? [])]
+        .reduce((total, match) => total + match.length, 0)
+      if (linkChars > 0 && linkChars >= text.trim().length * 0.8) {
         return null
       }
       const bbox = this.getTextBoundingBox(item, pageHeight)

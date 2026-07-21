@@ -716,13 +716,27 @@ export class PdfCleanComposer {
   /**
    * Validate text element dimensions
    */
+  /**
+   * A string this long with word structure is content, never a stray glyph.
+   * The dimension floors below exist to kill isolated rendering noise, but a
+   * full phrase set in small type fails them too: davisart's 7pt masthead
+   * credit lines ("Nicole Brisco, Pleasant Grove High School, ...") died on
+   * the 8pt height floor whenever they could not merge into a taller
+   * paragraph (the bare email line between credits breaks merge continuity).
+   */
+  private static readonly DIMENSION_EXEMPT_TEXT_LENGTH = 12
+
   private static validateTextElementDimensions(element: PdfElement, options: PdfCleanComposerOptions): boolean {
     if (!element.boundingBox) {
       return true // Keep elements without bounding box
     }
 
+    if (typeof element.data === 'string' && element.data.trim().length >= this.DIMENSION_EXEMPT_TEXT_LENGTH) {
+      return true
+    }
+
     const bbox = normalizeBoundingBox(element.boundingBox)
-    
+
     return bbox.width >= (options.minTextWidth || 10) && bbox.height >= (options.minTextHeight || 8)
   }
 
