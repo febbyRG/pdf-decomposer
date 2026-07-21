@@ -108,6 +108,7 @@ When splitting is active:
 - Multiple format support (RGB, RGBA, Grayscale)
 - Auto-scaling for memory safety
 - Duplicate detection and removal
+- Split-crop reunification: one printed artwork sliced into stacked XObject crops (a common InDesign export artifact) comes back as a single element. Same-column adjacency nominates candidates; a pixel-seam comparison confirms the crops depict one continuous picture before compositing (Node only; browser builds pass the crops through unchanged)
 
 #### Link Extraction (`extractLinks: true`)
 

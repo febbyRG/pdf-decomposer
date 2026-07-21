@@ -14,6 +14,7 @@ import type {
   PdfDecomposerDecomposedPage
 } from '../types/decomposer.types.js'
 import { logger } from '../utils/Logger.js'
+import { mergeSplitImageCrops } from '../utils/ImageCropMerge.js'
 import type { PdfPage } from './PdfPage.js'
 import type { PdfJsTextItem } from '../types/pdfjs.types.js'
 
@@ -96,7 +97,10 @@ export class PdfDecomposerPage {
 
     try {
       const extractor = new PdfImageExtractor()
-      const universalImages = await extractor.extractImagesFromPage(pdfPage)
+      // One printed artwork sliced into stacked XObject crops comes back as a
+      // single element (seam-verified merge), BEFORE file saving and element
+      // creation, so downstream stages never see the split.
+      const universalImages = await mergeSplitImageCrops(await extractor.extractImagesFromPage(pdfPage))
 
       // Save extracted images to files (Node.js) or keep as data URLs (Browser)
       const imageElements: PdfDecomposerExtractedImageElement[] = []

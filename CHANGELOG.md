@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### ✨ Added
+- **Split image crops of one printed artwork are reunited into a single element.** Page generators (InDesign exports in particular) often slice one placed photo into stacked XObject crops; extraction then reported two independent image elements, and downstream consumers rendered a magazine artwork as two giant partial images (davisart TOC lighthouse: two crops with byte-identical widths overlapping 0.52pt). Geometry alone cannot decide a merge (davisart's rail of six distinct thumbnails stacks edge to edge with ~1pt gaps, width deltas down to 0.05pt, one pair overlapping 2pt), so same-column candidates within a ±0.5pt gap / ≤4pt overlap window must also pass a pixel-seam test: the adjoining bands must depict the same printed sliver (measured mean absolute RGB difference: true split 5.7, distinct thumbnails 131.2, threshold 30). Pixels are only decoded for nominated pairs, chains collapse transitively, and the composite renders at the sharper crop's resolution. Corpus-validated: davisart merges 73 true splits document-wide (near-threshold cases spot-checked visually), mivision-february merges its 3 background slices, and mivision-test, opus, wa-grower, and nexus have zero candidates, zero false merges. Node-only (node-canvas); in the browser build the elements pass through unchanged.
+
 ## [1.5.3] - 2026-07-17
 
 ### 🐛 Fixed
