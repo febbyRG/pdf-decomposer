@@ -42,6 +42,9 @@ export class PdfLoader {
       const loadingParams: any = {
         data: pdfData,
         disableFontFace: true, // Force use of Canvas registered fonts instead of PDF embedded fonts
+        // Export encoding /Differences with each font so text extraction can
+        // recover strings whose ToUnicode is broken (see GlyphTextRecovery).
+        fontExtraProperties: true,
         verbosity: 0 // Reduce console noise
       }
 

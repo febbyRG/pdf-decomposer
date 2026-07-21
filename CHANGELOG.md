@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.1] - 2026-07-21
+
+### 🐛 Fixed
+- **Text with a broken ToUnicode CMap is recovered through the font's own encoding.** Some export pipelines write font subsets whose ToUnicode maps glyphs to C0 control characters equal to the raw charcode (davisart TOC entry numbers: cap-height figure glyphs, "22" extracted as `U+001F U+001F`), so the text silently vanished downstream even though PDF viewers copy it fine. The font's `/Differences` array still names the glyphs (charcode 31 → `two.cap`), so extraction now decodes control-character strings deterministically: control char → charcode → glyph name → Unicode (Adobe glyph-list naming, style suffixes stripped). Requires `fontExtraProperties` at load, now enabled. Only strings containing C0 control characters enter the recovery path and unresolvable glyphs keep their original characters, so healthy documents are byte-untouched (regression corpora unchanged: mivision, opus, wa-grower, nexus). On davisart this recovers all ten feature-entry page numbers that were previously unextractable.
+
 ## [1.6.0] - 2026-07-21
 
 ### ✨ Added

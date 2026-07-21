@@ -15,6 +15,7 @@ import type {
 } from '../types/decomposer.types.js'
 import { logger } from '../utils/Logger.js'
 import { mergeSplitImageCrops } from '../utils/ImageCropMerge.js'
+import { hasObfuscatedText, recoverObfuscatedText } from '../utils/GlyphTextRecovery.js'
 import type { PdfPage } from './PdfPage.js'
 import type { PdfJsTextItem } from '../types/pdfjs.types.js'
 
@@ -354,6 +355,18 @@ export class PdfDecomposerPage {
   private async extractTextElements(pdfPage: PdfPage, pageIndex: number): Promise<PdfDecomposerExtractedTextElement[]> {
     try {
       const textContent = await pdfPage.getTextContent()
+      // Fix broken-ToUnicode strings (control characters) through the font's
+      // own /Differences encoding before any consumer reads item.str: without
+      // this, subset fonts with obfuscated CMaps (davisart TOC entry numbers)
+      // extract as invisible control characters and vanish downstream.
+      for (const item of textContent.items) {
+        if (item.str && hasObfuscatedText(item.str)) {
+          const font = item.fontName && pdfPage.hasCommonObject(item.fontName)
+            ? pdfPage.getCommonObject(item.fontName)
+            : null
+          item.str = recoverObfuscatedText(item.str, font)
+        }
+      }
       const viewport = pdfPage.getViewport({ scale: 1 })
       const pageHeight = viewport.height
 
