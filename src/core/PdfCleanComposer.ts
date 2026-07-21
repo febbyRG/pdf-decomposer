@@ -250,7 +250,16 @@ export class PdfCleanComposer {
     let screenshotCount = 0
     
     const processedPages: PdfPageContent[] = []
-    
+
+    // Running heads repeat the same top-band text across pages; a listing's
+    // section label prints once. Collect repeated top-band caps up front so
+    // the display-label rescue never re-admits a running head (opus prints
+    // THE MALTA OPUS in the band of every spread).
+    const repeatedTopBandLabels = this.collectRepeatedTopBandLabels(pages, finalOptions.topMarginPercent)
+    if (repeatedTopBandLabels.size > 0) {
+      logger.info(`Top-band running-head labels suppressed from display-label rescue: ${[...repeatedTopBandLabels].join(', ')}`)
+    }
+
     for (let i = 0; i < pages.length; i++) {
       const page = pages[i]
       
@@ -267,7 +276,7 @@ export class PdfCleanComposer {
       }
       
       // Process page with screenshot limit check
-      const processedPage = await this.cleanPage(page, finalOptions, pdfDocument, screenshotCount >= maxScreenshots)
+      const processedPage = await this.cleanPage(page, finalOptions, pdfDocument, screenshotCount >= maxScreenshots, repeatedTopBandLabels)
       
       // Count if this page was converted to screenshot
       if (processedPage.metadata?.convertedToScreenshot) {
@@ -289,12 +298,14 @@ export class PdfCleanComposer {
     options: PdfCleanComposerOptions,
     pdfDocument?: PdfDocument,
     skipScreenshot = false
+  ,
+    repeatedTopBandLabels: Set<string> = new Set()
   ): Promise<PdfPageContent> {
     // Calculate content area for this page
     const contentArea = this.calculateContentArea(page, options)
 
     // Filter and clean elements
-    const cleaningResult = this.cleanElements(page.elements || [], contentArea, options, page.height)
+    const cleaningResult = this.cleanElements(page.elements || [], contentArea, options, page.height, repeatedTopBandLabels)
 
     // Check if page should be converted to screenshot (large image detection for any page)
     // Skip screenshot conversion if limit reached
@@ -354,6 +365,56 @@ export class PdfCleanComposer {
    * These are the page's running heads / kickers: furniture for the OUTPUT,
    * but the strongest available continuity signal between pages.
    */
+  /**
+   * All-caps display labels in the top margin band. The band exists to crop
+   * running heads and folios, but a listing's section header can legitimately
+   * print inside it (davisart's "D E P A R T M E N T S" at 4.1% of page
+   * height - real content the model needs). Qualification is strict: pure
+   * letters after stripping spacing/punctuation, ALL-CAPS, 6-30 characters,
+   * no digits. Folios carry digits, brand running heads are lowercase or
+   * mixed-case ("mivision"), and sentences are longer, so all stay cropped.
+   */
+  private static collectTopBandDisplayLabels(elements: PdfElement[], contentArea: ContentArea, repeatedLabels: Set<string>): Set<PdfElement> {
+    const labels = new Set<PdfElement>()
+    for (const element of elements) {
+      const letters = this.topBandLabelKey(element, contentArea.top)
+      if (letters === null || repeatedLabels.has(letters)) { continue }
+      labels.add(element)
+    }
+    return labels
+  }
+
+  /**
+   * Normalized key when the element qualifies as a top-band display label
+   * (pure ALL-CAPS letters, 6-30 chars, no digits, center above the band
+   * boundary), else null.
+   */
+  private static topBandLabelKey(element: PdfElement, bandTop: number): string | null {
+    if (!isTextElement(element) || typeof element.data !== 'string') { return null }
+    const bbox = normalizeBoundingBox(element.boundingBox)
+    if (bbox.top + bbox.height / 2 >= bandTop) { return null }
+    if (/\d/.test(element.data)) { return null }
+    const letters = element.data.replace(/[^a-zA-Z]/g, '')
+    if (letters.length < 6 || letters.length > 30) { return null }
+    if (letters !== letters.toUpperCase()) { return null }
+    return letters
+  }
+
+  /** Top-band label texts that repeat across pages (running-head signature). */
+  private static collectRepeatedTopBandLabels(pages: PdfPageContent[], topMarginPercent = 0.1): Set<string> {
+    const counts = new Map<string, number>()
+    for (const page of pages) {
+      const bandTop = (page.height || 0) * topMarginPercent
+      const seen = new Set<string>()
+      for (const element of page.elements || []) {
+        const key = this.topBandLabelKey(element, bandTop)
+        if (key !== null) { seen.add(key) }
+      }
+      for (const key of seen) { counts.set(key, (counts.get(key) ?? 0) + 1) }
+    }
+    return new Set([...counts.entries()].filter(([, count]) => count >= 2).map(([key]) => key))
+  }
+
   private static extractRunningHeadText(removed: PdfElement[], contentArea: ContentArea): string {
     const parts: string[] = []
     for (const element of removed) {
@@ -483,7 +544,7 @@ export class PdfCleanComposer {
     contentArea: ContentArea,
     options: PdfCleanComposerOptions,
     pageHeight = 0
-  ): CleaningResult {
+  , repeatedTopBandLabels: Set<string> = new Set()): CleaningResult {
     const result: CleaningResult = {
       kept: [],
       removed: [],
@@ -492,11 +553,14 @@ export class PdfCleanComposer {
 
     const areaKept = new Set(elements.filter((element) => this.isElementInContentArea(element, contentArea)))
     const { floorExempt, cropRescue } = this.collectNumericLabelElements(elements, options, pageHeight, areaKept)
+    const labelRescue = this.collectTopBandDisplayLabels(elements, contentArea, repeatedTopBandLabels)
 
     for (const element of elements) {
       // Check if element is within content area (on-image numeric labels ride
-      // with their kept image even when the label itself sits in a margin band)
-      if (!areaKept.has(element) && !cropRescue.has(element)) {
+      // with their kept image even when the label itself sits in a margin band,
+      // and all-caps display labels in the top band are section headers, not
+      // running heads)
+      if (!areaKept.has(element) && !cropRescue.has(element) && !labelRescue.has(element)) {
         result.removed.push({
           ...element,
           removalReason: 'outside_content_area'
