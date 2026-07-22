@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.6.3] - 2026-07-22
 
 ### 🐛 Fixed
 - **A listing's section label printed in the top margin band is no longer cropped as furniture.** davisart prints its "D E P A R T M E N T S" group header at 4.1% of page height, inside the band that exists to remove running heads and folios, so the label vanished from extraction and the converted contents listing lost its section split. All-caps display labels (pure letters, 6-30 characters, no digits) in the top band now survive, with a cross-page repeat guard: text repeating in the band on 2+ pages is a running head and stays cropped (opus's THE MALTA OPUS on every spread remains suppressed, with an INFO log naming what was suppressed). Regression: mivision and opus keep zero top-band text, davisart gains exactly its label.
