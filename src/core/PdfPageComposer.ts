@@ -1,6 +1,6 @@
 import type { PdfElement } from '../models/PdfElement.js'
 import type { PdfPageContent } from '../models/PdfPageContent.js'
-import { hasArticleTitle, hasContentContinuity, isScreenshotPage, runningHeadTokens } from './heuristics/pageContinuity.js'
+import { hasArticleTitle, hasContentContinuity, isScreenshotPage, runningHeadsDiffer, runningHeadTokens } from './heuristics/pageContinuity.js'
 
 // A running-head token is continuity evidence only while it is RARE across the
 // document: an article's subject kicker ("stable fly") spans 2-4 pages, while a
@@ -113,6 +113,10 @@ export class PdfPageComposer {
       candidateIndex++
     }
     if (passedOver.length === 0 || candidateIndex >= pages.length) return null
+    // Past a standalone page the article has to stay in its section: a page
+    // under another running head is another article, whatever the text says
+    // (and the standalone page is often that article's own opening picture).
+    if (runningHeadsDiffer(current, pages[candidateIndex])) return null
     return continuesWith(candidateIndex) ? { nextIndex: candidateIndex, passedOver } : null
   }
 

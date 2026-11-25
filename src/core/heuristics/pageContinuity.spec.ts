@@ -14,6 +14,7 @@ import {
   nextStartsMidSentence,
   opensWithSubheadingOf,
   parseContinuationMarkers,
+  runningHeadsDiffer,
   runningHeadTokens,
   spreadMateContinuity,
   startsNewSection
@@ -613,5 +614,53 @@ describe('a short opening page and the page that continues it (cyberwatch.pdf pa
       ]
     })
     expect(opensWithSubheadingOf(opener(), titleBelow)).toBe(false)
+  })
+})
+
+describe('what the 120-page magazine showed (WAGROWER.pdf)', () => {
+  const sentence = 'Growers across the region have taken part in the program and report what it changed for them this season. '
+  const copy = (data: string, top = 99) =>
+    makeTextElement({ data, type: 'paragraph', fontSize: 10, fontFamily: 'Body Serif', top, left: 60 })
+
+  it('does not take a page tag for the opening text of a contents page (pages 2-3)', () => {
+    // "8" tags a preview picture and comes first in reading order, the title follows.
+    const contents = makePage({
+      pageNumber: 3,
+      elements: [
+        makeTextElement({ data: '8', type: 'header', fontSize: 12, top: 207, left: 60 }),
+        makeTextElement({ data: 'CONTENTS', type: 'header', fontSize: 39, top: 235, left: 60 }),
+        copy('64 WorkSafe safety forum 66 Traffic safety in packhouses 68 Visiting your GP', 330)
+      ]
+    })
+    expect(startsNewSection(contents)).toBe(true)
+    const events = makePage({
+      pageNumber: 2,
+      elements: [
+        makeTextElement({ data: 'Upcoming EVENTS', type: 'header', fontSize: 42.8, top: 338, left: 40 }),
+        copy(sentence.repeat(4), 500),
+        makeTextElement({ data: 'Introduction to Responsible Beekeeping Course', type: 'paragraph', fontSize: 11, top: 600, left: 40 })
+      ]
+    })
+    expect(hasContentContinuity(events, contents)).toBe(false)
+  })
+
+  it('tells two running heads apart whatever the order of their words', () => {
+    const page = (runningHeadText?: string) => makePage({ elements: [copy(sentence)], ...(runningHeadText ? { metadata: { runningHeadText } } : {}) })
+    expect(runningHeadsDiffer(page('news UPFRONT'), page('grower FEATURE'))).toBe(true)
+    expect(runningHeadsDiffer(page('BUSINESS water'), page('water BUSINESS'))).toBe(false)
+    expect(runningHeadsDiffer(page('news UPFRONT'), page())).toBe(false)
+    expect(runningHeadsDiffer(page(), page())).toBe(false)
+  })
+
+  it('does not take a page under another running head for a headless continuation (pages 13 and 15)', () => {
+    const titled = (runningHeadText: string) => makePage({
+      pageNumber: 13,
+      elements: [makeTextElement({ data: 'DR SUKHVINDER PAL (SP) SINGH', type: 'header', fontSize: 36, top: 120, left: 60 }), copy(sentence.repeat(6), 300)],
+      metadata: { runningHeadText }
+    })
+    const headless = (runningHeadText: string) => makePage({ pageNumber: 15, elements: [copy(sentence.repeat(8))], metadata: { runningHeadText } })
+    expect(hasContentContinuity(titled('news UPFRONT'), headless('grower FEATURE'))).toBe(false)
+    // The same two pages under one running head are one article.
+    expect(hasContentContinuity(titled('news UPFRONT'), headless('UPFRONT news'))).toBe(true)
   })
 })

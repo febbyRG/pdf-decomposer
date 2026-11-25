@@ -127,6 +127,17 @@ function isAnyTextElement(element: PdfElement): boolean {
   return isBodyParagraph(element) || isHeaderElement(element)
 }
 
+// A contents page tags its preview pictures with page numbers ("8", "26"),
+// and such a tag can come first in reading order, before the page's title
+// (WAGROWER.pdf page 3: "8", then "CONTENTS" at 39pt). A bare number is never
+// what a page opens with.
+const PAGE_TAG = /^\d{1,3}$/
+
+/** The text a page opens with: its first text element that is not a bare page tag. */
+function openingTextElement(page: PdfPageContent): PdfElement | undefined {
+  return (page.elements || []).find(element => isAnyTextElement(element) && !PAGE_TAG.test(getCleanText(element)))
+}
+
 function getHeaderRatio(elements: PdfElement[]): number {
   if (elements.length === 0) return 0
   return elements.filter(isHeaderElement).length / elements.length
@@ -205,7 +216,7 @@ export function startsNewSection(page: PdfPageContent): boolean {
     }
   }
 
-  const first = elements.find(isAnyTextElement)
+  const first = openingTextElement(page)
   if (!first) return false
   const text = getCleanText(first)
   const fontSize = first.attributes?.fontSize || 0
@@ -294,10 +305,14 @@ export function hasArticleTitle(page: PdfPageContent): boolean {
  *  - it opens with a real body paragraph at the top of the page,
  *  - it carries real article copy, and
  *  - its body is set in the same face and size as the current page's body.
+ * And the two pages do not stand under different running heads: a feature
+ * whose title is printed on a full-page photograph opens its text page without
+ * a heading too (WAGROWER.pdf page 15, after the "news" article of page 13).
  * Whether the article so far has a title is the caller's to establish
  * (hasContentContinuity's `articleHasTitle`).
  */
 export function isHeadlessContinuation(currentPage: PdfPageContent, nextPage: PdfPageContent): boolean {
+  if (runningHeadsDiffer(currentPage, nextPage)) return false
   const textElements = (nextPage.elements || []).filter(isAnyTextElement)
   if (textElements.length === 0) return false
   if (textElements.some(isHeaderElement)) return false
@@ -332,7 +347,7 @@ function textSizes(page: PdfPageContent): number[] {
  *  - the current page's own title is clearly larger than that.
  */
 export function opensWithSubheadingOf(currentPage: PdfPageContent, nextPage: PdfPageContent): boolean {
-  const first = (nextPage.elements || []).find(isAnyTextElement)
+  const first = openingTextElement(nextPage)
   if (!first) return false
   const openingSize = Number(first.attributes?.fontSize) || 0
   if (openingSize <= 0 || openingSize >= HUGE_TITLE_FONT) return false
@@ -359,6 +374,19 @@ export function runningHeadTokens(page: PdfPageContent): string[] {
   if (!text) return []
   const tokens = text.toLowerCase().match(/[a-z]{3,}/g) || []
   return Array.from(new Set(tokens))
+}
+
+/**
+ * Both pages carry a running head and the two differ ("news UPFRONT" against
+ * "grower FEATURE"): the pages belong to different sections. Order does not
+ * matter, a left page prints "BUSINESS water" and its right page "water
+ * BUSINESS". False when either page has none, which says nothing.
+ */
+export function runningHeadsDiffer(currentPage: PdfPageContent, nextPage: PdfPageContent): boolean {
+  const current = runningHeadTokens(currentPage)
+  const next = runningHeadTokens(nextPage)
+  if (current.length === 0 || next.length === 0) return false
+  return current.length !== next.length || !current.every(token => next.includes(token))
 }
 
 /**

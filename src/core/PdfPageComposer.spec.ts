@@ -240,3 +240,33 @@ describe('PdfPageComposer furniture of a composed page', () => {
     expect((composed[0].metadata as Record<string, unknown>).furnitureTexts).toBeUndefined()
   })
 })
+
+describe('PdfPageComposer does not leave a section across a standalone page', () => {
+  // WAGROWER.pdf pages 12 to 16: a news article, the full-page photograph that
+  // opens a feature (collapsed to one picture), and the feature's text.
+  const hanging = (pageIndex: number, runningHeadText: string) => makePage({
+    pageIndex,
+    elements: [makeTextElement({ data: body + 'and the story continues', type: 'paragraph', fontSize: 12, pageIndex })],
+    metadata: { runningHeadText }
+  })
+  const picture = (pageIndex: number) => makePage({
+    pageIndex,
+    elements: [makeImageElement({ width: PAGE_W, height: PAGE_H, pageIndex })],
+    metadata: { convertedToScreenshot: true, conversionReason: 'single-large-image (100.0% coverage)', runningHeadText: 'FEATURE grower' }
+  })
+  const resuming = (pageIndex: number, runningHeadText: string) => makePage({
+    pageIndex,
+    elements: [makeTextElement({ data: 'after the picture, ' + body + 'It ends cleanly here.', type: 'paragraph', fontSize: 12, pageIndex })],
+    metadata: { runningHeadText }
+  })
+
+  it('keeps an article and the page after a picture apart when their running heads differ', () => {
+    const pages = [hanging(0, 'news UPFRONT'), picture(1), resuming(2, 'grower FEATURE')]
+    expect(PdfPageComposer.composePages(pages)).toEqual(pages)
+  })
+
+  it('still reaches over the picture inside one section', () => {
+    const composed = PdfPageComposer.composePages([hanging(0, 'news UPFRONT'), picture(1), resuming(2, 'UPFRONT news')])
+    expect(composed.map(page => page.metadata?.composedFromPages ?? [page.pageIndex])).toEqual([[0, 2], [1]])
+  })
+})
