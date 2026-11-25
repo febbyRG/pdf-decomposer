@@ -62,3 +62,120 @@ describe('PdfPageComposer spread groups', () => {
     expect((composed[0].metadata as Record<string, unknown>).composedFromSpreads).toBeUndefined()
   })
 })
+
+describe('PdfPageComposer headless continuation', () => {
+  // Long enough that the titled page is an article page and not a cover
+  // (a page of display type and little text never continues forward).
+  const copy = (lead: string) => lead + ' ' + 'The question is how the situation develops and what can be learned from it for the coming years. '.repeat(14)
+  const bodyParagraph = (data: string, pageIndex: number, top = 99) =>
+    makeTextElement({ data, type: 'paragraph', fontSize: 10.4, fontFamily: 'Crimson Text', top, pageIndex })
+  const titled = (pageIndex: number) => makePage({
+    pageIndex,
+    elements: [
+      makeTextElement({ data: 'CAN THE DEVELOPMENT BE PREDICTED?', type: 'header', fontSize: 31.4, top: 183, pageIndex }),
+      bodyParagraph(copy('The editorial opens under its title.') + 'It ends on a full stop.', pageIndex, 392)
+    ]
+  })
+  const headless = (pageIndex: number) => makePage({
+    pageIndex,
+    elements: [bodyParagraph(copy('The general perception is that little has changed.') + 'It ends on a full stop too.', pageIndex)]
+  })
+
+  it('composes a titled article with the headless page that follows it', () => {
+    const composed = PdfPageComposer.composePages([titled(0), headless(1)])
+    expect(composed).toHaveLength(1)
+    expect(composed[0].metadata?.composedFromPages).toEqual([0, 1])
+  })
+
+  it('carries the title of the group, so a third headless page follows the second', () => {
+    const composed = PdfPageComposer.composePages([titled(0), headless(1), headless(2)])
+    expect(composed).toHaveLength(1)
+    expect(composed[0].metadata?.composedFromPages).toEqual([0, 1, 2])
+  })
+
+  it('leaves headless pages alone when no titled article stands before them', () => {
+    const composed = PdfPageComposer.composePages([headless(0), headless(1)])
+    expect(composed).toHaveLength(2)
+  })
+})
+
+describe('PdfPageComposer article interrupted by standalone pages', () => {
+  const ad = (pageIndex: number) => makePage({
+    pageIndex,
+    elements: [makeImageElement({ width: PAGE_W, height: PAGE_H, pageIndex })],
+    metadata: { convertedToScreenshot: true, conversionReason: 'hero-image-ad (85.0% hero, 420 text chars)' }
+  })
+  const hanging = (pageIndex: number) => makePage({
+    pageIndex,
+    elements: [makeTextElement({ data: body + 'and the story continues', type: 'paragraph', fontSize: 12, pageIndex })]
+  })
+  const resuming = (pageIndex: number) => makePage({
+    pageIndex,
+    elements: [makeTextElement({ data: 'after the advertisement, ' + body + 'It ends cleanly here.', type: 'paragraph', fontSize: 12, pageIndex })]
+  })
+  const newArticle = (pageIndex: number) => makePage({
+    pageIndex,
+    elements: [
+      makeTextElement({ data: 'THE FUTURE, NOW', type: 'header', fontSize: 28, pageIndex }),
+      makeTextElement({ data: body + 'It ends cleanly here.', type: 'paragraph', fontSize: 12, pageIndex })
+    ]
+  })
+
+  it('composes an article across one ad page and lets the ad follow it', () => {
+    const pages = [hanging(0), ad(1), resuming(2)]
+    const composed = PdfPageComposer.composePages(pages)
+    expect(composed).toHaveLength(2)
+    expect(composed[0].metadata?.composedFromPages).toEqual([0, 2])
+    // The ad is the page it was, after the article it interrupted.
+    expect(composed[1]).toBe(pages[1])
+    // The article's elements are in page order, each still knowing its page.
+    expect(composed[0].elements.map(element => element.pageIndex)).toEqual([0, 2])
+  })
+
+  it('looks past a double-page ad, and no further', () => {
+    const acrossTwo = PdfPageComposer.composePages([hanging(0), ad(1), ad(2), resuming(3)])
+    expect(acrossTwo.map(page => page.metadata?.composedFromPages ?? [page.pageIndex])).toEqual([[0, 3], [1], [2]])
+
+    const acrossThree = PdfPageComposer.composePages([hanging(0), ad(1), ad(2), ad(3), resuming(4)])
+    expect(acrossThree.map(page => page.pageIndex)).toEqual([0, 1, 2, 3, 4])
+    expect(acrossThree.every(page => !page.metadata?.isComposed)).toBe(true)
+  })
+
+  it('goes on after the ad, the article may continue further', () => {
+    const middle = makePage({
+      pageIndex: 2,
+      elements: [makeTextElement({ data: 'after the advertisement, ' + body + 'and it still goes', type: 'paragraph', fontSize: 12, pageIndex: 2 })]
+    })
+    const composed = PdfPageComposer.composePages([hanging(0), ad(1), middle, resuming(3), newArticle(4)])
+    expect(composed.map(page => page.metadata?.composedFromPages ?? [page.pageIndex])).toEqual([[0, 2, 3], [1], [4]])
+  })
+
+  it('does not reach over an ad to a page that starts a new article', () => {
+    const pages = [hanging(0), ad(1), newArticle(2)]
+    const composed = PdfPageComposer.composePages(pages)
+    expect(composed).toEqual(pages)
+  })
+
+  it('does not reach over an ad without evidence that the article continues', () => {
+    const complete = makePage({
+      pageIndex: 0,
+      elements: [makeTextElement({ data: body + 'The first article ends here.', type: 'paragraph', fontSize: 12 })]
+    })
+    const unrelated = makePage({
+      pageIndex: 2,
+      elements: [makeTextElement({ data: 'The council announced a new program. ' + body, type: 'paragraph', fontSize: 12, pageIndex: 2 })]
+    })
+    const pages = [complete, ad(1), unrelated]
+    expect(PdfPageComposer.composePages(pages)).toEqual(pages)
+  })
+
+  it('leaves an ad at the end of the document, and ads between complete articles, where they are', () => {
+    const pages = [newArticle(0), ad(1), newArticle(2), ad(3)]
+    expect(PdfPageComposer.composePages(pages)).toEqual(pages)
+  })
+
+  it('never starts a group from an ad', () => {
+    const pages = [ad(0), resuming(1)]
+    expect(PdfPageComposer.composePages(pages)).toEqual(pages)
+  })
+})

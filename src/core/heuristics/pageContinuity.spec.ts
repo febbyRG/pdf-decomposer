@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { makeImageElement, makePage, makeTextElement, PAGE_H, PAGE_W } from './__fixtures__/pages.js'
 import {
   analyzeContentType,
+  dominantBodyFace,
+  hasArticleTitle,
   hasContentContinuity,
+  isHeadlessContinuation,
   isScreenshotPage,
   isSpreadArtworkHalf,
   isSpreadMatePair,
@@ -392,5 +395,128 @@ describe('spread-mate attachment', () => {
       metadata: spreadMeta(2, 'left')
     })
     expect(spreadMateContinuity(thinText, artworkHalf(2, 'right'))).toBe(false)
+  })
+})
+
+describe('headless continuation (cyberwatch.pdf pages 2-3, a sentence-boundary page break without a running head)', () => {
+  // Geometry and faces of the real pages: an editorial whose title, byline and
+  // two body columns fill page 2 (ending on a full stop and a pull quote), and
+  // whose page 3 opens with body copy at the top and closes with the author's
+  // card. No running head, no hanging sentence, a capitalized start.
+  const bodyCopy = (lead: string) => lead + ' ' + 'The question is how the situation develops and what can be learned from it for the coming years. '.repeat(8)
+  const body = (data: string, top: number, left = 51) =>
+    makeTextElement({ data, type: 'paragraph', fontSize: 10.4, fontFamily: 'Crimson Text', top, left, width: 238 })
+
+  const titledPage = () => makePage({
+    pageIndex: 1,
+    pageNumber: 2,
+    elements: [
+      makeTextElement({ data: 'CAN THE DEVELOPMENT OF THE CYBER WORLD', type: 'header', fontSize: 31.4, top: 183, left: 119 }),
+      makeTextElement({ data: 'BE PREDICTED?', type: 'header', fontSize: 31.4, top: 267, left: 175 }),
+      makeTextElement({ data: '// Aapo Cederberg', type: 'paragraph', fontSize: 7, top: 312, left: 262 }),
+      body(bodyCopy('The invasion has permanently changed the European security system.') + 'so as not to draw the wrong conclusions from', 392),
+      body('which future developments are predicted. ' + bodyCopy('Are you wondering when it ends?') + 'supporting cyber defense.', 403, 305),
+      makeTextElement({ data: 'The importance of anticipation is growing in the strategy work of both state actors and private companies.', type: 'paragraph', fontSize: 9.7, top: 733, left: 189 })
+    ]
+  })
+
+  const headlessPage = (overrides: { elements?: ReturnType<typeof makeTextElement>[] } = {}) => makePage({
+    pageIndex: 2,
+    pageNumber: 3,
+    elements: overrides.elements ?? [
+      body(bodyCopy('The general perception seems to be that the attacker has not been particularly successful.'), 99, 54),
+      body(bodyCopy('On the other side there is a great need to use these means as part of hybrid operations.'), 99, 305),
+      makeImageElement({ top: 388, left: 242, width: 299, height: 400 }),
+      makeTextElement({ data: 'AAPO CEDERBERG', type: 'paragraph', fontSize: 9, top: 648, left: 140 }),
+      makeTextElement({ data: 'Managing Director and Founder of Cyberwatch Finland', type: 'paragraph', fontSize: 8.5, top: 668, left: 116 })
+    ]
+  })
+
+  it('names the face that carries most of a page\'s body copy', () => {
+    expect(dominantBodyFace(titledPage())).toEqual({ fontFamily: 'Crimson Text', fontSize: 10.4 })
+    expect(dominantBodyFace(makePage({ elements: [makeTextElement({ data: 'Short.', type: 'paragraph' })] }))).toBeNull()
+  })
+
+  it('knows a page that carries an article title from one that does not', () => {
+    expect(hasArticleTitle(titledPage())).toBe(true)
+    expect(hasArticleTitle(headlessPage())).toBe(false)
+  })
+
+  it('merges a headless page of body copy onto the titled article before it', () => {
+    expect(isHeadlessContinuation(titledPage(), headlessPage())).toBe(true)
+    expect(hasContentContinuity(titledPage(), headlessPage())).toBe(true)
+  })
+
+  it('does not merge when the article so far has no title', () => {
+    const untitled = makePage({ pageIndex: 1, pageNumber: 2, elements: [body(bodyCopy('An article without a heading ends here.'), 99)] })
+    expect(hasContentContinuity(untitled, headlessPage())).toBe(false)
+    // The composer passes the title of the whole group: a third page follows a
+    // headless second one, which has no title of its own to offer.
+    const second = makePage({ pageIndex: 2, pageNumber: 3, elements: [body(bodyCopy('The second page of the article is body copy alone.'), 99)] })
+    const third = makePage({ pageIndex: 3, pageNumber: 4, elements: [body(bodyCopy('The third page of the article is body copy alone.'), 99)] })
+    expect(hasContentContinuity(second, third)).toBe(false)
+    expect(hasContentContinuity(second, third, false, true)).toBe(true)
+  })
+
+  it('does not merge a page that carries a heading of its own, however small', () => {
+    const withSubheading = headlessPage({
+      elements: [
+        body(bodyCopy('The general perception seems to be that little has changed.'), 99, 54),
+        makeTextElement({ data: 'A new angle', type: 'header', fontSize: 12, top: 320, left: 54 }),
+        body(bodyCopy('Another piece of copy follows the small heading.'), 340, 54)
+      ]
+    })
+    expect(hasContentContinuity(titledPage(), withSubheading)).toBe(false)
+  })
+
+  it('does not merge a page whose display type was typed as a paragraph', () => {
+    const displayParagraph = headlessPage({
+      elements: [
+        body(bodyCopy('The general perception seems to be that little has changed.'), 99, 54),
+        makeTextElement({ data: 'A PASSION FOR A SAFE CYBER WORLD', type: 'paragraph', fontSize: 35.9, top: 600, left: 54 })
+      ]
+    })
+    expect(hasContentContinuity(titledPage(), displayParagraph)).toBe(false)
+  })
+
+  it('does not merge a page whose body starts further down (a title that is artwork, not text)', () => {
+    const underArtwork = headlessPage({
+      elements: [
+        makeImageElement({ top: 0, left: 0, width: PAGE_W, height: 380 }),
+        body(bodyCopy('The general perception seems to be that little has changed.'), 400, 54),
+        body(bodyCopy('A second column of the same piece.'), 400, 305)
+      ]
+    })
+    expect(hasContentContinuity(titledPage(), underArtwork)).toBe(false)
+  })
+
+  it('does not merge a page set in another body size or another face', () => {
+    const smaller = headlessPage({
+      elements: [makeTextElement({ data: bodyCopy('Fine print in a smaller size opens this page.'), type: 'paragraph', fontSize: 8.5, fontFamily: 'Crimson Text', top: 99, left: 54 })]
+    })
+    const otherFace = headlessPage({
+      elements: [makeTextElement({ data: bodyCopy('The same size in another family opens this page.'), type: 'paragraph', fontSize: 10.4, fontFamily: 'Arimo', top: 99, left: 54 })]
+    })
+    expect(hasContentContinuity(titledPage(), smaller)).toBe(false)
+    expect(hasContentContinuity(titledPage(), otherFace)).toBe(false)
+  })
+
+  it('does not merge a page with too little copy to be an article page', () => {
+    const notice = headlessPage({
+      elements: [body('A short notice of a few lines that says something about the next issue and nothing more than that.', 99, 54)]
+    })
+    expect(hasContentContinuity(titledPage(), notice)).toBe(false)
+  })
+
+  it('still stops at a page that starts a new section', () => {
+    const newArticle = makePage({
+      pageIndex: 2,
+      pageNumber: 3,
+      elements: [
+        makeTextElement({ data: 'CYBER SAFETY', type: 'header', fontSize: 44.5, top: 116, left: 54 }),
+        body(bodyCopy('A new article begins under its own title.'), 300, 54)
+      ]
+    })
+    expect(hasContentContinuity(titledPage(), newArticle)).toBe(false)
   })
 })

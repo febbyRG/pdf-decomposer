@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### ✨ Added
+- **An article that continues on a page without a heading is composed as one page.** The page composer merged two pages only on text-flow evidence (a sentence cut at the page break, a lowercase or connective start, a "continued" marker) or a shared rare running head. An editorial whose first page ends on a full stop and whose second page opens with a capital, with no running head on either, stayed two articles, the second without a title (cyberwatch.pdf pages 2-3). New evidence, the headless continuation (`isHeadlessContinuation`): the next page has no heading element and no display-size text, opens with a real body paragraph in the top quarter of the page, carries at least 500 characters of copy, and is set in the dominant body face and size of the current page (`dominantBodyFace`), and the article so far has a title (`hasArticleTitle`, which the composer tracks for the whole group, so a third page follows a headless second one). Every condition is required: a shared body face or a capitalized start alone still never merges two pages.
+- **An article interrupted by advertising stays one article.** A screenshot page (an ad, a full-page image) is standalone and never merges, so an article with an ad between two of its pages came out as two articles around it. `PdfPageComposer` now looks past up to two standalone pages (`MAX_INTERLEAVED_STANDALONE_PAGES`, a double-page ad) and applies the same continuity decision to the page after them. The article is composed from its own pages and the standalone pages follow it in the result.
+
+### ⚠️ Changed
+- **`composePages` no longer guarantees page order, and `metadata.composedFromPages` no longer lists neighbours only.** Both follow from the entry above and only occur when an article runs past a standalone page: `[page 3, ad 4, page 5]` composes to `[article {composedFromPages: [2, 4]}, ad]`. A consumer that derives a page range from the first and last member (`3-5`) names the ad's page too. The ad page itself is the unchanged object.
+- `hasContentContinuity` takes a fourth optional argument, `articleHasTitle` (default: the current page's own title).
+
 ## [1.6.3] - 2026-07-22
 
 ### 🐛 Fixed

@@ -1,6 +1,6 @@
 import type { PdfElement } from '../models/PdfElement.js'
 import type { PdfPageContent } from '../models/PdfPageContent.js'
-import { hasContentContinuity, runningHeadTokens } from './heuristics/pageContinuity.js'
+import { hasArticleTitle, hasContentContinuity, isScreenshotPage, runningHeadTokens } from './heuristics/pageContinuity.js'
 
 // A running-head token is continuity evidence only while it is RARE across the
 // document: an article's subject kicker ("stable fly") spans 2-4 pages, while a
@@ -8,10 +8,29 @@ import { hasContentContinuity, runningHeadTokens } from './heuristics/pageContin
 // Sharing a frequent token must not glue two different articles of one section.
 const RUNNING_HEAD_MAX_PAGE_FREQUENCY = 4
 
+// An article interrupted by advertising continues after it: the composer looks
+// past this many standalone pages (ads, full-page images) for the page the
+// article goes on with. Two covers a double-page ad, which in a split spread
+// document is two logical pages; beyond that the pages are more likely to
+// belong to different articles than to one.
+const MAX_INTERLEAVED_STANDALONE_PAGES = 2
+
+/** Where an article goes on after `fromIndex`, and the standalone pages passed over to get there. */
+interface ArticleContinuation {
+  nextIndex: number
+  passedOver: number[]
+}
+
 /**
- * Composes consecutive PDF pages that belong to the same article into a single
- * page. The continuity decision (document-agnostic, ad-aware) lives in
+ * Composes PDF pages that belong to the same article into a single page. The
+ * continuity decision (document-agnostic, ad-aware) lives in
  * ./heuristics/pageContinuity; this class only handles grouping and merging.
+ *
+ * The pages of an article are usually consecutive. When an ad or a full-page
+ * image stands between two of them, the article is still composed as one page
+ * and the standalone page follows it in the result, so the result is no longer
+ * strictly in page order: a composed page's `metadata.composedFromPages` lists
+ * its members, which then are not neighbours (e.g. [3, 5] with page 4 after).
  */
 export class PdfPageComposer {
   /**
@@ -32,41 +51,69 @@ export class PdfPageComposer {
     }
 
     const composedPages: PdfPageContent[] = []
-    let currentPageGroup: PdfPageContent[] = []
+    let index = 0
 
-    for (let i = 0; i < pages.length; i++) {
-      const currentPage = pages[i]
-      const nextPage = i < pages.length - 1 ? pages[i + 1] : null
+    while (index < pages.length) {
+      const group: PdfPageContent[] = [pages[index]]
+      // Standalone pages the article runs past, emitted after it.
+      const passedOver: PdfPageContent[] = []
+      let articleHasTitle = hasArticleTitle(pages[index])
+      let lastIndex = index
 
-      // Add current page to group
-      currentPageGroup.push(currentPage)
-
-      // Check if content continues to next page
-      const sharedRunningHead = nextPage !== null
-        && this.hasSharedRareRunningHead(pageTokens[i], pageTokens[i + 1], tokenPageFrequency)
-      const continuesToNext = nextPage && hasContentContinuity(currentPage, nextPage, sharedRunningHead)
-
-      if (!continuesToNext) {
-        // Content ends here - finalize the current group
-        if (currentPageGroup.length === 1) {
-          composedPages.push(currentPageGroup[0])
-        } else {
-          composedPages.push(this.composePageGroup(currentPageGroup))
-        }
-        currentPageGroup = []
+      for (;;) {
+        const continuation = this.findContinuation(pages, lastIndex, pageTokens, tokenPageFrequency, articleHasTitle)
+        if (!continuation) break
+        passedOver.push(...continuation.passedOver.map(passedIndex => pages[passedIndex]))
+        group.push(pages[continuation.nextIndex])
+        articleHasTitle = articleHasTitle || hasArticleTitle(pages[continuation.nextIndex])
+        lastIndex = continuation.nextIndex
       }
-    }
 
-    // Handle any remaining pages
-    if (currentPageGroup.length > 0) {
-      if (currentPageGroup.length === 1) {
-        composedPages.push(currentPageGroup[0])
-      } else {
-        composedPages.push(this.composePageGroup(currentPageGroup))
-      }
+      composedPages.push(group.length === 1 ? group[0] : this.composePageGroup(group))
+      composedPages.push(...passedOver)
+      index = lastIndex + 1
     }
 
     return composedPages
+  }
+
+  /**
+   * The page the article of `pages[fromIndex]` goes on with: the page right
+   * after it, or the page after one or two standalone pages (an ad between two
+   * pages of one article). Null when the article ends at `fromIndex`.
+   */
+  private static findContinuation(
+    pages: PdfPageContent[],
+    fromIndex: number,
+    pageTokens: string[][],
+    tokenPageFrequency: Map<string, number>,
+    articleHasTitle: boolean
+  ): ArticleContinuation | null {
+    const current = pages[fromIndex]
+    const continuesWith = (candidateIndex: number): boolean => {
+      const sharedRunningHead = this.hasSharedRareRunningHead(pageTokens[fromIndex], pageTokens[candidateIndex], tokenPageFrequency)
+      return hasContentContinuity(current, pages[candidateIndex], sharedRunningHead, articleHasTitle)
+    }
+
+    const nextIndex = fromIndex + 1
+    if (nextIndex >= pages.length) return null
+    if (continuesWith(nextIndex)) return { nextIndex, passedOver: [] }
+
+    // A standalone page itself never continues, and is never continued.
+    if (isScreenshotPage(current)) return null
+
+    const passedOver: number[] = []
+    let candidateIndex = nextIndex
+    while (
+      candidateIndex < pages.length
+      && passedOver.length < MAX_INTERLEAVED_STANDALONE_PAGES
+      && isScreenshotPage(pages[candidateIndex])
+    ) {
+      passedOver.push(candidateIndex)
+      candidateIndex++
+    }
+    if (passedOver.length === 0 || candidateIndex >= pages.length) return null
+    return continuesWith(candidateIndex) ? { nextIndex: candidateIndex, passedOver } : null
   }
 
   /**

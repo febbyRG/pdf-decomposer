@@ -72,7 +72,9 @@ Extract structured text with positioning and formatting:
 
 - Merges continuous content across consecutive pages
 - Spread-mate attachment: the two halves of one physical spread page merge into one article when one half is the article text and the other its full-page artwork (caption-level text only, no display title, never an ad). Composed groups keep every member's physical identity in `metadata.composedFromSpreads`
-- Document-agnostic continuity: a page pair merges only when there is real evidence (the current page's main body ends mid-sentence, the next page begins mid-sentence or opens with a discourse connective, both pages carry the same rare running-head kicker, or a "continued on/from page N" marker links them)
+- Document-agnostic continuity: a page pair merges only when there is real evidence (the current page's main body ends mid-sentence, the next page begins mid-sentence or opens with a discourse connective, both pages carry the same rare running-head kicker, a "continued on/from page N" marker links them, or the next page is a headless continuation)
+- Headless continuation: a page that opens with body copy at its top, carries no heading and no display-size text, and is set in the body face and size of the page before it continues that article, when the article has a title. Covers a page break on a sentence boundary without a running head
+- An article interrupted by advertising stays one article: the composer looks past one or two standalone pages (ads, full-page images) for the page the article goes on with, by the same evidence. The standalone pages follow the composed article in the result, so the result is not strictly in page order then, and `metadata.composedFromPages` lists members that are not neighbours (e.g. `[3, 5]`, with page 4 after it)
 - Resource trailers ("More information ...") and page furniture never count as continuation evidence
 - Detects article boundaries and section breaks (a display heading in the title region or a section-marker word starts a new article, even when a small hero caption precedes the title in reading order)
 - Never merges a cover, advertisement, or full-page screenshot into a neighbour
@@ -504,7 +506,7 @@ interface PdfPageContent {
   title: string // Page title
   elements: PdfElement[] // Extracted elements
   metadata?: {
-    composedFromPages?: number[] // Original page indices (for pageComposer)
+    composedFromPages?: number[] // Original page indices (for pageComposer), ascending, not always neighbours (an ad between two pages of an article is left out)
     [key: string]: any
   }
 }

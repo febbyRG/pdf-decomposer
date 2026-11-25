@@ -13,9 +13,13 @@ import { getCleanPageText, getCleanText, getTextElements } from './textUtils.js'
  * the continuation is evidenced from EITHER side:
  *  - the current page's MAIN body ends mid-sentence (bio/sidebar-aware), or
  *  - the next page begins mid-sentence (a lowercase body start), or
- *  - an explicit "continued on/from page N" marker links them.
+ *  - an explicit "continued on/from page N" marker links them, or
+ *  - the next page is a headless page of body copy in the face of a titled
+ *    article before it (isHeadlessContinuation).
  *
- * Ads / covers / screenshots never merge.
+ * Ads / covers / screenshots never merge. An article may continue past them
+ * (PdfPageComposer looks over one or two standalone pages), they stay pages
+ * of their own.
  */
 
 // Ad-aware structural fallback thresholds (metadata is the primary signal; these
@@ -53,6 +57,23 @@ const RESOURCE_TRAILER = /^(more information|for more information|further inform
 // even when the previous page ended on a sentence boundary. Conservative list:
 // fresh article ledes practically never open with these.
 const CONTINUATION_CONNECTIVE = /^(Meanwhile|However|Nevertheless|Furthermore|Moreover|Similarly, |Likewise, |Instead, |Even so|At the same time|On the other hand|As a result|Consequently|By contrast)[,\s]/
+
+// ── Headless continuation (a page of body copy with no heading of its own) ──
+// A page that opens with running body text and carries no heading cannot open
+// an article: it continues the titled article before it, even when both pages
+// break on a sentence boundary and share no running head. The text-flow
+// signals cannot see that case (cyberwatch.pdf pages 2-3: the editorial ends
+// page 2 on a full stop, page 3 opens with a capital and closes with the
+// author's card). Deliberately narrow, because a shared body face or a
+// capitalized start alone once glued unrelated articles together: every one of
+// the conditions in isHeadlessContinuation must hold.
+// The first body paragraph of a continuation page sits at the top of the page;
+// a new piece whose title is artwork (not text) opens with body further down.
+const HEADLESS_BODY_TOP_RATIO = 0.25
+// The page must carry real article copy, not a caption page or a short notice.
+const HEADLESS_MIN_TEXT = 500
+// Two pages of one article are set in the same body size.
+const BODY_FONT_SIZE_TOLERANCE = 0.5
 
 // ── Spread-mate attachment (two logical halves of one physical spread page) ──
 // In spread publications the two halves are routinely ONE editorial unit:
@@ -199,6 +220,83 @@ export function nextStartsWithConnective(page: PdfPageContent): boolean {
   const first = (page.elements || []).find(isAnyTextElement)
   if (!first || isHeaderElement(first)) return false
   return CONTINUATION_CONNECTIVE.test(getCleanText(first))
+}
+
+export interface BodyFace {
+  fontFamily: string
+  fontSize: number
+}
+
+/**
+ * The face the page's body copy is set in: the font family and size that carry
+ * the most characters of its real body paragraphs. Null when the page has no
+ * body paragraph with a known size.
+ */
+export function dominantBodyFace(page: PdfPageContent): BodyFace | null {
+  const weights = new Map<string, { face: BodyFace, characters: number }>()
+  for (const element of page.elements || []) {
+    if (!isBodyParagraph(element)) continue
+    const text = getCleanText(element)
+    if (text.length < MIN_BODY_PARAGRAPH) continue
+    const fontSize = Number(element.attributes?.fontSize) || 0
+    if (fontSize <= 0) continue
+    const fontFamily = String(element.attributes?.fontFamily || '')
+    const key = `${fontFamily}|${fontSize.toFixed(1)}`
+    const entry = weights.get(key) ?? { face: { fontFamily, fontSize }, characters: 0 }
+    entry.characters += text.length
+    weights.set(key, entry)
+  }
+  let dominant: { face: BodyFace, characters: number } | null = null
+  for (const entry of weights.values()) {
+    if (!dominant || entry.characters > dominant.characters) dominant = entry
+  }
+  return dominant ? dominant.face : null
+}
+
+function sameBodyFace(a: BodyFace, b: BodyFace): boolean {
+  if (Math.abs(a.fontSize - b.fontSize) > BODY_FONT_SIZE_TOLERANCE) return false
+  // A family is compared only when both pages name one.
+  return !a.fontFamily || !b.fontFamily || a.fontFamily === b.fontFamily
+}
+
+/**
+ * The page opens an article: it starts a new section, or it carries a heading
+ * sized clearly above body text. PdfPageComposer asks this of the pages of the
+ * group it is building, since a headless page can only continue an article
+ * that has a title.
+ */
+export function hasArticleTitle(page: PdfPageContent): boolean {
+  if (startsNewSection(page)) return true
+  return (page.elements || []).some(element =>
+    isHeaderElement(element) && (element.attributes?.fontSize || 0) >= SECTION_HEADING_FONT)
+}
+
+/**
+ * The next page is a headless continuation of the current page's article:
+ *  - it has no heading element and no display-size text at all,
+ *  - it opens with a real body paragraph at the top of the page,
+ *  - it carries real article copy, and
+ *  - its body is set in the same face and size as the current page's body.
+ * Whether the article so far has a title is the caller's to establish
+ * (hasContentContinuity's `articleHasTitle`).
+ */
+export function isHeadlessContinuation(currentPage: PdfPageContent, nextPage: PdfPageContent): boolean {
+  const textElements = (nextPage.elements || []).filter(isAnyTextElement)
+  if (textElements.length === 0) return false
+  if (textElements.some(isHeaderElement)) return false
+  // A title the element composer typed as a paragraph is still a title.
+  if (textElements.some(element => (element.attributes?.fontSize || 0) >= SECTION_HEADING_FONT)) return false
+
+  const first = textElements[0]
+  if (getCleanText(first).length < MIN_BODY_PARAGRAPH) return false
+  const pageHeight = nextPage.height || 0
+  if (pageHeight > 0 && normalizeBoundingBox(first.boundingBox).top > pageHeight * HEADLESS_BODY_TOP_RATIO) return false
+
+  if (getCleanPageText(nextPage).length < HEADLESS_MIN_TEXT) return false
+
+  const currentFace = dominantBodyFace(currentPage)
+  const nextFace = dominantBodyFace(nextPage)
+  return currentFace !== null && nextFace !== null && sameBodyFace(currentFace, nextFace)
 }
 
 /**
@@ -358,8 +456,22 @@ export function analyzeContentType(page: PdfPageContent): ContentType {
  * article subject line such as "stable fly", not a section label). It covers
  * continuations whose pages each end on a clean sentence boundary, which the
  * text-flow signals below cannot see.
+ *
+ * `articleHasTitle` is group-level evidence for the headless continuation
+ * (isHeadlessContinuation): the article the current page belongs to has a
+ * title. It defaults to the current page's own title; PdfPageComposer passes
+ * it for the whole group, so a third page can follow a headless second one.
+ *
+ * `nextPage` is usually the page right after `currentPage`. PdfPageComposer
+ * also asks about the page that follows one or two standalone pages (an ad
+ * between two pages of one article), the decision is the same.
  */
-export function hasContentContinuity(currentPage: PdfPageContent, nextPage: PdfPageContent, sharedRunningHead = false): boolean {
+export function hasContentContinuity(
+  currentPage: PdfPageContent,
+  nextPage: PdfPageContent,
+  sharedRunningHead = false,
+  articleHasTitle = hasArticleTitle(currentPage)
+): boolean {
   // Two halves of one physical spread page forming one editorial unit
   // (article + its artwork) merge BEFORE the screenshot guard below: within
   // a spread, a full-page editorial image belongs to its mate's article.
@@ -385,4 +497,5 @@ export function hasContentContinuity(currentPage: PdfPageContent, nextPage: PdfP
   const markerFlow = currentMarkers.toPage !== null || nextMarkers.fromPage !== null
   return mainBodyEndsHanging(currentPage) || nextStartsMidSentence(nextPage)
     || nextStartsWithConnective(nextPage) || sharedRunningHead || markerFlow
+    || (articleHasTitle && isHeadlessContinuation(currentPage, nextPage))
 }
