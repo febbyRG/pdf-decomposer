@@ -31,6 +31,12 @@ const SCREENSHOT_FALLBACK_MAX_TEXT = 600
 const COVER_MAX_TEXT = 1000
 const COVER_HEADER_RATIO = 0.6
 const LARGE_FONT = 20
+// A cover carries display type and at most a tagline. A page with this much
+// body copy under its title is the opening page of an article, however short
+// (cyberwatch.pdf page 8: a 36pt title, a standfirst and 550 characters of
+// body, which continue on page 9). Same figure as the clean composer's
+// editorial guard (significantTextBlockThreshold).
+const COVER_MAX_BODY_COPY = 300
 
 // A display title at this font size or larger marks a new section/article (any element).
 const HUGE_TITLE_FONT = 40
@@ -74,6 +80,17 @@ const HEADLESS_BODY_TOP_RATIO = 0.25
 const HEADLESS_MIN_TEXT = 500
 // Two pages of one article are set in the same body size.
 const BODY_FONT_SIZE_TOLERANCE = 0.5
+
+// ── A page that opens with a sub-heading of the running article ──
+// A heading that opens a page reads as a new article (startsNewSection). Inside
+// one article the next part often opens a page the same way: "BENEFITS AND
+// COMPETITIVE ADVANTAGES" at 18pt on cyberwatch.pdf page 9, under the running
+// head of page 8, whose title is 36pt and whose own sub-heading is 18pt. The
+// title of an article is clearly larger than the headings inside it, so an
+// opening heading at the size of a heading the current page already has, well
+// below that page's title, is a sub-heading. Only counted together with a
+// shared running head (the caller's evidence that both pages are one piece).
+const SUBHEADING_TITLE_RATIO = 1.5
 
 // ── Spread-mate attachment (two logical halves of one physical spread page) ──
 // In spread publications the two halves are routinely ONE editorial unit:
@@ -299,6 +316,38 @@ export function isHeadlessContinuation(currentPage: PdfPageContent, nextPage: Pd
   return currentFace !== null && nextFace !== null && sameBodyFace(currentFace, nextFace)
 }
 
+function textSizes(page: PdfPageContent): number[] {
+  return (page.elements || [])
+    .filter(isAnyTextElement)
+    .map(element => Number(element.attributes?.fontSize) || 0)
+    .filter(size => size > 0)
+}
+
+/**
+ * The next page opens with a sub-heading of the current page's article, not
+ * with the title of a new one:
+ *  - its opening text is the largest type on the next page (no bigger title
+ *    stands further down) and is not display-title size,
+ *  - the current page has a heading of the same size, and
+ *  - the current page's own title is clearly larger than that.
+ */
+export function opensWithSubheadingOf(currentPage: PdfPageContent, nextPage: PdfPageContent): boolean {
+  const first = (nextPage.elements || []).find(isAnyTextElement)
+  if (!first) return false
+  const openingSize = Number(first.attributes?.fontSize) || 0
+  if (openingSize <= 0 || openingSize >= HUGE_TITLE_FONT) return false
+  if (/^(FEATURE|SECTION|CHAPTER)\b/i.test(getCleanText(first))) return false
+
+  const nextSizes = textSizes(nextPage)
+  if (Math.max(...nextSizes) > openingSize + BODY_FONT_SIZE_TOLERANCE) return false
+
+  const currentSizes = textSizes(currentPage)
+  if (currentSizes.length === 0) return false
+  const titleSize = Math.max(...currentSizes)
+  if (titleSize < openingSize * SUBHEADING_TITLE_RATIO) return false
+  return currentSizes.some(size => Math.abs(size - openingSize) <= BODY_FONT_SIZE_TOLERANCE)
+}
+
 /**
  * Distinct normalized tokens of the page's running head / kicker (stashed by
  * the clean composer in metadata.runningHeadText before the margin filter
@@ -430,15 +479,35 @@ export function isScreenshotPage(page: PdfPageContent): boolean {
   return false
 }
 
+/**
+ * Characters of body copy on the page: real paragraphs set below display size.
+ * Titles, standfirsts in display type and short labels do not count.
+ */
+function bodyCopyLength(page: PdfPageContent): number {
+  let length = 0
+  for (const element of getTextElements(page)) {
+    if ((element.attributes?.fontSize || 0) >= SECTION_HEADING_FONT) continue
+    const text = getCleanText(element)
+    if (text.length >= MIN_BODY_PARAGRAPH) length += text.length
+  }
+  return length
+}
+
+/**
+ * A cover: no text at all, or display type with little text and no real body
+ * copy. A page with a large title and a few hundred characters of body is the
+ * opening page of an article and may continue onto the next page.
+ */
 export function isCoverPage(page: PdfPageContent): boolean {
   const textElements = getTextElements(page)
   if (textElements.length === 0) return true
 
   const isShortText = getCleanPageText(page).length < COVER_MAX_TEXT
+  if (!isShortText || bodyCopyLength(page) >= COVER_MAX_BODY_COPY) return false
+
   const headerRatio = getHeaderRatio(textElements)
   const hasLargeFonts = textElements.some(el => (el.attributes?.fontSize || 0) > LARGE_FONT)
-
-  return (headerRatio > COVER_HEADER_RATIO && isShortText) || (hasLargeFonts && isShortText)
+  return headerRatio > COVER_HEADER_RATIO || hasLargeFonts
 }
 
 export function analyzeContentType(page: PdfPageContent): ContentType {
@@ -489,8 +558,12 @@ export function hasContentContinuity(
   if (currentMarkers.toPage !== null && currentMarkers.toPage === nextPage.pageNumber) return true
   if (nextMarkers.fromPage !== null && nextMarkers.fromPage === currentPage.pageNumber) return true
 
-  // The next page begins a new section/article -> not a continuation of this one.
-  if (startsNewSection(nextPage)) return false
+  // The next page begins a new section/article -> not a continuation of this
+  // one, unless what opens it is a sub-heading of this article under the same
+  // running head.
+  if (startsNewSection(nextPage)) {
+    return sharedRunningHead && opensWithSubheadingOf(currentPage, nextPage)
+  }
 
   // Continuation evidence from either side (a marker on either side also counts,
   // covering renumbered slices where the printed page number no longer matches).

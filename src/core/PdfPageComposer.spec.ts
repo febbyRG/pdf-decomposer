@@ -179,3 +179,64 @@ describe('PdfPageComposer article interrupted by standalone pages', () => {
     expect(PdfPageComposer.composePages(pages)).toEqual(pages)
   })
 })
+
+describe('PdfPageComposer opening page and its next part', () => {
+  const sentence = 'Strategic expertise requires a holistic view and an understanding of how the parts depend on one another. '
+  const text = (data: string, fontSize: number, top: number, pageIndex: number) =>
+    makeTextElement({ data, type: 'paragraph', fontSize, fontFamily: 'Arimo', top, left: 90, pageIndex })
+  const page = (pageIndex: number, heading: string, headingSize: number, runningHeadText?: string) => makePage({
+    pageIndex,
+    elements: [
+      text(heading, headingSize, 94, pageIndex),
+      ...(pageIndex === 0 ? [text('FORMULATING A DEPENDABLE CYBER SECURITY', 18.1, 300, pageIndex)] : []),
+      text(sentence.repeat(6), 10.5, 400, pageIndex)
+    ],
+    ...(runningHeadText ? { metadata: { runningHeadText } } : {})
+  })
+
+  it('composes a short opening page with the page that opens on its sub-heading, under one running head', () => {
+    const composed = PdfPageComposer.composePages([
+      page(0, 'A PASSION FOR A SAFE CYBER WORLD', 35.9, 'Cyberwatch Finland'),
+      page(1, 'BENEFITS AND COMPETITIVE ADVANTAGES', 18.1, 'Cyberwatch Finland'),
+      page(2, 'OUR SERVICES', 37.4, 'Cyberwatch Finland')
+    ])
+    expect(composed.map(composedPage => composedPage.metadata?.composedFromPages ?? [composedPage.pageIndex])).toEqual([[0, 1], [2]])
+  })
+
+  it('keeps them apart without a running head to tie them', () => {
+    const composed = PdfPageComposer.composePages([
+      page(0, 'A PASSION FOR A SAFE CYBER WORLD', 35.9),
+      page(1, 'BENEFITS AND COMPETITIVE ADVANTAGES', 18.1)
+    ])
+    expect(composed).toHaveLength(2)
+  })
+})
+
+describe('PdfPageComposer furniture of a composed page', () => {
+  const page = (pageIndex: number, tail: string, metadata: Record<string, string>) => makePage({
+    pageIndex,
+    elements: [makeTextElement({ data: body + tail, type: 'paragraph', fontSize: 12, pageIndex })],
+    metadata
+  })
+
+  it('lists the running heads and feet of every member once', () => {
+    const composed = PdfPageComposer.composePages([
+      page(0, 'and the story continues', { runningFootText: 'CYBERWATCH FINLAND | 3' }),
+      page(1, 'onto the next page, and', { runningHeadText: 'Editorial', runningFootText: '4 | CYBERWATCH FINLAND' }),
+      page(2, 'ends on the third.', { runningHeadText: 'Editorial', runningFootText: 'CYBERWATCH FINLAND | 5' })
+    ])
+    expect(composed).toHaveLength(1)
+    expect((composed[0].metadata as Record<string, unknown>).furnitureTexts).toEqual([
+      'CYBERWATCH FINLAND | 3',
+      'Editorial',
+      '4 | CYBERWATCH FINLAND',
+      'CYBERWATCH FINLAND | 5'
+    ])
+  })
+
+  it('writes no list when no member has any', () => {
+    const composed = PdfPageComposer.composePages([page(0, 'and the story continues', {}), page(1, 'onto the next page.', {})])
+    expect(composed).toHaveLength(1)
+    expect((composed[0].metadata as Record<string, unknown>).furnitureTexts).toBeUndefined()
+  })
+})

@@ -77,11 +77,13 @@ Extract structured text with positioning and formatting:
 - An article interrupted by advertising stays one article: the composer looks past one or two standalone pages (ads, full-page images) for the page the article goes on with, by the same evidence. The standalone pages follow the composed article in the result, so the result is not strictly in page order then, and `metadata.composedFromPages` lists members that are not neighbours (e.g. `[3, 5]`, with page 4 after it)
 - Resource trailers ("More information ...") and page furniture never count as continuation evidence
 - Detects article boundaries and section breaks (a display heading in the title region or a section-marker word starts a new article, even when a small hero caption precedes the title in reading order)
+- A cover is a page without text, or display type with a tagline and no real body copy. A page with a large title over a few hundred characters of body is an article's opening page and may continue
+- A page that opens with a heading the size of a sub-heading of the page before it, well below that page's title, continues the article when both pages carry the same rare running head. A display title still starts a new article
 - Never merges a cover, advertisement, or full-page screenshot into a neighbour
 
 #### Clean Composer
 
-- Filters out headers, footers, and page numbers (the removed running-head text is preserved in `metadata.runningHeadText` for the page composer's continuity signal)
+- Filters out headers, footers, and page numbers. The removed text is preserved, the top band's in `metadata.runningHeadText` (the page composer's continuity signal) and the bottom band's in `metadata.runningFootText`. A composed page lists those of all its member pages in `metadata.furnitureTexts`, so a consumer can tell page furniture from content
 - Content area detection with configurable margins. Images of any size survive when they overlap the content area (a QR code in a corner is content, not furniture)
 - Image size validation and filtering
 - Control character removal

@@ -341,6 +341,13 @@ export class PdfCleanComposer {
     // section kickers like "BUSINESS stable fly"): PdfPageComposer uses it as
     // continuity evidence binding consecutive pages of the same article.
     const runningHeadText = this.extractRunningHeadText(cleaningResult.removed, contentArea)
+    // The text removed from the BOTTOM margin band (running feet and folios,
+    // "CYBERWATCH FINLAND | 3") is kept the same way. It is furniture for the
+    // output, and a consumer that also shows the page to a vision model has
+    // to know it: the model reads the foot off the page image and writes it
+    // into the article, where a check can only take it out again when it
+    // knows what the page's furniture was.
+    const runningFootText = this.extractRunningFootText(cleaningResult.removed, contentArea)
 
     // Return normally cleaned page
     return {
@@ -349,6 +356,7 @@ export class PdfCleanComposer {
       metadata: {
         ...page.metadata,
         ...(runningHeadText ? { runningHeadText } : {}),
+        ...(runningFootText ? { runningFootText } : {}),
         cleaning: {
           contentArea,
           originalElementCount: page.elements?.length || 0,
@@ -416,13 +424,26 @@ export class PdfCleanComposer {
   }
 
   private static extractRunningHeadText(removed: PdfElement[], contentArea: ContentArea): string {
+    return this.extractMarginBandText(removed, contentArea, 'top')
+  }
+
+  /**
+   * Join the text of elements the margin filter removed from the bottom band:
+   * the page's running foot and folio.
+   */
+  private static extractRunningFootText(removed: PdfElement[], contentArea: ContentArea): string {
+    return this.extractMarginBandText(removed, contentArea, 'bottom')
+  }
+
+  private static extractMarginBandText(removed: PdfElement[], contentArea: ContentArea, band: 'top' | 'bottom'): string {
     const parts: string[] = []
     for (const element of removed) {
       if (isImageElement(element)) continue
       if (element.removalReason !== 'outside_content_area') continue
       const bbox = normalizeBoundingBox(element.boundingBox)
       const centerY = bbox.top + bbox.height / 2
-      if (centerY < contentArea.top) {
+      const inBand = band === 'top' ? centerY < contentArea.top : centerY > contentArea.bottom
+      if (inBand) {
         const text = String(element.data || '').replace(/<[^>]*>/g, ' ').trim()
         if (text) parts.push(text)
       }

@@ -193,3 +193,32 @@ describe('PdfCleanComposer numeric-label exemption', () => {
     expect(keptTexts(elements)).not.toContain('25')
   })
 })
+
+describe('PdfCleanComposer running head and foot', () => {
+  // What the margin filter removed from cyberwatch.pdf page 2 and page 8: a
+  // spaced running foot with its folio at 96% of the page's height, and a
+  // running head in the top band.
+  const removed = (data: string, top: number, removalReason = 'outside_content_area') => ({
+    type: 'paragraph',
+    data,
+    removalReason,
+    boundingBox: { top, left: 300, width: 120, height: 7 }
+  })
+  const extract = (method: string, elements: unknown[]): string =>
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (PdfCleanComposer as any)[method](elements, contentArea)
+
+  it('keeps the text of the bottom band, the running foot and its folio', () => {
+    const elements = [removed('Cyberwatch Finland', 20), removed('C Y B E R W A T C H F I N L A N D |', 808), removed('3', 808)]
+    expect(extract('extractRunningFootText', elements)).toBe('C Y B E R W A T C H F I N L A N D | 3')
+    expect(extract('extractRunningHeadText', elements)).toBe('Cyberwatch Finland')
+  })
+
+  it('takes neither from what was removed for another reason, or from a picture', () => {
+    const elements = [
+      removed('a stray glyph', 810, 'too_small'),
+      { type: 'image', data: 'x.jpg', removalReason: 'outside_content_area', boundingBox: { top: 810, left: 0, width: 50, height: 20 } }
+    ]
+    expect(extract('extractRunningFootText', elements)).toBe('')
+  })
+})

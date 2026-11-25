@@ -5,12 +5,14 @@ import {
   dominantBodyFace,
   hasArticleTitle,
   hasContentContinuity,
+  isCoverPage,
   isHeadlessContinuation,
   isScreenshotPage,
   isSpreadArtworkHalf,
   isSpreadMatePair,
   mainBodyEndsHanging,
   nextStartsMidSentence,
+  opensWithSubheadingOf,
   parseContinuationMarkers,
   runningHeadTokens,
   spreadMateContinuity,
@@ -518,5 +520,98 @@ describe('headless continuation (cyberwatch.pdf pages 2-3, a sentence-boundary p
       ]
     })
     expect(hasContentContinuity(titledPage(), newArticle)).toBe(false)
+  })
+})
+
+describe('a short opening page and the page that continues it (cyberwatch.pdf pages 8-9)', () => {
+  // The real shapes: page 8 is a 36pt title, a standfirst in 18pt display
+  // type and 550 characters of body. Page 9 opens with an 18pt heading of the
+  // same style, and both carry the running head "Cyberwatch Finland".
+  const sentence = 'Strategic expertise requires a holistic view and an understanding of how the parts depend on one another. '
+  const display = (data: string, fontSize: number, top: number) =>
+    makeTextElement({ data, type: 'paragraph', fontSize, fontFamily: 'Arimo', top, left: 90 })
+  const copy = (data: string, top: number) =>
+    makeTextElement({ data, type: 'paragraph', fontSize: 10.5, fontFamily: 'Arimo', top, left: 90 })
+
+  const opener = (lastWords = 'It ends on a full stop.') => makePage({
+    pageIndex: 7,
+    pageNumber: 8,
+    elements: [
+      display('A PASSION FOR A SAFE CYBER WORLD', 35.9, 260),
+      display('FORMULATING A DEPENDABLE CYBER SECURITY', 18.1, 516),
+      copy(sentence.repeat(4) + lastWords, 593),
+      copy(sentence, 705)
+    ]
+  })
+  const nextPart = (heading: { data: string, fontSize: number } = { data: 'BENEFITS AND COMPETITIVE ADVANTAGES', fontSize: 18.1 }) => makePage({
+    pageIndex: 8,
+    pageNumber: 9,
+    elements: [
+      display(heading.data, heading.fontSize, 94),
+      copy(sentence.repeat(6), 154),
+      makeTextElement({ data: 'REFERENCES', type: 'header', fontSize: 18.1, fontFamily: 'Arimo', top: 245, left: 90 }),
+      copy(sentence.repeat(6), 286)
+    ]
+  })
+
+  it('does not take an opening page with real body copy for a cover', () => {
+    expect(isCoverPage(opener())).toBe(false)
+    expect(analyzeContentType(opener())).not.toBe('cover')
+  })
+
+  it('still takes display type with a tagline, or no text at all, for a cover', () => {
+    const titleAndTagline = makePage({
+      elements: [display('MAGAZINE TITLE', 40, 100), copy('The quarterly review of things that matter to people who read.', 400)]
+    })
+    expect(isCoverPage(titleAndTagline)).toBe(true)
+    expect(isCoverPage(makePage({ elements: [makeImageElement({ width: PAGE_W, height: PAGE_H })] }))).toBe(true)
+  })
+
+  it('lets a short opening page continue on text-flow evidence, as any article page does', () => {
+    const continuation = makePage({ pageIndex: 8, pageNumber: 9, elements: [copy('and goes on from the page before. ' + sentence.repeat(6), 99)] })
+    expect(hasContentContinuity(opener('the sentence runs over the page break and'), continuation)).toBe(true)
+  })
+
+  it('knows a heading at the size of the article\'s own sub-heading from a title', () => {
+    expect(startsNewSection(nextPart())).toBe(true)
+    expect(opensWithSubheadingOf(opener(), nextPart())).toBe(true)
+  })
+
+  it('continues onto a page that opens with such a sub-heading, under a shared running head only', () => {
+    expect(hasContentContinuity(opener(), nextPart(), true)).toBe(true)
+    expect(hasContentContinuity(opener(), nextPart(), false)).toBe(false)
+  })
+
+  it('still stops at a display title, shared running head or not ("OUR SERVICES" on page 10)', () => {
+    const newArticle = nextPart({ data: 'OUR SERVICES', fontSize: 37.4 })
+    expect(opensWithSubheadingOf(nextPart(), newArticle)).toBe(false)
+    expect(hasContentContinuity(nextPart(), newArticle, true)).toBe(false)
+  })
+
+  it('still stops at a heading of a size the current page does not use', () => {
+    expect(hasContentContinuity(opener(), nextPart({ data: 'A DIFFERENT KIND OF HEADING', fontSize: 24 }), true)).toBe(false)
+  })
+
+  it('still stops when the current page has no title clearly larger than the heading', () => {
+    const flat = makePage({
+      pageIndex: 7,
+      pageNumber: 8,
+      elements: [display('A SECTION OF EQUAL HEADINGS', 18.1, 100), copy(sentence.repeat(6), 160)]
+    })
+    expect(opensWithSubheadingOf(flat, nextPart())).toBe(false)
+    expect(hasContentContinuity(flat, nextPart(), true)).toBe(false)
+  })
+
+  it('still stops when a larger title stands further down the next page', () => {
+    const titleBelow = makePage({
+      pageIndex: 8,
+      pageNumber: 9,
+      elements: [
+        display('BENEFITS AND COMPETITIVE ADVANTAGES', 18.1, 94),
+        display('A NEW ARTICLE', 30, 200),
+        copy(sentence.repeat(6), 300)
+      ]
+    })
+    expect(opensWithSubheadingOf(opener(), titleBelow)).toBe(false)
   })
 })

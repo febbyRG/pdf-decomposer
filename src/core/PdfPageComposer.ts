@@ -168,6 +168,12 @@ export class PdfPageComposer {
     // screenshots need the source page + half of every absorbed member.
     const composedFromSpreads = pages.map(page => (page.metadata as Record<string, unknown> | undefined)?.spread ?? null)
 
+    // The running heads and feet of every member (the clean composer's
+    // runningHeadText / runningFootText). The metadata spread below keeps the
+    // FIRST page's only, and a consumer that has to tell page furniture from
+    // content needs the folio of every page the article was printed on.
+    const furnitureTexts = this.collectFurnitureTexts(pages)
+
     return {
       ...firstPage,
       title: `${firstPage.title} - ${lastPage.title}`,
@@ -177,11 +183,25 @@ export class PdfPageComposer {
       metadata: {
         composedFromPages,
         ...(composedFromSpreads.some(spread => spread !== null) ? { composedFromSpreads } : {}),
+        ...(furnitureTexts.length > 0 ? { furnitureTexts } : {}),
         originalHeight: totalOriginalHeight,
         isComposed: true,
         ...(firstPage.metadata || {}) // Preserve any existing metadata
       }
     }
+  }
+
+  /** The distinct running heads and feet of the pages, in page order. */
+  private static collectFurnitureTexts(pages: PdfPageContent[]): string[] {
+    const texts: string[] = []
+    for (const page of pages) {
+      const metadata = page.metadata as Record<string, unknown> | undefined
+      for (const key of ['runningHeadText', 'runningFootText']) {
+        const text = String(metadata?.[key] || '').trim()
+        if (text && !texts.includes(text)) texts.push(text)
+      }
+    }
+    return texts
   }
 
   /**
