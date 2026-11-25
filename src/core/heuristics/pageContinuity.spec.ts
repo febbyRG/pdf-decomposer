@@ -12,6 +12,7 @@ import {
   isSpreadMatePair,
   mainBodyEndsHanging,
   nextStartsMidSentence,
+  openingPageContinuity,
   opensWithSubheadingOf,
   parseContinuationMarkers,
   runningHeadsDiffer,
@@ -662,5 +663,163 @@ describe('what the 120-page magazine showed (WAGROWER.pdf)', () => {
     expect(hasContentContinuity(titled('news UPFRONT'), headless('grower FEATURE'))).toBe(false)
     // The same two pages under one running head are one article.
     expect(hasContentContinuity(titled('news UPFRONT'), headless('UPFRONT news'))).toBe(true)
+  })
+})
+
+describe('what the 19-page magazine showed (worlds-leader.pdf)', () => {
+  const sentence = 'She went on to perform across the country and on tour abroad, and founded her first company soon after. '
+  // Three columns of 150pt at 36, 212 and 389, a gutter the element composer's
+  // histogram does not see: the page comes ordered from top to bottom.
+  const COLUMNS = [36, 212, 389]
+  const column = (index: number, top: number, data: string, height = 100) =>
+    makeTextElement({ data, type: 'paragraph', fontSize: 9.5, fontFamily: 'Body Serif', top, left: COLUMNS[index], width: 150, height })
+  const fromTopToBottom = (elements: ReturnType<typeof column>[]) =>
+    [...elements].sort((a, b) => (a.boundingBox as { top: number }).top - (b.boundingBox as { top: number }).top)
+
+  it('reads the end of a page at the foot of its last column (page 10)', () => {
+    const page = makePage({
+      pageNumber: 10,
+      width: 576,
+      height: 756,
+      elements: fromTopToBottom([
+        column(0, 271, sentence.repeat(3)),
+        // The paragraph that starts lowest stands in the first column and ends its sentence.
+        column(0, 593, sentence.repeat(3)),
+        column(1, 85, sentence.repeat(3)),
+        column(1, 523, sentence.repeat(3)),
+        column(2, 85, sentence.repeat(3)),
+        column(2, 560, sentence.repeat(2) + 'On the misconceptions about franchising she')
+      ])
+    })
+    expect(mainBodyEndsHanging(page)).toBe(true)
+  })
+
+  it('reads the start of a page at the top of its first column (page 13)', () => {
+    const page = makePage({
+      pageNumber: 13,
+      width: 576,
+      height: 756,
+      elements: fromTopToBottom([
+        // A logo stands over the first column, which starts lower than the others.
+        column(0, 271, 'says, and the successes are what people ought to read about. ' + sentence.repeat(2)),
+        column(1, 85, sentence.repeat(3)),
+        column(2, 85, sentence.repeat(3))
+      ])
+    })
+    expect(nextStartsMidSentence(page)).toBe(true)
+  })
+
+  it('takes no evidence away from a page read from top to bottom, and leaves a page ordered by column alone', () => {
+    // The paragraph that starts lowest hangs, the foot of the last column does not.
+    const hangingInComposerOrder = makePage({
+      width: 576,
+      height: 756,
+      elements: fromTopToBottom([
+        column(0, 85, sentence.repeat(3)),
+        column(0, 604, sentence.repeat(2) + 'She considers that traveling is what lets her hear the'),
+        column(1, 85, sentence.repeat(3)),
+        column(2, 85, sentence.repeat(3))
+      ])
+    })
+    expect(mainBodyEndsHanging(hangingInComposerOrder)).toBe(true)
+
+    // Ordered by column by the composer: the last element is the page's end.
+    const orderedByColumn = makePage({
+      width: 576,
+      height: 756,
+      elements: [
+        column(0, 85, sentence.repeat(3)),
+        column(0, 400, sentence.repeat(2) + 'A sentence that runs on into the next column and'),
+        column(1, 85, sentence.repeat(3)),
+        column(1, 300, sentence.repeat(3))
+      ]
+    })
+    expect(mainBodyEndsHanging(orderedByColumn)).toBe(false)
+  })
+
+  it('does not run a hanging sentence on into a page without text (pages 13-14)', () => {
+    const text = makePage({ pageNumber: 13, pageIndex: 12, elements: [para(long('She considers that traveling is what lets her hear the'))] })
+    expect(mainBodyEndsHanging(text)).toBe(true)
+    // An advertisement drawn as vectors: the library reads nothing from it.
+    const empty = makePage({ pageNumber: 14, pageIndex: 13, elements: [] })
+    expect(isScreenshotPage(empty)).toBe(false)
+    expect(hasContentContinuity(text, empty)).toBe(false)
+  })
+
+  describe('an opening page and the text that follows it (pages 16-17, 9-10)', () => {
+    const opening = (pageIndex = 15) => makePage({
+      pageIndex,
+      width: 576,
+      height: 756,
+      elements: [
+        makeTextElement({ data: 'Chairwoman, CEO, & Managing Director LHT Holdings Ltd.', type: 'paragraph', fontSize: 11.2, top: 471, left: 181 }),
+        makeTextElement({ data: 'MAY YAP', type: 'header', fontSize: 66.4, top: 513, left: 139 }),
+        makeTextElement({ data: 'A Trailblazing Business Leader and an Inspiration for Emerging Women Leaders', type: 'paragraph', fontSize: 14, top: 588, left: 139 })
+      ]
+    })
+    const textPage = (first: string, ...more: ReturnType<typeof column>[]) => makePage({
+      pageIndex: 16,
+      width: 576,
+      height: 756,
+      elements: [column(1, 85, first + sentence.repeat(3)), column(2, 85, sentence.repeat(4)), column(0, 250, sentence.repeat(4)), ...more]
+    })
+
+    it('composes the two when the text speaks of what the opening page names', () => {
+      const next = textPage('The journey to the top was not easy for May Yap, Chairwoman of the company. ')
+      expect(isCoverPage(opening())).toBe(true)
+      expect(openingPageContinuity(opening(), next)).toBe(true)
+      expect(hasContentContinuity(opening(), next)).toBe(true)
+    })
+
+    it('also when the text has a pull quote in display type', () => {
+      const quote = makeTextElement({ data: 'Deforestation is one major cause of climate change.', type: 'paragraph', fontSize: 21, top: 333, left: 389, width: 145, height: 300 })
+      const next = textPage('The journey to the top was not easy for May Yap, Chairwoman of the company. ', quote)
+      expect(hasContentContinuity(opening(), next)).toBe(true)
+    })
+
+    it('reads a name in a byline too (page 9)', () => {
+      const page = makePage({
+        pageIndex: 8,
+        width: 576,
+        height: 756,
+        elements: [
+          makeTextElement({ data: 'A Compelling Story of Inspiration and Dedication', type: 'header', fontSize: 19, top: 528, left: 148 }),
+          makeTextElement({ data: 'CEO & Franchisor | Oksana Franchising International, Inc.', type: 'paragraph', fontSize: 13.1, top: 594, left: 147 })
+        ]
+      })
+      const next = textPage('She is the CEO and franchisor at Oksana Franchising International, Inc. and a live performer. ')
+      expect(hasContentContinuity(page, next)).toBe(true)
+    })
+
+    it('leaves a page alone that does not speak of it, that has a title, or that follows the cover', () => {
+      const unrelated = textPage('Growers across the region have taken part in the program this season. ')
+      expect(hasContentContinuity(opening(), unrelated)).toBe(false)
+
+      const titled = makePage({
+        pageIndex: 16,
+        width: 576,
+        height: 756,
+        elements: [
+          makeTextElement({ data: 'Another Story Altogether', type: 'header', fontSize: 30, top: 60, left: 36 }),
+          column(0, 120, 'It mentions May Yap, Chairwoman of the company, in passing. ' + sentence.repeat(6))
+        ]
+      })
+      expect(hasContentContinuity(opening(), titled)).toBe(false)
+
+      const next = textPage('The journey to the top was not easy for May Yap, Chairwoman of the company. ')
+      expect(hasContentContinuity(opening(0), next)).toBe(false)
+    })
+
+    it('does not take two function words standing together for a name', () => {
+      const page = makePage({
+        pageIndex: 5,
+        elements: [
+          makeTextElement({ data: 'FULL OF LIFE', type: 'header', fontSize: 40, top: 100, left: 60 }),
+          makeTextElement({ data: 'More of what you have been looking for', type: 'paragraph', fontSize: 12, top: 600, left: 60 })
+        ]
+      })
+      const next = textPage('It is more than what you have seen, and you have been here before. ')
+      expect(openingPageContinuity(page, next)).toBe(false)
+    })
   })
 })

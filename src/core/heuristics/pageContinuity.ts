@@ -17,11 +17,16 @@ import { getCleanPageText, getCleanText, getTextElements } from './textUtils.js'
  *  - the next page is a headless page of body copy in the face of a titled
  *    article before it (isHeadlessContinuation).
  *
- * Ads / covers / screenshots never merge, with two exceptions that are no
- * ads: the artwork half of a spread (spreadMateContinuity) and the full-page
- * photograph an article opens on (openingPictureContinuity). An article may
- * continue past a standalone page (PdfPageComposer looks over one or two),
- * which stays a page of its own.
+ * Ads / covers / screenshots never merge, with three exceptions that are no
+ * ads: the artwork half of a spread (spreadMateContinuity), the full-page
+ * photograph an article opens on (openingPictureContinuity) and the opening
+ * page of an article, a title over a picture with no body copy
+ * (openingPageContinuity). An article may continue past a standalone page
+ * (PdfPageComposer looks over one or two), which stays a page of its own.
+ *
+ * The signals that read where a page ends and where it starts read it in
+ * column order as well (columnReadingOrder), where PdfElementComposer left
+ * the page ordered from top to bottom.
  */
 
 // Ad-aware structural fallback thresholds (metadata is the primary signal; these
@@ -120,6 +125,26 @@ const SPREAD_ARTICLE_MIN_TEXT = 500
 // Screenshot-collapse reason class that must never attach (advertisement).
 const AD_CONVERSION_REASON = /^hero-image-ad/
 
+// Reading order by column (columnReadingOrder). Two body paragraphs stand in
+// one column when their widths overlap by more than this share of the narrower.
+const COLUMN_OVERLAP_RATIO = 0.5
+// A column of body copy holds at least this many characters, a caption or a
+// label beside the text is no column.
+const COLUMN_MIN_TEXT = 200
+// A paragraph wider than this share of the text's width spans the columns.
+const COLUMN_SPANNING_RATIO = 0.5
+// Tops closer than this are the same line.
+const SAME_LINE_TOLERANCE = 2
+
+// Function words that say nothing about what a page is about
+// (openingPageContinuity compares the names an opening page prints).
+const NAME_STOPWORDS = new Set([
+  'the', 'and', 'for', 'with', 'that', 'this', 'from', 'your', 'our', 'you', 'are', 'was', 'were', 'has', 'have',
+  'had', 'not', 'all', 'can', 'will', 'more', 'most', 'new', 'its', 'his', 'her', 'their', 'about', 'into', 'over',
+  'out', 'who', 'what', 'how', 'why', 'when', 'where', 'one', 'two', 'but', 'than', 'then', 'them', 'they', 'there',
+  'here', 'also', 'been', 'being', 'which', 'while', 'every', 'each', 'any', 'such', 'only', 'just', 'now', 'get'
+])
+
 export type ContentType = 'cover' | 'image' | 'article' | 'mixed'
 
 export interface ContinuationMarkers {
@@ -139,6 +164,112 @@ function isBodyParagraph(element: PdfElement): boolean {
 
 function isAnyTextElement(element: PdfElement): boolean {
   return isBodyParagraph(element) || isHeaderElement(element)
+}
+
+interface TextColumn {
+  left: number
+  right: number
+  top: number
+  bottom: number
+  characters: number
+}
+
+/**
+ * The page's text elements in the order they are read.
+ *
+ * PdfElementComposer orders a page by column when it finds the columns, and
+ * from top to bottom when it does not. It does not find them when the gutter
+ * falls on one bin of its histogram, which happens to gutters of 25pt
+ * (worlds-leader.pdf pages 10, 13 and 17, three columns at 36, 212 and 389).
+ * On such a page the element that comes first is the top of whichever column
+ * starts highest, and the last is whichever paragraph starts lowest: page 13
+ * "ended" on the foot of its FIRST column, mid-sentence, and was composed with
+ * the advertisement after it.
+ *
+ * So the signals that read where a page ends and where it starts read it
+ * this way too: when the elements come from top to bottom and the body copy
+ * stands in two or more columns side by side, the text is put in column
+ * order, what stands above the columns first. Null for a page the composer
+ * ordered by column itself, a page of one column and a page without geometry:
+ * its order stands.
+ *
+ * The column order ADDS evidence, it takes none away: a page ends hanging when
+ * its last paragraph does in either order (WAGROWER.pdf pages 6, 66 and 80 are
+ * continued on the evidence of the composer's order, pages 64 and 106 on the
+ * foot of their last column). Where a section starts is read in the
+ * composer's order alone.
+ */
+function columnReadingOrder(page: PdfPageContent): PdfElement[] | null {
+  const texts = (page.elements || []).filter(isAnyTextElement)
+  if (texts.length < 3) return null
+  const boxes = new Map(texts.map(element => [element, normalizeBoundingBox(element.boundingBox)]))
+  const boxOf = (element: PdfElement) => boxes.get(element) as ReturnType<typeof normalizeBoundingBox>
+
+  // Ordered by column already: the tops go back up where a column ends.
+  for (let i = 1; i < texts.length; i++) {
+    if (boxOf(texts[i]).top < boxOf(texts[i - 1]).top - SAME_LINE_TOLERANCE) return null
+  }
+
+  const body = texts.filter(element =>
+    isBodyParagraph(element)
+    && (element.attributes?.fontSize || 0) < SECTION_HEADING_FONT
+    && getCleanText(element).length >= MIN_BODY_PARAGRAPH
+    && boxOf(element).width > 0)
+  if (body.length < 2) return null
+  const textLeft = Math.min(...body.map(element => boxOf(element).left))
+  const textRight = Math.max(...body.map(element => boxOf(element).left + boxOf(element).width))
+  const inColumns = body.filter(element => boxOf(element).width <= (textRight - textLeft) * COLUMN_SPANNING_RATIO)
+
+  const columns: TextColumn[] = []
+  for (const element of [...inColumns].sort((a, b) => boxOf(a).left - boxOf(b).left)) {
+    const box = boxOf(element)
+    const column = columns.find(candidate => {
+      const overlap = Math.min(candidate.right, box.left + box.width) - Math.max(candidate.left, box.left)
+      return overlap > Math.min(candidate.right - candidate.left, box.width) * COLUMN_OVERLAP_RATIO
+    })
+    if (column) {
+      column.left = Math.min(column.left, box.left)
+      column.right = Math.max(column.right, box.left + box.width)
+      column.top = Math.min(column.top, box.top)
+      column.bottom = Math.max(column.bottom, box.top + box.height)
+      column.characters += getCleanText(element).length
+    } else {
+      columns.push({
+        left: box.left,
+        right: box.left + box.width,
+        top: box.top,
+        bottom: box.top + box.height,
+        characters: getCleanText(element).length
+      })
+    }
+  }
+  const bodyColumns = columns.filter(column => column.characters >= COLUMN_MIN_TEXT).sort((a, b) => a.left - b.left)
+  if (bodyColumns.length < 2) return null
+  const sideBySide = bodyColumns.some((column, index) =>
+    index > 0 && Math.min(column.bottom, bodyColumns[index - 1].bottom) > Math.max(column.top, bodyColumns[index - 1].top))
+  if (!sideBySide) return null
+
+  const columnsTop = Math.min(...bodyColumns.map(column => column.top))
+  const columnOf = (element: PdfElement): number => {
+    const box = boxOf(element)
+    // What stands above every column (a title, a kicker) is read first.
+    if (box.top + box.height <= columnsTop + SAME_LINE_TOLERANCE) return -1
+    // What spans the columns is read where it starts, like the composer does.
+    const anchor = box.width > (textRight - textLeft) * COLUMN_SPANNING_RATIO ? box.left : box.left + box.width / 2
+    let nearest = 0
+    let nearestDistance = Infinity
+    bodyColumns.forEach((column, index) => {
+      const distance = anchor < column.left ? column.left - anchor : anchor > column.right ? anchor - column.right : 0
+      if (distance < nearestDistance) {
+        nearestDistance = distance
+        nearest = index
+      }
+    })
+    return nearest
+  }
+  const placed = texts.map((element, index) => ({ element, index, column: columnOf(element), top: boxOf(element).top }))
+  placed.sort((a, b) => a.column - b.column || a.top - b.top || a.index - b.index)
+  return placed.map(entry => entry.element)
 }
 
 // A contents page tags its preview pictures with page numbers ("8", "26"),
@@ -164,8 +295,7 @@ function getHeaderRatio(elements: PdfElement[]): number {
  * This is what lets us see that a page whose reading-order ends with a bio blurb
  * actually has a hanging main paragraph earlier (the real continuation point).
  */
-function mainBodyLastParagraph(page: PdfPageContent): string | null {
-  const elements = page.elements || []
+function mainBodyLastParagraph(elements: PdfElement[]): string | null {
 
   // An interior heading (not the page's opening title in the first 2 elements)
   // starts a sidebar/aside; the main body ends before the last one.
@@ -198,18 +328,29 @@ function mainBodyLastParagraph(page: PdfPageContent): string | null {
  * onto its neighbour.
  */
 export function mainBodyEndsHanging(page: PdfPageContent): boolean {
-  const text = mainBodyLastParagraph(page)
-  if (!text) return false
-  const noTerminalPunctuation = !/[.!?]["')\]]?\s*$/.test(text)
-  const cutMidSentence = /[A-Za-z,]\s*$/.test(text)
-  return noTerminalPunctuation && cutMidSentence
+  const hangs = (text: string | null): boolean => {
+    if (!text) return false
+    const noTerminalPunctuation = !/[.!?]["')\]]?\s*$/.test(text)
+    const cutMidSentence = /[A-Za-z,]\s*$/.test(text)
+    return noTerminalPunctuation && cutMidSentence
+  }
+  // In the composer's order, and in column order where that is another one
+  // (columnReadingOrder): the foot of the last column is where a page ends.
+  if (hangs(mainBodyLastParagraph(page.elements || []))) return true
+  const byColumn = columnReadingOrder(page)
+  return byColumn !== null && hangs(mainBodyLastParagraph(byColumn))
+}
+
+/** The texts a page can be said to open with: the composer's first, and the first in column order. */
+function openingTexts(page: PdfPageContent): PdfElement[] {
+  const first = (page.elements || []).find(isAnyTextElement)
+  const firstByColumn = columnReadingOrder(page)?.[0]
+  return [first, firstByColumn].filter((element): element is PdfElement => element !== undefined)
 }
 
 /** The next page begins mid-sentence: its first text element is body starting lowercase. */
 export function nextStartsMidSentence(page: PdfPageContent): boolean {
-  const first = (page.elements || []).find(isAnyTextElement)
-  if (!first || isHeaderElement(first)) return false
-  return /^[a-z]/.test(getCleanText(first))
+  return openingTexts(page).some(first => !isHeaderElement(first) && /^[a-z]/.test(getCleanText(first)))
 }
 
 /** The page opens a new section/article (large display title or a section-marker word). */
@@ -259,9 +400,7 @@ export function startsNewSection(page: PdfPageContent): boolean {
  * on a sentence boundary.
  */
 export function nextStartsWithConnective(page: PdfPageContent): boolean {
-  const first = (page.elements || []).find(isAnyTextElement)
-  if (!first || isHeaderElement(first)) return false
-  return CONTINUATION_CONNECTIVE.test(getCleanText(first))
+  return openingTexts(page).some(first => !isHeaderElement(first) && CONTINUATION_CONNECTIVE.test(getCleanText(first)))
 }
 
 export interface BodyFace {
@@ -435,6 +574,59 @@ export function openingPictureContinuity(currentPage: PdfPageContent, nextPage: 
   if (!runningHeadsMatch(currentPage, nextPage)) return false
   if (isScreenshotPage(nextPage) || hasArticleTitle(nextPage)) return false
   return getCleanPageText(nextPage).length >= OPENING_PICTURE_MIN_TEXT
+}
+
+/** The words of a text that can name what a page is about, in order. */
+function nameWords(text: string): string[] {
+  return (text.toLowerCase().match(/[a-z0-9']+/g) || []).map(word => word.replace(/^'+|'+$/g, ''))
+}
+
+/**
+ * The next page speaks of what the current page names: two words that stand
+ * together in one of the current page's texts stand together in the next
+ * page's text too ("MAY YAP" over a portrait, "May Yap, Chairwoman" in the
+ * copy). Function words and words of one or two letters name nothing.
+ */
+function namesRecur(currentPage: PdfPageContent, nextPage: PdfPageContent): boolean {
+  const nextText = ` ${nameWords(getCleanPageText(nextPage)).join(' ')} `
+  for (const element of getTextElements(currentPage)) {
+    const words = nameWords(getCleanText(element))
+    for (let i = 1; i < words.length; i++) {
+      const pair = [words[i - 1], words[i]]
+      if (pair.some(word => word.length < 3 || NAME_STOPWORDS.has(word))) continue
+      if (nextText.includes(` ${pair.join(' ')} `)) return true
+    }
+  }
+  return false
+}
+
+/**
+ * The current page is the opening page of the article whose text starts on
+ * the next page: a title over a picture and a line or two, no body copy
+ * (worlds-leader.pdf page 16, "MAY YAP" on a portrait, before three pages of
+ * text without a title). Such a page reads as a cover, and a cover does not
+ * continue. What tells the two apart is the next page:
+ *  - it has no title of its own and opens with body copy at its top,
+ *  - it carries real article copy, and
+ *  - it speaks of what the opening page names (namesRecur).
+ * The document's first page is the magazine's cover and opens no article, and
+ * two pages under different running heads are two sections. Evaluated before
+ * the cover guard in hasContentContinuity.
+ */
+export function openingPageContinuity(currentPage: PdfPageContent, nextPage: PdfPageContent): boolean {
+  if (currentPage.pageIndex === 0) return false
+  if ((currentPage.metadata as Record<string, any> | undefined)?.coverPage) return false
+  if (bodyCopyLength(currentPage) >= COVER_MAX_BODY_COPY || !hasArticleTitle(currentPage)) return false
+  if (runningHeadsDiffer(currentPage, nextPage)) return false
+
+  if (hasArticleTitle(nextPage)) return false
+  const first = (nextPage.elements || []).find(isAnyTextElement)
+  if (!first || isHeaderElement(first) || getCleanText(first).length < MIN_BODY_PARAGRAPH) return false
+  const pageHeight = nextPage.height || 0
+  if (pageHeight > 0 && normalizeBoundingBox(first.boundingBox).top > pageHeight * HEADLESS_BODY_TOP_RATIO) return false
+  if (getCleanPageText(nextPage).length < HEADLESS_MIN_TEXT) return false
+
+  return namesRecur(currentPage, nextPage)
 }
 
 /**
@@ -627,6 +819,16 @@ export function hasContentContinuity(
 
   // Ads / screenshots are standalone and never merge.
   if (isScreenshotPage(currentPage) || isScreenshotPage(nextPage)) return false
+
+  // A sentence does not run on into a page without text. A page the library
+  // read nothing from is not a screenshot page by its metadata (worlds-leader.pdf
+  // page 14, an advertisement drawn as vectors), and the hanging end of the
+  // page before it composed the two.
+  if (getTextElements(nextPage).length === 0) return false
+
+  // An article's opening page (a title, a picture, no body copy) belongs to
+  // the text that follows it, although it reads as a cover.
+  if (openingPageContinuity(currentPage, nextPage)) return true
 
   // A cover page does not continue forward.
   if (isCoverPage(currentPage)) return false
