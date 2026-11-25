@@ -41,8 +41,25 @@ export function transformImageToArray(image: PdfImage): Uint8ClampedArray {
   return image.data
 }
 
+/**
+ * The family, weight and style a PDF font name stands for.
+ *
+ * A PostScript name of Monotype carries two markers that are not part of the
+ * family: "MT" at its end and "PS" after the family ("TimesNewRomanPSMT",
+ * "TimesNewRomanPS-BoldMT", "Arial-BoldMT"). Left in, they gave every text of
+ * worlds-leader.pdf the family "Times New Roman Psmt" (and "Times New Roman Ps
+ * Bold Mt" for its bold), a face no font source knows, and three families
+ * where the page has one.
+ */
 export function parseFontName(raw: string) {
   const result = { raw, identifier: '', fontFamily: raw.replace(/^.+\+/, ''), fontWeight: 'regular', fontStyle: 'normal' }
+  // "MT" closes the name, after a lower-case letter or after "PS".
+  result.fontFamily = result.fontFamily.replace(/(?<=[a-z]|PS)MT$/, '')
+  if (/-bold(italic|oblique)$/i.test(result.fontFamily)) {
+    result.fontFamily = result.fontFamily.replace(/-bold(italic|oblique)$/i, '')
+    result.fontWeight = 'bold'
+    result.fontStyle = 'italic'
+  }
   if (/-regular$/i.test(result.fontFamily)) {
     result.fontFamily = result.fontFamily.replace(/-regular$/i, '')
   }
@@ -66,6 +83,8 @@ export function parseFontName(raw: string) {
     result.fontFamily = result.fontFamily.replace(/-oblique$/i, '')
     result.fontStyle = 'italic'
   }
+  // "PS" closes the family, after a lower-case letter ("TimesNewRomanPS").
+  result.fontFamily = result.fontFamily.replace(/(?<=[a-z])PS$/, '')
   result.fontFamily = capitalCase(result.fontFamily)
   result.identifier = paramCase(result.fontFamily)
   return result
