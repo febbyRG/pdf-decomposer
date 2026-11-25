@@ -17,9 +17,11 @@ import { getCleanPageText, getCleanText, getTextElements } from './textUtils.js'
  *  - the next page is a headless page of body copy in the face of a titled
  *    article before it (isHeadlessContinuation).
  *
- * Ads / covers / screenshots never merge. An article may continue past them
- * (PdfPageComposer looks over one or two standalone pages), they stay pages
- * of their own.
+ * Ads / covers / screenshots never merge, with two exceptions that are no
+ * ads: the artwork half of a spread (spreadMateContinuity) and the full-page
+ * photograph an article opens on (openingPictureContinuity). An article may
+ * continue past a standalone page (PdfPageComposer looks over one or two),
+ * which stays a page of its own.
  */
 
 // Ad-aware structural fallback thresholds (metadata is the primary signal; these
@@ -91,6 +93,18 @@ const BODY_FONT_SIZE_TOLERANCE = 0.5
 // below that page's title, is a sub-heading. Only counted together with a
 // shared running head (the caller's evidence that both pages are one piece).
 const SUBHEADING_TITLE_RATIO = 1.5
+
+// ── Opening picture (an article that opens on a full-page photograph) ──
+// A feature often opens with its title set on a photograph that fills the
+// page, and its text starts on the page after (WAGROWER.pdf pages 14-15 and
+// 70-71). The clean composer collapses such a page to one picture, as it does
+// an advertisement, and a collapsed page never merges: the reader got a
+// picture as an article of its own and the text as an article without a title.
+// What tells the opening page from an ad is the magazine's own furniture: it
+// carries the running head of the page after it ("FEATURE grower" and "grower
+// FEATURE"), an ad carries none. And the page after it has no title of its own.
+// The page must carry real article copy, same figure as the headless rule.
+const OPENING_PICTURE_MIN_TEXT = 500
 
 // ── Spread-mate attachment (two logical halves of one physical spread page) ──
 // In spread publications the two halves are routinely ONE editorial unit:
@@ -390,6 +404,40 @@ export function runningHeadsDiffer(currentPage: PdfPageContent, nextPage: PdfPag
 }
 
 /**
+ * Both pages carry the same running head, in any order of its words. Unlike
+ * the composer's shared RARE running head this says nothing about how many
+ * pages share it: it only places two neighbouring pages in one section.
+ */
+export function runningHeadsMatch(currentPage: PdfPageContent, nextPage: PdfPageContent): boolean {
+  const current = runningHeadTokens(currentPage)
+  const next = runningHeadTokens(nextPage)
+  return current.length > 0 && current.length === next.length && current.every(token => next.includes(token))
+}
+
+function isCollapsedToPicture(page: PdfPageContent): boolean {
+  const metadata = page.metadata as Record<string, any> | undefined
+  return Boolean(metadata?.convertedToScreenshot || metadata?.processedAsScreenshot)
+}
+
+/**
+ * The current page is the opening picture of the article whose text starts on
+ * the next page:
+ *  - the clean composer collapsed it to one picture, and it is not the
+ *    document's first page (the magazine's cover opens no article),
+ *  - both pages carry the same running head,
+ *  - the next page is a text page with real copy and no title of its own.
+ * Evaluated before the screenshot guard in hasContentContinuity, like the
+ * spread-mate attachment.
+ */
+export function openingPictureContinuity(currentPage: PdfPageContent, nextPage: PdfPageContent): boolean {
+  if (!isCollapsedToPicture(currentPage) || currentPage.pageIndex === 0) return false
+  if ((currentPage.metadata as Record<string, any> | undefined)?.coverPage) return false
+  if (!runningHeadsMatch(currentPage, nextPage)) return false
+  if (isScreenshotPage(nextPage) || hasArticleTitle(nextPage)) return false
+  return getCleanPageText(nextPage).length >= OPENING_PICTURE_MIN_TEXT
+}
+
+/**
  * Parse "continued on/from page N" markers from a page's text.
  */
 export function parseContinuationMarkers(page: PdfPageContent): ContinuationMarkers {
@@ -573,6 +621,9 @@ export function hasContentContinuity(
   // (article + its artwork) merge BEFORE the screenshot guard below: within
   // a spread, a full-page editorial image belongs to its mate's article.
   if (spreadMateContinuity(currentPage, nextPage)) return true
+
+  // An article's opening photograph belongs to the text that follows it.
+  if (openingPictureContinuity(currentPage, nextPage)) return true
 
   // Ads / screenshots are standalone and never merge.
   if (isScreenshotPage(currentPage) || isScreenshotPage(nextPage)) return false

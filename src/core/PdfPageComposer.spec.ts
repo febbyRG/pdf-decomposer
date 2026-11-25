@@ -262,11 +262,92 @@ describe('PdfPageComposer does not leave a section across a standalone page', ()
 
   it('keeps an article and the page after a picture apart when their running heads differ', () => {
     const pages = [hanging(0, 'news UPFRONT'), picture(1), resuming(2, 'grower FEATURE')]
-    expect(PdfPageComposer.composePages(pages)).toEqual(pages)
+    const composed = PdfPageComposer.composePages(pages)
+    // The news article ends, and the photograph opens the feature whose text follows it.
+    expect(composed.map(page => page.metadata?.composedFromPages ?? [page.pageIndex])).toEqual([[0], [1, 2]])
+    expect(composed[0]).toBe(pages[0])
   })
 
   it('still reaches over the picture inside one section', () => {
     const composed = PdfPageComposer.composePages([hanging(0, 'news UPFRONT'), picture(1), resuming(2, 'UPFRONT news')])
     expect(composed.map(page => page.metadata?.composedFromPages ?? [page.pageIndex])).toEqual([[0, 2], [1]])
+  })
+})
+
+describe('PdfPageComposer article that opens on a full-page photograph', () => {
+  // WAGROWER.pdf pages 14-16 and 70-71: the title is set on a photograph that
+  // fills the page (collapsed to one picture, classified like a hero-image
+  // ad), the text starts on the next page, both under the section's running
+  // head. Page 20 of the same magazine is a real ad and carries none.
+  const opening = (pageIndex: number, runningHeadText?: string) => makePage({
+    pageIndex,
+    elements: [makeImageElement({ width: PAGE_W, height: PAGE_H, pageIndex })],
+    metadata: {
+      convertedToScreenshot: true,
+      processedAsScreenshot: true,
+      conversionReason: 'hero-image-ad (70.3% hero, 160 text chars)',
+      ...(runningHeadText ? { runningHeadText } : {})
+    }
+  })
+  const text = (pageIndex: number, runningHeadText: string, tail = 'It ends cleanly here.') => makePage({
+    pageIndex,
+    elements: [makeTextElement({ data: body + tail, type: 'paragraph', fontSize: 10, pageIndex })],
+    metadata: { runningHeadText }
+  })
+  const titled = (pageIndex: number, runningHeadText: string) => makePage({
+    pageIndex,
+    elements: [
+      makeTextElement({ data: 'VegNET Projects Update', type: 'header', fontSize: 25, pageIndex }),
+      makeTextElement({ data: body + 'It ends cleanly here.', type: 'paragraph', fontSize: 10, pageIndex })
+    ],
+    metadata: { runningHeadText }
+  })
+  const groups = (pages: ReturnType<typeof makePage>[]) =>
+    PdfPageComposer.composePages(pages).map(page => page.metadata?.composedFromPages ?? [page.pageIndex])
+
+  it('composes the photograph with the text that follows it under the same running head', () => {
+    const pages = [text(0, 'news UPFRONT'), opening(1, 'FEATURE grower'), text(2, 'grower FEATURE')]
+    const composed = PdfPageComposer.composePages(pages)
+    expect(composed.map(page => page.metadata?.composedFromPages ?? [page.pageIndex])).toEqual([[0], [1, 2]])
+    // The picture comes first, and the article is not itself a collapsed page.
+    expect(composed[1].elements[0].type).toBe('image')
+    expect(composed[1].metadata?.convertedToScreenshot).toBeUndefined()
+    expect(composed[1].metadata?.conversionReason).toBeUndefined()
+    expect(composed[1].metadata?.isComposed).toBe(true)
+  })
+
+  it('goes on from the text page to the next one under their rare running head, the photograph is not counted against it', () => {
+    // Four text pages and the photograph share the kicker: counted with the
+    // photograph it would stand on five pages and no longer be rare.
+    const pages = [
+      opening(1, 'FEATURE grower'),
+      text(2, 'grower FEATURE'),
+      text(3, 'FEATURE grower'),
+      text(4, 'grower FEATURE'),
+      text(5, 'FEATURE grower')
+    ]
+    expect(groups(pages)).toEqual([[1, 2, 3, 4, 5]])
+  })
+
+  it('leaves an advertisement alone, it carries no running head of the magazine', () => {
+    const pages = [text(0, 'syngenta ADVERTORIAL'), opening(1), titled(2, 'VegNET BUSINESS')]
+    expect(PdfPageComposer.composePages(pages)).toEqual(pages)
+  })
+
+  it('leaves a photograph alone when the page after it has a title of its own, or is in another section', () => {
+    expect(groups([opening(1, 'FEATURE grower'), titled(2, 'grower FEATURE')])).toEqual([[1], [2]])
+    expect(groups([opening(1, 'FEATURE grower'), text(2, 'VegNET BUSINESS')])).toEqual([[1], [2]])
+  })
+
+  it('never takes the cover of the document for an opening picture', () => {
+    expect(groups([opening(0, 'FEATURE grower'), text(1, 'grower FEATURE')])).toEqual([[0], [1]])
+  })
+
+  it('does not let the article before it reach over the photograph into the feature', () => {
+    // Same section on all three pages, and the first one ends mid-sentence:
+    // the text after the photograph still belongs to the photograph.
+    const before = text(0, 'grower FEATURE', 'and the story continues')
+    const pages = [before, opening(1, 'FEATURE grower'), text(2, 'grower FEATURE')]
+    expect(groups(pages)).toEqual([[0], [1, 2]])
   })
 })

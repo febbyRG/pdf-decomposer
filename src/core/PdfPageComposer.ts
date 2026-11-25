@@ -1,6 +1,13 @@
 import type { PdfElement } from '../models/PdfElement.js'
 import type { PdfPageContent } from '../models/PdfPageContent.js'
-import { hasArticleTitle, hasContentContinuity, isScreenshotPage, runningHeadsDiffer, runningHeadTokens } from './heuristics/pageContinuity.js'
+import {
+  hasArticleTitle,
+  hasContentContinuity,
+  isScreenshotPage,
+  openingPictureContinuity,
+  runningHeadsDiffer,
+  runningHeadTokens
+} from './heuristics/pageContinuity.js'
 
 // A running-head token is continuity evidence only while it is RARE across the
 // document: an article's subject kicker ("stable fly") spans 2-4 pages, while a
@@ -43,12 +50,16 @@ export class PdfPageComposer {
 
     // Document-wide running-head token frequency (pages containing each token).
     const pageTokens = pages.map(page => runningHeadTokens(page))
+    // A page collapsed to one picture keeps its running head for the opening
+    // picture rule, but is not counted here: an article of four text pages and
+    // an opening photograph is still an article of a rare kicker.
     const tokenPageFrequency = new Map<string, number>()
-    for (const tokens of pageTokens) {
+    pageTokens.forEach((tokens, pageIndex) => {
+      if (isScreenshotPage(pages[pageIndex])) return
       for (const token of tokens) {
         tokenPageFrequency.set(token, (tokenPageFrequency.get(token) || 0) + 1)
       }
-    }
+    })
 
     const composedPages: PdfPageContent[] = []
     let index = 0
@@ -117,6 +128,9 @@ export class PdfPageComposer {
     // under another running head is another article, whatever the text says
     // (and the standalone page is often that article's own opening picture).
     if (runningHeadsDiffer(current, pages[candidateIndex])) return null
+    // The standalone page may be the candidate's own opening picture: then the
+    // candidate starts an article and does not continue this one.
+    if (openingPictureContinuity(pages[candidateIndex - 1], pages[candidateIndex])) return null
     return continuesWith(candidateIndex) ? { nextIndex: candidateIndex, passedOver } : null
   }
 
@@ -178,6 +192,15 @@ export class PdfPageComposer {
     // content needs the folio of every page the article was printed on.
     const furnitureTexts = this.collectFurnitureTexts(pages)
 
+    // What the clean composer wrote about the first member alone must not
+    // describe the article: a group that opens on a collapsed picture (a
+    // spread's artwork half, an article's opening photograph) is not itself a
+    // page converted to a screenshot.
+    const collapseKeys = ['convertedToScreenshot', 'processedAsScreenshot', 'conversionReason']
+    const firstPageMetadata = Object.fromEntries(
+      Object.entries((firstPage.metadata || {}) as Record<string, unknown>).filter(([key]) => !collapseKeys.includes(key))
+    )
+
     return {
       ...firstPage,
       title: `${firstPage.title} - ${lastPage.title}`,
@@ -190,7 +213,7 @@ export class PdfPageComposer {
         ...(furnitureTexts.length > 0 ? { furnitureTexts } : {}),
         originalHeight: totalOriginalHeight,
         isComposed: true,
-        ...(firstPage.metadata || {}) // Preserve any existing metadata
+        ...firstPageMetadata // Preserve the first member's other metadata
       }
     }
   }

@@ -79,6 +79,7 @@ Extract structured text with positioning and formatting:
 - Detects article boundaries and section breaks (a display heading in the title region or a section-marker word starts a new article, even when a small hero caption precedes the title in reading order)
 - A cover is a page without text, or display type with a tagline and no real body copy. A page with a large title over a few hundred characters of body is an article's opening page and may continue
 - A page that opens with a heading the size of a sub-heading of the page before it, well below that page's title, continues the article when both pages carry the same rare running head. A display title still starts a new article
+- An article that opens on a full-page photograph (collapsed to one picture by the clean composer) is composed with the text page after it when both carry the same running head and the text page has no title of its own. An advertisement carries no running head of the magazine and stays alone
 - Never merges a cover, advertisement, or full-page screenshot into a neighbour
 
 #### Clean Composer

@@ -315,11 +315,18 @@ export class PdfCleanComposer {
       if (shouldScreenshot.convert) {
         const screenshot = await this.generatePageScreenshot(page, pdfDocument, options)
         if (screenshot) {
+          // A collapsed page keeps its running head and foot like any other:
+          // the head tells an article's opening photograph (it carries the
+          // section's running head) from an advertisement (it carries none).
+          const collapsedHeadText = this.extractRunningHeadText(cleaningResult.removed, contentArea)
+          const collapsedFootText = this.extractRunningFootText(cleaningResult.removed, contentArea)
           return {
             ...page,
             elements: [screenshot],
             metadata: {
               ...page.metadata,
+              ...(collapsedHeadText ? { runningHeadText: collapsedHeadText } : {}),
+              ...(collapsedFootText ? { runningFootText: collapsedFootText } : {}),
               convertedToScreenshot: true,
               conversionReason: shouldScreenshot.reason,
               originalElementCount: page.elements?.length || 0,
